@@ -4,7 +4,30 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
-## [1.1.0-alpha.3] - Real-World Reconstruction Validation & Reader Integration (Phase 2.7E)
+## [1.1.0-alpha.4] - Reading Quality Validation & Refinement (Phase 2.8)
+
+### Fixed
+- **Pagination Geometry & Double-Margin Elimination**:
+  - Aligned non-content deductions between `PaginationEngine.paginateChapter` and `ReflowablePageRenderer` from 124 pt to 68 pt (`headerHeight = 28.0`, `footerHeight = 24.0`, `verticalPadding = 8.0`), eliminating the artificial dead-zone at the bottom of pages.
+  - Removed redundant pre-halving and pre-margin deduction in `PaginatedReflowableReader._ensureLayout` and `_recalculateLayoutPreservingAnchor`, passing full layout constraints directly to `PaginationEngine` and eliminating line wrap measurement discrepancies.
+- **Bidirectional Reading Position Synchronization**:
+  - Synchronized reader switching between Reflowable and Original PDF modes:
+    - Reflowable $\to$ PDF: Resolves active `ContentNode.sourcePdfPage` and sets `_pdfPage` directly to that exact physical PDF page.
+    - PDF $\to$ Reflowable: Scans for the first `ContentNode` with `sourcePdfPage >= _pdfPage`, resolves anchor ID and chapter, and jumps smoothly to that position.
+- **Referential Document Stability**:
+  - Memoized `_readerDocument` in `ReadingScreen` (`_readerDocument ??= ReflowableEngine.normalizeDocument(...)`) to eliminate infinite layout re-render loops on frame builds.
+- **Novel Heading Structure**:
+  - Expanded `SemanticClassifier` H1 detection to recognize standalone non-standard headings common in novels: "Prolog", "Epilog", "Introduction", "Kata Pengantar", uppercase standalone chapter titles, and standalone Roman numerals (`I`, `II`, `III`, etc.).
+- **Paragraph Cross-Page Continuity**:
+  - Refined `ParagraphReconstructor` boundary rules to prevent accidental fragmentation of continuous sentences spanning across physical PDF page breaks.
+
+### Added
+- **Phase 2.8 Reading Quality & Mode Switch Test Suite (`test/phase_2_8_reading_quality_test.dart`)**:
+  - Validates novel heading recognition (`Prolog`, `III`, `Epilogue`).
+  - Validates exact single-deduction geometry in `PaginationEngine`.
+  - Validates bidirectional mode switching and page mapping in `ReadingScreen`.
+  - Validates real-world structural integrity across imported library books (e.g. *The Devotion of Suspect X* with 20 chapters and 1,907 paragraphs).
+  - 171/171 automated tests passing with 0 `flutter analyze` issues.
 
 ### Added
 - **End-to-End Modernized Pipeline**: Integrated `GeometryAwarePdfExtractor` and `SemanticDocumentReconstructor` into `PdfProcessingPipeline.processAndImportPdf()`, retiring legacy plain-text splitting.

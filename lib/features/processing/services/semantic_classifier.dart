@@ -162,7 +162,24 @@ class SemanticClassifier {
         caseSensitive: false,
       ).hasMatch(text);
 
-      if (fontRatio >= 1.45 || (fontRatio >= 1.25 && isBold && isChapterPattern)) {
+      final isNamedChapter = RegExp(
+        r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion)\b',
+        caseSensitive: false,
+      ).hasMatch(text);
+
+      final isRomanChapter = RegExp(
+        r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
+      ).hasMatch(text);
+
+      final isProminentTitle = fontRatio >= 1.25 &&
+          isBold &&
+          text.length < 60 &&
+          text == text.toUpperCase() &&
+          !RegExp(r'^\d+$').hasMatch(text);
+
+      if (fontRatio >= 1.45 ||
+          (fontRatio >= 1.18 && isBold && (isChapterPattern || isNamedChapter || isRomanChapter)) ||
+          isProminentTitle) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading1,
           headingLevel: 1,

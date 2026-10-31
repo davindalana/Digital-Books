@@ -158,20 +158,85 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
 
   void _setReadingMode(ReadingMode mode) {
     if (_readingMode == mode) return;
-    setState(() {
-      _readingMode = mode;
-      if (mode == ReadingMode.originalPdf) {
+
+    if (mode == ReadingMode.originalPdf) {
+      // Switching from Reflowable to Original PDF:
+      // Map active reflowable anchor node to its source PDF page
+      int targetPdfPage = _pdfPage;
+      if (_readerDocument != null) {
+        final currentAnchorId = _activeAnchorNodeId ??
+            _reflowableKey.currentState?.activeAnchorNodeId;
+        if (currentAnchorId != null) {
+          for (final ch in _readerDocument!.chapters) {
+            for (final node in ch.nodes) {
+              if (node.id == currentAnchorId && node.sourcePdfPage > 0) {
+                targetPdfPage = node.sourcePdfPage;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      setState(() {
+        _readingMode = mode;
+        _pdfPage = targetPdfPage;
         _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
         _currentPage = _pdfPage;
-      } else {
+      });
+    } else {
+      // Switching from Original PDF to Reflowable:
+      // Map current PDF page to first matching node in Reflowable reader
+      String? targetAnchorId;
+      int targetChapter = _reflowableChapter;
+
+      if (_readerDocument != null && _readerDocument!.chapters.isNotEmpty) {
+        for (int chIdx = 0; chIdx < _readerDocument!.chapters.length; chIdx++) {
+          final ch = _readerDocument!.chapters[chIdx];
+          for (final node in ch.nodes) {
+            if (node.sourcePdfPage >= _pdfPage) {
+              targetAnchorId = node.id;
+              targetChapter = chIdx;
+              break;
+            }
+          }
+          if (targetAnchorId != null) break;
+        }
+
+        if (targetAnchorId == null) {
+          // Fallback to last node if past end
+          final lastChapter = _readerDocument!.chapters.last;
+          if (lastChapter.nodes.isNotEmpty) {
+            targetAnchorId = lastChapter.nodes.last.id;
+            targetChapter = _readerDocument!.chapters.length - 1;
+          }
+        }
+      }
+
+      setState(() {
+        _readingMode = mode;
+        if (targetAnchorId != null) {
+          _activeAnchorNodeId = targetAnchorId;
+          _reflowableChapter = targetChapter;
+          _currentChapter = targetChapter;
+        }
         final reflowableTotal = _reflowableKey.currentState?.totalPages;
         if (reflowableTotal != null && reflowableTotal > 0) {
           _totalPages = reflowableTotal;
         }
         _currentChapter = _reflowableChapter;
         _currentPage = _reflowablePosition;
+      });
+
+      if (targetAnchorId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _reflowableKey.currentState?.jumpToAnchor(targetAnchorId!, 0);
+          }
+        });
       }
-    });
+    }
+
     ref.read(activeReadingModeProvider(widget.book.id).notifier).state = mode;
     _saveProgress(
       chapter: _reflowableChapter,
@@ -979,7 +1044,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         key: _reflowableKey,
                         bookId: widget.book.id,
                         document:
-                            _readerDocument ??
+                            _readerDocument ??=
                             ReflowableEngine.normalizeDocument(_document!),
                         theme: activeTheme,
                         typography: typoSettings,

@@ -122,9 +122,9 @@ class PaginationEngine {
     required double viewportHeight,
     required TypographySettings typography,
     int startBookPageIndex = 0,
-    double headerHeight = 32.0,
-    double footerHeight = 28.0,
-    double verticalPadding = 32.0,
+    double headerHeight = 28.0,
+    double footerHeight = 24.0,
+    double verticalPadding = 8.0,
   }) {
     // 1. Check cache
     final isTwoPageSpread = viewportWidth >= 850 && typography.twoPageSpread;

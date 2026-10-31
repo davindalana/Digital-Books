@@ -178,18 +178,24 @@ class ParagraphReconstructor {
       }
     } else {
       // 7. Across page boundary:
-      // If previous page ended with sentence-ending punctuation AND current page line starts capitalized, break
-      final prevEndsSentence = _sentenceTerminators.hasMatch(prevLine.text.trim());
-      final startsCapital = currentTrimmed.isNotEmpty &&
-          currentTrimmed[0].toUpperCase() == currentTrimmed[0] &&
-          currentTrimmed[0].toLowerCase() != currentTrimmed[0];
-
-      if (prevEndsSentence && startsCapital) {
+      // If previous line was a short heading or title, break immediately
+      if (prevLine.fontSize > 13.0 || prevLine.isBold) {
         return true;
       }
 
-      // If previous line was a short heading or title
-      if (prevLine.fontSize > 13.0 || prevLine.isBold) {
+      // Dialogue opener or first-line indentation signals a distinct new paragraph
+      final isDialogue = _dialogueOpeners.hasMatch(currentTrimmed);
+      final indentDiff = currentLine.bounds.left - prevLine.bounds.left;
+      final hasFirstLineIndent = indentDiff >= 8.0;
+
+      if (isDialogue || hasFirstLineIndent) {
+        return true;
+      }
+
+      // If previous page ended with sentence-ending punctuation AND current page starts far down (new section)
+      final prevEndsSentence = _sentenceTerminators.hasMatch(prevLine.text.trim());
+      final startsFarDown = currentLine.bounds.top > 120.0;
+      if (prevEndsSentence && startsFarDown) {
         return true;
       }
     }

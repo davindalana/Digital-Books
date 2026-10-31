@@ -96,21 +96,12 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     if (_lastWidth <= 0 || _lastHeight <= 0) return;
 
     final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
-    final availableWidth = isTwoPage ? ((_lastWidth - 32) / 2) : _lastWidth;
-    final effectiveMargin = (availableWidth < 400)
-        ? 16.0
-        : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(
-      160.0,
-      900.0,
-    );
-    final contentHeight = (_lastHeight - 56.0).clamp(200.0, 3000.0);
 
     final newPages = PaginationEngine.paginateDocument(
       document: widget.document,
       typography: widget.typography,
-      viewportWidth: contentWidth,
-      viewportHeight: contentHeight,
+      viewportWidth: _lastWidth,
+      viewportHeight: _lastHeight,
     );
 
     int targetIndex = _currentPageIndex;
@@ -239,21 +230,12 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
   void _ensureLayout(double width, double height) {
     final isTwoPage = widget.typography.twoPageSpread && width >= 850.0;
-    final availableWidth = isTwoPage ? ((width - 32) / 2) : width;
-    final effectiveMargin = (availableWidth < 400)
-        ? 16.0
-        : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(
-      160.0,
-      900.0,
-    );
-    final contentHeight = (height - 56.0).clamp(200.0, 3000.0);
 
     final pages = PaginationEngine.paginateDocument(
       document: widget.document,
       typography: widget.typography,
-      viewportWidth: contentWidth,
-      viewportHeight: contentHeight,
+      viewportWidth: width,
+      viewportHeight: height,
     );
 
     int targetIndex = _currentPageIndex;
