@@ -99,7 +99,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   String? get errorMessage => _errorMessage;
   PdfDocument? get document => _document;
   PdfViewMode get viewMode => widget.viewMode;
-  bool get isTwoPageSpreadActive => _effectiveTwoPage;
+  bool get isTwoPageSpreadActive {
+    final double width = mounted ? (MediaQuery.maybeSizeOf(context)?.width ?? 800.0) : 800.0;
+    return _isEffectiveSpread(width);
+  }
 
   int? get currentSecondaryPage {
     if (!_effectiveTwoPage) return null;

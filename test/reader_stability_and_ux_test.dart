@@ -98,6 +98,64 @@ void main() {
       expect(() => key.currentState?.zoomIn(), returnsNormally);
       expect(() => key.currentState?.zoomOut(), returnsNormally);
       expect(() => key.currentState?.resetZoom(), returnsNormally);
+      expect(() => key.currentState?.toggleTwoPageSpread(), returnsNormally);
+    });
+
+    testWidgets('Responsive spread detection toggles between single and two-page spread',
+        (tester) async {
+      final key = GlobalKey<OriginalPdfReaderState>();
+
+      // 1. Wide desktop screen (1200x800)
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OriginalPdfReader(
+              key: key,
+              pdfPath: '/invalid/path.pdf',
+              initialPage: 1,
+              theme: ReadingThemeType.black,
+              onPageChanged: (p, t) {},
+              onTapContent: () {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      expect(key.currentState?.isTwoPageSpreadActive, isTrue);
+
+      // User manually toggles to 1-page mode
+      key.currentState?.toggleTwoPageSpread();
+      await tester.pumpAndSettle();
+      expect(key.currentState?.isTwoPageSpreadActive, isFalse);
+
+      // User toggles back to 2-page mode
+      key.currentState?.toggleTwoPageSpread();
+      await tester.pumpAndSettle();
+      expect(key.currentState?.isTwoPageSpreadActive, isTrue);
+
+      // 2. Narrow mobile screen (400x800) -> automatically collapses to single page
+      tester.view.physicalSize = const Size(400, 800);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OriginalPdfReader(
+              key: key,
+              pdfPath: '/invalid/path.pdf',
+              initialPage: 1,
+              theme: ReadingThemeType.black,
+              onPageChanged: (p, t) {},
+              onTapContent: () {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(key.currentState?.isTwoPageSpreadActive, isFalse);
     });
 
     testWidgets('Transformation controller scales accurately with zoomIn, zoomOut, resetZoom',
