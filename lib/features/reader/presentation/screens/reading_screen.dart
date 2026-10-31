@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -55,16 +56,6 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     final currentProviderMode = ref.read(activeReadingModeProvider(widget.book.id));
     _readingMode = widget.initialMode ??
         (widget.book.isScanned ? ReadingMode.originalPdf : currentProviderMode);
-
-    debugPrint('[PDF_DIAGNOSTIC] === ReadingScreen.initState ===');
-    debugPrint('[PDF_DIAGNOSTIC] Book ID: ${widget.book.id}');
-    debugPrint('[PDF_DIAGNOSTIC] Book Title: "${widget.book.title}"');
-    debugPrint('[PDF_DIAGNOSTIC] Book isScanned: ${widget.book.isScanned}');
-    debugPrint('[PDF_DIAGNOSTIC] widget.initialMode: ${widget.initialMode}');
-    debugPrint('[PDF_DIAGNOSTIC] activeReadingModeProvider: $currentProviderMode');
-    debugPrint('[PDF_DIAGNOSTIC] Selected ReadingMode: $_readingMode');
-    debugPrint('[PDF_DIAGNOSTIC] Original PDF Path: ${widget.book.originalPdfPath}');
-    debugPrint('[PDF_DIAGNOSTIC] Processed Book Path: ${widget.book.processedBookPath}');
 
     _loadBookDocumentAndProgress();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -345,6 +336,29 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       autofocus: true,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
+          final isMetaOrCtrl = HardwareKeyboard.instance.isMetaPressed ||
+              HardwareKeyboard.instance.isControlPressed;
+
+          if (isMetaOrCtrl) {
+            if (event.logicalKey == LogicalKeyboardKey.equal ||
+                event.logicalKey == LogicalKeyboardKey.add) {
+              if (_readingMode == ReadingMode.originalPdf) {
+                _pdfKey.currentState?.zoomIn();
+                return KeyEventResult.handled;
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.minus) {
+              if (_readingMode == ReadingMode.originalPdf) {
+                _pdfKey.currentState?.zoomOut();
+                return KeyEventResult.handled;
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.digit0) {
+              if (_readingMode == ReadingMode.originalPdf) {
+                _pdfKey.currentState?.resetZoom();
+                return KeyEventResult.handled;
+              }
+            }
+          }
+
           if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
               event.logicalKey == LogicalKeyboardKey.pageUp) {
             _previousPage(_readingMode);
@@ -422,11 +436,20 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           pdfPath: widget.book.originalPdfPath,
                           initialPage: _currentPage,
                           theme: activeTheme,
+                          viewMode: ref.watch(pdfViewModeProvider),
+                          showControls: _showControls,
                           onTapContent: _toggleControls,
                           onSwitchToReflowable: _document != null
                               ? () => _setReadingMode(ReadingMode.reflowable)
                               : null,
                           onBack: () => Navigator.of(context).pop(),
+                          onToggleViewMode: () {
+                            final current = ref.read(pdfViewModeProvider);
+                            ref.read(pdfViewModeProvider.notifier).state =
+                                current == PdfViewMode.paginated
+                                    ? PdfViewMode.continuous
+                                    : PdfViewMode.paginated;
+                          },
                           onPageChanged: (page, total) {
                             setState(() {
                               _currentPage = page;
@@ -488,16 +511,25 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     ReadingMode readingMode,
     bool isBookmarked,
   ) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isDesktopOrTablet = screenWidth >= 680;
+    final isCompact = screenWidth < 520;
+    final isUltraCompact = screenWidth < 380;
+    final pdfViewMode = ref.watch(pdfViewModeProvider);
+
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 8 : 16,
+          vertical: 8,
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               height: 52,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
                 color: activeTheme.isDark
                     ? const Color(0xFF1E1E22).withAlpha(200)
@@ -510,7 +542,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha( activeTheme.isDark ? 80 : 25),
+                    color: Colors.black.withAlpha(activeTheme.isDark ? 80 : 25),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -525,7 +557,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     icon: Icon(
                       Icons.chevron_left,
                       color: activeTheme.textColor,
-                      size: 28,
+                      size: 26,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -546,59 +578,62 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          _currentChapterTitle.isNotEmpty
-                              ? '$_currentChapterTitle • ${widget.book.author}'
-                              : widget.book.author,
-                          style: TextStyle(
-                            color: activeTheme.secondaryTextColor,
-                            fontSize: 11,
+                        if (!isCompact)
+                          Text(
+                            _currentChapterTitle.isNotEmpty
+                                ? '$_currentChapterTitle • ${widget.book.author}'
+                                : widget.book.author,
+                            style: TextStyle(
+                              color: activeTheme.secondaryTextColor,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ],
                     ),
                   ),
 
-                  // Mode Switcher: Reflowable vs PDF
-                  Container(
-                    height: 32,
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: activeTheme.isDark
-                          ? Colors.white.withAlpha(20)
-                          : Colors.black.withAlpha(12),
-                      borderRadius: BorderRadius.circular(16),
+                  // Mode Switcher: Reflowable vs PDF (only if processed document is present and not compact)
+                  if (_document != null && !isCompact) ...[
+                    Container(
+                      height: 30,
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(20)
+                            : Colors.black.withAlpha(12),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Row(
+                        children: [
+                          _ModePillButton(
+                            label: 'Book',
+                            isSelected: readingMode == ReadingMode.reflowable,
+                            activeTheme: activeTheme,
+                            onTap: () => _setReadingMode(ReadingMode.reflowable),
+                          ),
+                          _ModePillButton(
+                            label: 'PDF',
+                            isSelected: readingMode == ReadingMode.originalPdf,
+                            activeTheme: activeTheme,
+                            onTap: () => _setReadingMode(ReadingMode.originalPdf),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        _ModePillButton(
-                          label: 'Book',
-                          isSelected: readingMode == ReadingMode.reflowable,
-                          activeTheme: activeTheme,
-                          onTap: () => _setReadingMode(ReadingMode.reflowable),
-                        ),
-                        _ModePillButton(
-                          label: 'PDF',
-                          isSelected: readingMode == ReadingMode.originalPdf,
-                          activeTheme: activeTheme,
-                          onTap: () => _setReadingMode(ReadingMode.originalPdf),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                    const SizedBox(width: 4),
+                  ],
 
                   // 1-Page vs 2-Page Slide Toggle in Reflowable Mode
-                  if (readingMode == ReadingMode.reflowable)
+                  if (readingMode == ReadingMode.reflowable && isDesktopOrTablet)
                     Consumer(
                       builder: (context, ref, _) {
                         final typo = ref.watch(typographySettingsStateProvider);
                         return IconButton(
                           tooltip: typo.twoPageSpread
-                              ? 'Tampilan 2 Halaman (Klik untuk 1 Halaman)'
-                              : 'Tampilan 1 Halaman (Klik untuk 2 Halaman)',
+                              ? 'Tampilan 2 Halaman'
+                              : 'Tampilan 1 Halaman',
                           icon: Icon(
                             typo.twoPageSpread
                                 ? Icons.auto_stories_rounded
@@ -615,40 +650,80 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       },
                     ),
 
-                  // Zoom controls in Original PDF Mode
+                  // PDF Zoom controls & View Mode Toggle
                   if (readingMode == ReadingMode.originalPdf) ...[
-                    IconButton(
-                      tooltip: 'Zoom Out',
-                      icon: Icon(
-                        Icons.zoom_out,
-                        color: activeTheme.textColor,
-                        size: 20,
+                    if (isDesktopOrTablet) ...[
+                      IconButton(
+                        tooltip: _pdfKey.currentState?.isTwoPageSpreadActive == true
+                            ? 'Tampilan 1 Halaman'
+                            : 'Tampilan 2 Halaman (Buku Terbuka)',
+                        icon: Icon(
+                          _pdfKey.currentState?.isTwoPageSpreadActive == true
+                              ? Icons.auto_stories_rounded
+                              : Icons.article_rounded,
+                          color: activeTheme.textColor,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _pdfKey.currentState?.toggleTwoPageSpread();
+                          });
+                        },
                       ),
-                      onPressed: () => _pdfKey.currentState?.zoomOut(),
-                    ),
-                    IconButton(
-                      tooltip: 'Zoom In',
-                      icon: Icon(
-                        Icons.zoom_in,
-                        color: activeTheme.textColor,
-                        size: 20,
+                      IconButton(
+                        tooltip: 'Zoom Out (Cmd -)',
+                        icon: Icon(
+                          Icons.zoom_out,
+                          color: activeTheme.textColor,
+                          size: 20,
+                        ),
+                        onPressed: () => _pdfKey.currentState?.zoomOut(),
                       ),
-                      onPressed: () => _pdfKey.currentState?.zoomIn(),
-                    ),
+                      IconButton(
+                        tooltip: 'Zoom In (Cmd +)',
+                        icon: Icon(
+                          Icons.zoom_in,
+                          color: activeTheme.textColor,
+                          size: 20,
+                        ),
+                        onPressed: () => _pdfKey.currentState?.zoomIn(),
+                      ),
+                    ],
+                    if (!isUltraCompact)
+                      IconButton(
+                        tooltip: pdfViewMode == PdfViewMode.continuous
+                            ? 'Mode Halaman'
+                            : 'Mode Gulir Vertikal',
+                        icon: Icon(
+                          pdfViewMode == PdfViewMode.continuous
+                              ? Icons.view_headline_rounded
+                              : Icons.view_carousel_outlined,
+                          color: activeTheme.textColor,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          final next = pdfViewMode == PdfViewMode.paginated
+                              ? PdfViewMode.continuous
+                              : PdfViewMode.paginated;
+                          ref.read(pdfViewModeProvider.notifier).state = next;
+                        },
+                      ),
                   ],
 
                   // Table of Contents
-                  IconButton(
-                    icon: Icon(
-                      Icons.list_alt,
-                      color: activeTheme.textColor,
-                      size: 20,
+                  if (!isUltraCompact)
+                    IconButton(
+                      tooltip: 'Daftar Isi',
+                      icon: Icon(
+                        Icons.list_alt,
+                        color: activeTheme.textColor,
+                        size: 20,
+                      ),
+                      onPressed: _openTocDialog,
                     ),
-                    onPressed: _openTocDialog,
-                  ),
 
                   // In-Book Search button
-                  if (_document != null)
+                  if (_document != null && isDesktopOrTablet)
                     IconButton(
                       tooltip: 'Cari dalam buku',
                       icon: Icon(
@@ -661,6 +736,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
 
                   // Appearance Settings (aA)
                   IconButton(
+                    tooltip: 'Tampilan & Tema',
                     icon: Text(
                       'aA',
                       style: TextStyle(
@@ -674,6 +750,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
 
                   // Bookmark button
                   IconButton(
+                    tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
                     icon: Icon(
                       isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                       color: isBookmarked
@@ -693,6 +770,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   }
 
   Widget _buildFloatingBottomBar(ReadingThemeType activeTheme, ReadingMode readingMode) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 500;
     final currentProgress = (_sliderDragValue ?? _progressPercentage).clamp(0.0, 1.0);
     final displayPage = _sliderDragValue != null
         ? (_sliderDragValue! * _totalPages).round().clamp(1, _totalPages > 0 ? _totalPages : 1)
@@ -700,13 +779,16 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 24,
+          vertical: 10,
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: activeTheme.isDark
                     ? const Color(0xFF1E1E22).withAlpha(200)
@@ -731,17 +813,42 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _readingMode == ReadingMode.reflowable &&
-                                _estimatedMinutesLeftInChapter > 0
-                            ? 'Page $displayPage of $_totalPages • ~$_estimatedMinutesLeftInChapter mnt tersisa'
-                            : 'Page $displayPage of $_totalPages',
-                        style: TextStyle(
-                          color: activeTheme.secondaryTextColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                      Flexible(
+                        child: Builder(
+                          builder: (context) {
+                            String pageLabel;
+                            final secPage = _readingMode == ReadingMode.originalPdf
+                                ? _pdfKey.currentState?.currentSecondaryPage
+                                : null;
+
+                            if (secPage != null && secPage != displayPage) {
+                              final start = math.min(displayPage, secPage);
+                              final end = math.max(displayPage, secPage);
+                              pageLabel = 'Pages $start–$end of $_totalPages';
+                            } else {
+                              pageLabel = 'Page $displayPage of $_totalPages';
+                            }
+
+                            if (_readingMode == ReadingMode.reflowable &&
+                                _estimatedMinutesLeftInChapter > 0 &&
+                                !isCompact) {
+                              pageLabel += ' • ~$_estimatedMinutesLeftInChapter mnt tersisa';
+                            }
+
+                            return Text(
+                              pageLabel,
+                              style: TextStyle(
+                                color: activeTheme.secondaryTextColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         '${(currentProgress * 100).toInt()}%',
                         style: TextStyle(

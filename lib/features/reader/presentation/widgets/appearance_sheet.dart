@@ -33,23 +33,25 @@ class AppearanceSheet extends ConsumerWidget {
           ),
           child: SafeArea(
             top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: activeTheme.isDark
-                          ? Colors.white.withAlpha(50)
-                          : Colors.black.withAlpha(30),
-                      borderRadius: BorderRadius.circular(2.5),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(50)
+                            : Colors.black.withAlpha(30),
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 18),
 
                 // Theme Selector
@@ -156,6 +158,118 @@ class AppearanceSheet extends ConsumerWidget {
                             Icons.brightness_high,
                             size: 20,
                             color: activeTheme.secondaryTextColor,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Page Layout Selector (Paginated vs Continuous Scroll)
+                Text(
+                  'TATA LETAK HALAMAN',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                    color: activeTheme.secondaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final pdfViewMode = ref.watch(pdfViewModeProvider);
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(18)
+                            : Colors.black.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                ref.read(pdfViewModeProvider.notifier).state =
+                                    PdfViewMode.paginated;
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: pdfViewMode == PdfViewMode.paginated
+                                      ? const Color(0xFF007AFF)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.view_carousel_outlined,
+                                      size: 18,
+                                      color: pdfViewMode == PdfViewMode.paginated
+                                          ? Colors.white
+                                          : activeTheme.textColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Halaman',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: pdfViewMode == PdfViewMode.paginated
+                                            ? Colors.white
+                                            : activeTheme.textColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                ref.read(pdfViewModeProvider.notifier).state =
+                                    PdfViewMode.continuous;
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: pdfViewMode == PdfViewMode.continuous
+                                      ? const Color(0xFF007AFF)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.view_headline_rounded,
+                                      size: 18,
+                                      color: pdfViewMode == PdfViewMode.continuous
+                                          ? Colors.white
+                                          : activeTheme.textColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Gulir Vertikal',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: pdfViewMode == PdfViewMode.continuous
+                                            ? Colors.white
+                                            : activeTheme.textColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -460,8 +574,9 @@ class AppearanceSheet extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SpacingButton extends StatelessWidget {
