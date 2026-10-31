@@ -182,7 +182,10 @@ class BookDetailsDialog extends ConsumerWidget {
                             .state = ReadingMode.originalPdf;
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => ReadingScreen(book: book),
+                            builder: (_) => ReadingScreen(
+                              book: book,
+                              initialMode: ReadingMode.originalPdf,
+                            ),
                           ),
                         );
                       },
@@ -203,12 +206,18 @@ class BookDetailsDialog extends ConsumerWidget {
                       ),
                       onPressed: () {
                         Navigator.of(context).pop();
+                        final mode = book.isScanned
+                            ? ReadingMode.originalPdf
+                            : ReadingMode.reflowable;
                         ref
                             .read(activeReadingModeProvider(book.id).notifier)
-                            .state = book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable;
+                            .state = mode;
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => ReadingScreen(book: book),
+                            builder: (_) => ReadingScreen(
+                              book: book,
+                              initialMode: mode,
+                            ),
                           ),
                         );
                       },
@@ -241,6 +250,7 @@ class BookDetailsDialog extends ConsumerWidget {
               Navigator.of(context).pop();
 
               await FileStorageService.deleteBookFiles(
+                bookId: book.id,
                 originalPdfPath: book.originalPdfPath,
                 processedBookPath: book.processedBookPath,
                 coverPath: book.coverPath,

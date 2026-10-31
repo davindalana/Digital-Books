@@ -39,6 +39,15 @@ class FileStorageService {
     return dir;
   }
 
+  static Future<Directory> getImagesDirectory() async {
+    final base = await getAppBaseDirectory();
+    final dir = Directory(p.join(base.path, 'images'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   static Future<File> copyPdfToStorage(File sourcePdf, String bookId) async {
     final originalsDir = await getOriginalsDirectory();
     final ext = p.extension(sourcePdf.path).isEmpty ? '.pdf' : p.extension(sourcePdf.path);
@@ -62,6 +71,7 @@ class FileStorageService {
   }
 
   static Future<void> deleteBookFiles({
+    String? bookId,
     required String? originalPdfPath,
     required String? processedBookPath,
     required String? coverPath,
@@ -75,6 +85,13 @@ class FileStorageService {
       }
       if (coverPath != null && await File(coverPath).exists()) {
         await File(coverPath).delete();
+      }
+      if (bookId != null) {
+        final imagesDir = await getImagesDirectory();
+        final bookImages = Directory(p.join(imagesDir.path, bookId));
+        if (await bookImages.exists()) {
+          await bookImages.delete(recursive: true);
+        }
       }
     } catch (_) {}
   }

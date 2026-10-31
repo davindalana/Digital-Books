@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../processing/models/processing_status.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
+import '../../../reader/providers/reader_settings_provider.dart';
 
 class ImportPdfHelper {
   static Future<void> pickAndImportPdf(BuildContext context, WidgetRef ref) async {
@@ -62,7 +63,12 @@ class ImportPdfHelper {
           // Open Reading Screen immediately
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => ReadingScreen(book: importedBook),
+              builder: (_) => ReadingScreen(
+                book: importedBook,
+                initialMode: importedBook.isScanned
+                    ? ReadingMode.originalPdf
+                    : ReadingMode.reflowable,
+              ),
             ),
           );
         }

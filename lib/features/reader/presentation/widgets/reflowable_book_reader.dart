@@ -27,7 +27,8 @@ class ReflowableBookReader extends StatefulWidget {
   final TypographySettings typography;
   final int initialChapterIndex;
   final int initialPosition;
-  final Function(int chapterIndex, int pageNumber, double percentage) onProgressChanged;
+  final Function(int chapterIndex, int pageNumber, double percentage)
+  onProgressChanged;
   final VoidCallback onTapContent;
   final VoidCallback? onSwitchToPdfMode;
 
@@ -48,7 +49,8 @@ class ReflowableBookReader extends StatefulWidget {
 }
 
 class ReflowableBookReaderState extends State<ReflowableBookReader> {
-  final GlobalKey<BookPageTurnViewState> _turnKey = GlobalKey<BookPageTurnViewState>();
+  final GlobalKey<BookPageTurnViewState> _turnKey =
+      GlobalKey<BookPageTurnViewState>();
   List<ReflowablePageContent> _pages = [];
   int _currentPageIndex = 0;
 
@@ -64,13 +66,17 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.typography.fontSize != widget.typography.fontSize ||
         oldWidget.typography.lineSpacing != widget.typography.lineSpacing ||
-        oldWidget.typography.horizontalMargin != widget.typography.horizontalMargin ||
+        oldWidget.typography.horizontalMargin !=
+            widget.typography.horizontalMargin ||
         oldWidget.document != widget.document) {
       final currentFraction = _pages.isNotEmpty
           ? (_currentPageIndex / _pages.length)
           : 0.0;
       _paginateContent();
-      _currentPageIndex = (_pages.length * currentFraction).round().clamp(0, _pages.isNotEmpty ? _pages.length - 1 : 0);
+      _currentPageIndex = (_pages.length * currentFraction).round().clamp(
+        0,
+        _pages.isNotEmpty ? _pages.length - 1 : 0,
+      );
       _turnKey.currentState?.jumpTo(_currentPageIndex);
     }
   }
@@ -100,7 +106,10 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
   }
 
   void jumpToPage(int pageNumber) {
-    final target = (pageNumber - 1).clamp(0, _pages.isNotEmpty ? _pages.length - 1 : 0);
+    final target = (pageNumber - 1).clamp(
+      0,
+      _pages.isNotEmpty ? _pages.length - 1 : 0,
+    );
     _currentPageIndex = target;
     _turnKey.currentState?.jumpTo(target);
   }
@@ -118,7 +127,9 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     final chapters = widget.document.chapters;
 
     // Approximate words per page based on font size and line spacing
-    final int wordsPerPage = (260 * (18.0 / widget.typography.fontSize)).round().clamp(120, 500);
+    final int wordsPerPage = (260 * (18.0 / widget.typography.fontSize))
+        .round()
+        .clamp(120, 500);
 
     int runningPageIndex = 0;
 
@@ -133,13 +144,15 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
         // If block is a major heading and page is not empty, start a new page
         if (block.type == BlockType.heading && pageBlocks.isNotEmpty) {
-          generated.add(ReflowablePageContent(
-            chapterIndex: chIdx,
-            chapterTitle: chapter.title,
-            blocks: List.from(pageBlocks),
-            pageIndexInBook: runningPageIndex++,
-            totalEstimatedPages: 0,
-          ));
+          generated.add(
+            ReflowablePageContent(
+              chapterIndex: chIdx,
+              chapterTitle: chapter.title,
+              blocks: List.from(pageBlocks),
+              pageIndexInBook: runningPageIndex++,
+              totalEstimatedPages: 0,
+            ),
+          );
           pageBlocks.clear();
           currentWordCount = 0;
         }
@@ -148,13 +161,15 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         currentWordCount += words;
 
         if (currentWordCount >= wordsPerPage) {
-          generated.add(ReflowablePageContent(
-            chapterIndex: chIdx,
-            chapterTitle: chapter.title,
-            blocks: List.from(pageBlocks),
-            pageIndexInBook: runningPageIndex++,
-            totalEstimatedPages: 0,
-          ));
+          generated.add(
+            ReflowablePageContent(
+              chapterIndex: chIdx,
+              chapterTitle: chapter.title,
+              blocks: List.from(pageBlocks),
+              pageIndexInBook: runningPageIndex++,
+              totalEstimatedPages: 0,
+            ),
+          );
           pageBlocks.clear();
           currentWordCount = 0;
         }
@@ -162,30 +177,34 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
       // Trailing blocks of chapter
       if (pageBlocks.isNotEmpty) {
-        generated.add(ReflowablePageContent(
-          chapterIndex: chIdx,
-          chapterTitle: chapter.title,
-          blocks: List.from(pageBlocks),
-          pageIndexInBook: runningPageIndex++,
-          totalEstimatedPages: 0,
-        ));
+        generated.add(
+          ReflowablePageContent(
+            chapterIndex: chIdx,
+            chapterTitle: chapter.title,
+            blocks: List.from(pageBlocks),
+            pageIndexInBook: runningPageIndex++,
+            totalEstimatedPages: 0,
+          ),
+        );
       }
     }
 
     if (generated.isEmpty) {
-      generated.add(ReflowablePageContent(
-        chapterIndex: 0,
-        chapterTitle: widget.document.title,
-        blocks: [
-          BookBlock(
-            id: 'default',
-            type: BlockType.paragraph,
-            text: 'No content available.',
-          ),
-        ],
-        pageIndexInBook: 0,
-        totalEstimatedPages: 1,
-      ));
+      generated.add(
+        ReflowablePageContent(
+          chapterIndex: 0,
+          chapterTitle: widget.document.title,
+          blocks: [
+            BookBlock(
+              id: 'default',
+              type: BlockType.paragraph,
+              text: 'No content available.',
+            ),
+          ],
+          pageIndexInBook: 0,
+          totalEstimatedPages: 1,
+        ),
+      );
     }
 
     _pages = generated;
@@ -235,7 +254,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Scanned Document',
+                'Buku Dokumen Hasil Pindai',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -244,7 +263,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               ),
               const SizedBox(height: 8),
               Text(
-                'This document contains visual scanned pages. Read in Original PDF Mode for the crisp Apple Books reading experience with full graphical fidelity.',
+                'Buku ini berisi visual asli, denah, atau gambar. Beralih ke Mode PDF Asli untuk tata letak lengkap dan ketajaman visual terbaik seperti di Apple Books.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -258,14 +277,17 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF007AFF),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   icon: const Icon(Icons.picture_as_pdf, size: 18),
                   label: const Text(
-                    'Read in Original PDF Mode',
+                    'Buka dalam Mode PDF Asli',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   onPressed: widget.onSwitchToPdfMode,
@@ -287,7 +309,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktopWide = constraints.maxWidth >= 900 && widget.typography.twoPageSpread;
+        final isDesktopWide =
+            constraints.maxWidth >= 900 && widget.typography.twoPageSpread;
 
         return BookPageTurnView(
           key: _turnKey,
@@ -313,7 +336,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             }
           },
           onTapCenter: widget.onTapContent,
-          pageBuilder: (page, {isLeftPage}) => _buildBookPageView(page, isLeftPage: isLeftPage),
+          pageBuilder: (page, {isLeftPage}) =>
+              _buildBookPageView(page, isLeftPage: isLeftPage),
         );
       },
     );
@@ -330,66 +354,69 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-                // Running Header (Book title or chapter title)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text(
-                    isLeftPage == true
-                        ? widget.document.title.toUpperCase()
-                        : page.chapterTitle.toUpperCase(),
-                    textAlign: isLeftPage == true
-                        ? TextAlign.left
-                        : (isLeftPage == false ? TextAlign.right : TextAlign.center),
-                    style: TextStyle(
-                      color: widget.theme.secondaryTextColor.withAlpha(150),
-                      fontSize: 10,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-                // Main Text Content
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (int i = 0; i < page.blocks.length; i++)
-                          _renderBlock(
-                            page.blocks[i],
-                            isFirstParagraphOfChapter: i == 0 &&
-                                page.blocks[i].type == BlockType.paragraph,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Running Footer (Page Number)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    '${page.pageIndexInBook + 1}',
-                    textAlign: isLeftPage == true
-                        ? TextAlign.left
-                        : (isLeftPage == false ? TextAlign.right : TextAlign.center),
-                    style: TextStyle(
-                      color: widget.theme.secondaryTextColor.withAlpha(160),
-                      fontSize: 11,
-                      fontFamily: 'serif',
-                    ),
-                  ),
-                ),
-              ],
+          // Running Header (Book title or chapter title)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              isLeftPage == true
+                  ? widget.document.title.toUpperCase()
+                  : page.chapterTitle.toUpperCase(),
+              textAlign: isLeftPage == true
+                  ? TextAlign.left
+                  : (isLeftPage == false ? TextAlign.right : TextAlign.center),
+              style: TextStyle(
+                color: widget.theme.secondaryTextColor.withAlpha(150),
+                fontSize: 10,
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
+          ),
+
+          // Main Text Content
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (int i = 0; i < page.blocks.length; i++)
+                    _renderBlock(
+                      page.blocks[i],
+                      isFirstParagraphOfChapter:
+                          i == 0 && page.blocks[i].type == BlockType.paragraph,
+                    ),
+                ],
+              ),
+            ),
+          ),
+
+          // Running Footer (Page Number)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Text(
+              '${page.pageIndexInBook + 1}',
+              textAlign: isLeftPage == true
+                  ? TextAlign.left
+                  : (isLeftPage == false ? TextAlign.right : TextAlign.center),
+              style: TextStyle(
+                color: widget.theme.secondaryTextColor.withAlpha(160),
+                fontSize: 11,
+                fontFamily: 'serif',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _renderBlock(BookBlock block, {bool isFirstParagraphOfChapter = false}) {
+  Widget _renderBlock(
+    BookBlock block, {
+    bool isFirstParagraphOfChapter = false,
+  }) {
     // 1. Image Block with Interactive Lightbox
     if (block.type == BlockType.image) {
       final file = block.imagePath != null ? File(block.imagePath!) : null;
@@ -413,7 +440,9 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(widget.theme.isDark ? 140 : 40),
+                    color: Colors.black.withAlpha(
+                      widget.theme.isDark ? 140 : 40,
+                    ),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -424,15 +453,15 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                 child: Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
-                    Image.file(
-                      file,
-                      fit: BoxFit.contain,
-                    ),
+                    Image.file(file, fit: BoxFit.contain),
                     Positioned(
                       top: 10,
                       right: 10,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withAlpha(180),
                           borderRadius: BorderRadius.circular(12),
@@ -458,12 +487,18 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                     if (block.text.isNotEmpty)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withAlpha(210)],
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withAlpha(210),
+                            ],
                           ),
                         ),
                         child: Text(
@@ -507,7 +542,10 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
           children: [
             if (badgeText.isNotEmpty) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withAlpha(25),
                   borderRadius: BorderRadius.circular(16),
@@ -620,13 +658,15 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             Expanded(
               child: Text(
                 block.text,
-                style: widget.typography.fontFamily.getTextStyle(
-                  fontSize: widget.typography.fontSize * 0.95,
-                  fontWeight: FontWeight.normal,
-                  color: widget.theme.textColor.withAlpha(235),
-                  height: 1.6,
-                  letterSpacing: 0.2,
-                ).copyWith(fontStyle: FontStyle.italic),
+                style: widget.typography.fontFamily
+                    .getTextStyle(
+                      fontSize: widget.typography.fontSize * 0.95,
+                      fontWeight: FontWeight.normal,
+                      color: widget.theme.textColor.withAlpha(235),
+                      height: 1.6,
+                      letterSpacing: 0.2,
+                    )
+                    .copyWith(fontStyle: FontStyle.italic),
               ),
             ),
           ],
@@ -673,9 +713,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     }
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: widget.typography.fontSize * 0.75,
-      ),
+      padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.75),
       child: Text(
         text,
         textAlign: widget.typography.textAlign,
@@ -722,4 +760,3 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     );
   }
 }
-

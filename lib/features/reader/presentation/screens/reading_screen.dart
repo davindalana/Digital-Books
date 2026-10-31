@@ -20,11 +20,7 @@ class ReadingScreen extends ConsumerStatefulWidget {
   final Book book;
   final ReadingMode? initialMode;
 
-  const ReadingScreen({
-    super.key,
-    required this.book,
-    this.initialMode,
-  });
+  const ReadingScreen({super.key, required this.book, this.initialMode});
 
   @override
   ConsumerState<ReadingScreen> createState() => _ReadingScreenState();
@@ -41,20 +37,18 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   int _currentChapter = 0;
   double _progressPercentage = 0.0;
 
-  final GlobalKey<ReflowableBookReaderState> _reflowableKey = GlobalKey<ReflowableBookReaderState>();
-  final GlobalKey<OriginalPdfReaderState> _pdfKey = GlobalKey<OriginalPdfReaderState>();
+  final GlobalKey<ReflowableBookReaderState> _reflowableKey =
+      GlobalKey<ReflowableBookReaderState>();
+  final GlobalKey<OriginalPdfReaderState> _pdfKey =
+      GlobalKey<OriginalPdfReaderState>();
 
   @override
   void initState() {
     super.initState();
+    final savedMode = ref.read(activeReadingModeProvider(widget.book.id));
     _readingMode = widget.initialMode ??
-        (widget.book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable);
+        (widget.book.isScanned ? ReadingMode.originalPdf : savedMode);
     _loadBookDocumentAndProgress();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref.read(activeReadingModeProvider(widget.book.id).notifier).state = _readingMode;
-      }
-    });
   }
 
   void _setReadingMode(ReadingMode mode) {
@@ -71,7 +65,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     if (progress != null) {
       setState(() {
         _currentChapter = progress.currentChapter;
-        _currentPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
+        _currentPage = progress.currentPosition > 0
+            ? progress.currentPosition
+            : 1;
         _progressPercentage = progress.progressPercentage;
       });
     }
@@ -79,7 +75,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     // 2. Load processed book document if available
     if (widget.book.processedBookPath != null) {
       try {
-        final jsonStr = await FileStorageService.readProcessedBook(widget.book.processedBookPath!);
+        final jsonStr = await FileStorageService.readProcessedBook(
+          widget.book.processedBookPath!,
+        );
         if (jsonStr != null) {
           _document = BookDocument.fromJsonString(jsonStr);
         }
@@ -133,14 +131,16 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     });
 
     final dbService = ref.read(databaseServiceProvider);
-    dbService.upsertProgress(ReadingProgressesCompanion(
-      id: drift.Value(const Uuid().v4()),
-      bookId: drift.Value(widget.book.id),
-      currentChapter: drift.Value(chapter),
-      currentPosition: drift.Value(position),
-      progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
-      lastReadAt: drift.Value(DateTime.now()),
-    ));
+    dbService.upsertProgress(
+      ReadingProgressesCompanion(
+        id: drift.Value(const Uuid().v4()),
+        bookId: drift.Value(widget.book.id),
+        currentChapter: drift.Value(chapter),
+        currentPosition: drift.Value(position),
+        progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
+        lastReadAt: drift.Value(DateTime.now()),
+      ),
+    );
   }
 
   void _toggleControls() {
@@ -211,13 +211,15 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         );
       }
     } else {
-      await dbService.addBookmark(BookmarksCompanion(
-        id: drift.Value(const Uuid().v4()),
-        bookId: drift.Value(widget.book.id),
-        position: drift.Value(_currentPage),
-        label: drift.Value('Page $_currentPage'),
-        createdAt: drift.Value(DateTime.now()),
-      ));
+      await dbService.addBookmark(
+        BookmarksCompanion(
+          id: drift.Value(const Uuid().v4()),
+          bookId: drift.Value(widget.book.id),
+          position: drift.Value(_currentPage),
+          label: drift.Value('Page $_currentPage'),
+          createdAt: drift.Value(DateTime.now()),
+        ),
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -233,8 +235,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   Widget build(BuildContext context) {
     final activeTheme = ref.watch(readingThemeStateProvider);
     final typoSettings = ref.watch(typographySettingsStateProvider);
-    final bookmarksAsync = ref.watch(bookBookmarksStreamProvider(widget.book.id));
-    final isBookmarked = bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
+    final bookmarksAsync = ref.watch(
+      bookBookmarksStreamProvider(widget.book.id),
+    );
+    final isBookmarked =
+        bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
 
     return Focus(
       autofocus: true,
@@ -268,43 +273,47 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                         color: activeTheme.textColor,
                       ),
                     )
-                  : (_readingMode == ReadingMode.reflowable && _document != null && !widget.book.isScanned)
-                      ? ReflowableBookReader(
-                          key: _reflowableKey,
-                          document: _document!,
-                          theme: activeTheme,
-                          typography: typoSettings,
-                          initialChapterIndex: _currentChapter,
-                          initialPosition: _currentPage,
-                          onTapContent: _toggleControls,
-                          onSwitchToPdfMode: () => _setReadingMode(ReadingMode.originalPdf),
-                          onProgressChanged: (ch, page, pct) {
-                            _saveProgress(
-                              chapter: ch,
-                              position: page,
-                              percentage: pct,
-                            );
-                          },
-                        )
-                      : OriginalPdfReader(
-                          key: _pdfKey,
-                          pdfPath: widget.book.originalPdfPath,
-                          initialPage: _currentPage,
-                          theme: activeTheme,
-                          onTapContent: _toggleControls,
-                          onPageChanged: (page, total) {
-                            setState(() {
-                              _currentPage = page;
-                              _totalPages = total;
-                              _progressPercentage = total > 0 ? (page / total) : 0.0;
-                            });
-                            _saveProgress(
-                              chapter: 0,
-                              position: page,
-                              percentage: total > 0 ? (page / total) : 0.0,
-                            );
-                          },
-                        ),
+                  : (_readingMode == ReadingMode.reflowable &&
+                        _document != null)
+                  ? ReflowableBookReader(
+                      key: _reflowableKey,
+                      document: _document!,
+                      theme: activeTheme,
+                      typography: typoSettings,
+                      initialChapterIndex: _currentChapter,
+                      initialPosition: _currentPage,
+                      onTapContent: _toggleControls,
+                      onSwitchToPdfMode: () =>
+                          _setReadingMode(ReadingMode.originalPdf),
+                      onProgressChanged: (ch, page, pct) {
+                        _saveProgress(
+                          chapter: ch,
+                          position: page,
+                          percentage: pct,
+                        );
+                      },
+                    )
+                  : OriginalPdfReader(
+                      key: _pdfKey,
+                      pdfPath: widget.book.originalPdfPath,
+                      initialPage: _currentPage,
+                      theme: activeTheme,
+                      onTapContent: _toggleControls,
+                      onPageChanged: (page, total) {
+                        setState(() {
+                          _currentPage = page;
+                          _totalPages = total;
+                          _progressPercentage = total > 0
+                              ? (page / total)
+                              : 0.0;
+                        });
+                        _saveProgress(
+                          chapter: 0,
+                          position: page,
+                          percentage: total > 0 ? (page / total) : 0.0,
+                        );
+                      },
+                    ),
             ),
 
             // 2. Minimalist Floating Apple Books Top Toolbar
@@ -314,7 +323,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
               top: _showControls ? 0 : -100,
               left: 0,
               right: 0,
-              child: _buildFloatingTopBar(activeTheme, _readingMode, isBookmarked),
+              child: _buildFloatingTopBar(
+                activeTheme,
+                _readingMode,
+                isBookmarked,
+              ),
             ),
 
             // 3. Minimalist Floating Bottom Bar with Slider & Steppers
@@ -359,7 +372,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha( activeTheme.isDark ? 80 : 25),
+                    color: Colors.black.withAlpha(activeTheme.isDark ? 80 : 25),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -500,7 +513,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     );
   }
 
-  Widget _buildFloatingBottomBar(ReadingThemeType activeTheme, ReadingMode readingMode) {
+  Widget _buildFloatingBottomBar(
+    ReadingThemeType activeTheme,
+    ReadingMode readingMode,
+  ) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -577,8 +593,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                                 : Colors.black.withAlpha(20),
                             thumbColor: Colors.white,
                             trackHeight: 3,
-                            thumbShape:
-                                const RoundSliderThumbShape(enabledThumbRadius: 6),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
                           ),
                           child: Slider(
                             value: _progressPercentage.clamp(0.0, 1.0),
@@ -639,18 +656,11 @@ class _ModePillButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
-              ? (activeTheme.isDark
-                  ? Colors.white.withAlpha(45)
-                  : Colors.white)
+              ? (activeTheme.isDark ? Colors.white.withAlpha(45) : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           boxShadow: isSelected && !activeTheme.isDark
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(15),
-                    blurRadius: 3,
-                  ),
-                ]
+              ? [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 3)]
               : null,
         ),
         child: Text(
@@ -667,4 +677,3 @@ class _ModePillButton extends StatelessWidget {
     );
   }
 }
-

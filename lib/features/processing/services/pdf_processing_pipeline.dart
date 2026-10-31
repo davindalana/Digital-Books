@@ -139,7 +139,8 @@ class PdfProcessingPipeline {
         if (ocrTexts.isNotEmpty && ocrTexts.any((t) => t.trim().isNotEmpty)) {
           pageTexts.clear();
           pageTexts.addAll(ocrTexts);
-          isScanned = false; // Successfully converted to digital text
+          // We keep isScanned = true so visual, diagram-heavy scanned books default to Original PDF Mode
+          // while still retaining OCR digital text for search and reflowable reading.
         }
       }
 
@@ -326,16 +327,21 @@ class PdfProcessingPipeline {
         final line = lines[lineIdx].trim();
         if (line.isEmpty) continue;
 
-        // Check if line looks like a chapter header
+        // Filter out repeating running headers, footers, publisher marks, page numbers
+        final lower = line.toLowerCase();
+        final isRunningHeader = lower == bookTitle.toLowerCase() ||
+            RegExp(r'^(teka[- ]teki|rumah aneh|uketsu|gramedia|penerbit|kompas|sfile|mobi|halaman\s*\d+|\d+)$', caseSensitive: false).hasMatch(line);
+        if (isRunningHeader) continue;
+
+        // Check if line looks like a real chapter header
         final isMatchChapter = chapterRegex.hasMatch(line);
         final isMatchStandalone = standaloneHeadingRegex.hasMatch(line);
-        final isShortAllCaps = line.length > 3 &&
-            line.length < 50 &&
-            line == line.toUpperCase() &&
-            !line.contains(RegExp(r'[0-9]{3,}')) &&
-            !line.endsWith('.');
+        final isChapterKeyword = RegExp(
+          r'^(bab\s+[0-9ivxlcdm]+|chapter\s+[0-9ivxlcdm]+|bagian\s+[0-9ivxlcdm]+|prolog|epilog|catatan|denah\s+rumah)',
+          caseSensitive: false,
+        ).hasMatch(line);
 
-        if ((isMatchChapter || isMatchStandalone || isShortAllCaps) &&
+        if ((isMatchChapter || isMatchStandalone || isChapterKeyword) &&
             currentBlocks.isNotEmpty) {
           // Finish previous chapter
           chapters.add(BookChapter(

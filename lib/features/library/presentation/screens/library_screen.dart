@@ -737,7 +737,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         Navigator.of(context).pop();
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ReadingScreen(book: book),
+            builder: (_) => ReadingScreen(
+              book: book,
+              initialMode: book.isScanned
+                  ? ReadingMode.originalPdf
+                  : ReadingMode.reflowable,
+            ),
           ),
         );
       }

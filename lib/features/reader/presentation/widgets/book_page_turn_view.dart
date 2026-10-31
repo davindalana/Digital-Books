@@ -35,12 +35,16 @@ class BookPageTurnView extends StatefulWidget {
 class BookPageTurnViewState extends State<BookPageTurnView>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
 
   late int _currentPageIndex;
   int? _targetPageIndex;
   FlipDirection _direction = FlipDirection.forward;
   bool _isFlipping = false;
+  bool _isDragging = false;
+  double? _dragStartX;
+
+  // Gentle perspective factor to prevent any glyph explosion or clipping artifacts
+  static const double _kPerspective = 0.00010;
 
   @override
   void initState() {
@@ -55,12 +59,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
-    );
-
-    _animation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOutCubic,
+      duration: const Duration(milliseconds: 320),
     );
 
     _controller.addStatusListener((status) {
@@ -70,10 +69,17 @@ class BookPageTurnViewState extends State<BookPageTurnView>
             _currentPageIndex = _targetPageIndex!;
             _targetPageIndex = null;
             _isFlipping = false;
+            _isDragging = false;
           });
           widget.onPageChanged(_currentPageIndex);
         }
         _controller.reset();
+      } else if (status == AnimationStatus.dismissed) {
+        setState(() {
+          _targetPageIndex = null;
+          _isFlipping = false;
+          _isDragging = false;
+        });
       }
     });
   }
@@ -140,9 +146,94 @@ class BookPageTurnViewState extends State<BookPageTurnView>
       _currentPageIndex = clamped;
       _targetPageIndex = null;
       _isFlipping = false;
+      _isDragging = false;
     });
     _controller.reset();
     widget.onPageChanged(_currentPageIndex);
+  }
+
+  // --- Interactive Drag Gesture Handling ("ketika melakukan geser") ---
+  void _onHorizontalDragStart(DragStartDetails details, BoxConstraints constraints) {
+    if (_isFlipping && !_isDragging) return;
+    _dragStartX = details.localPosition.dx;
+    _isDragging = true;
+    _controller.stop();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details, BoxConstraints constraints) {
+    if (!_isDragging || _dragStartX == null || widget.pages.isEmpty) return;
+
+    final deltaX = details.localPosition.dx - _dragStartX!;
+    final step = widget.isTwoPageSpread ? 2 : 1;
+    final dragSpan = widget.isTwoPageSpread
+        ? (constraints.maxWidth * 0.45)
+        : (constraints.maxWidth * 0.85);
+
+    if (deltaX < 0) {
+      // Swiping left -> Turn forward to next page
+      final target = _currentPageIndex + step;
+      if (target >= widget.pages.length) return;
+
+      if (_targetPageIndex != target || _direction != FlipDirection.forward) {
+        setState(() {
+          _direction = FlipDirection.forward;
+          _targetPageIndex = target;
+          _isFlipping = true;
+        });
+      }
+      final progress = (-deltaX / dragSpan).clamp(0.0, 1.0);
+      _controller.value = progress;
+    } else if (deltaX > 0) {
+      // Swiping right -> Turn backward to previous page
+      final target = _currentPageIndex - step;
+      if (target < 0) return;
+
+      if (_targetPageIndex != target || _direction != FlipDirection.backward) {
+        setState(() {
+          _direction = FlipDirection.backward;
+          _targetPageIndex = target;
+          _isFlipping = true;
+        });
+      }
+      final progress = (deltaX / dragSpan).clamp(0.0, 1.0);
+      _controller.value = progress;
+    }
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details, BoxConstraints constraints) {
+    if (!_isDragging) return;
+    _isDragging = false;
+    _dragStartX = null;
+
+    if (_targetPageIndex == null) {
+      setState(() {
+        _isFlipping = false;
+      });
+      _controller.reset();
+      return;
+    }
+
+    final velocity = details.primaryVelocity ?? 0.0;
+    final isForward = _direction == FlipDirection.forward;
+
+    // Determine completion threshold: drag progress > 22% or fast flick velocity
+    final completed = (isForward && (velocity < -250 || _controller.value > 0.22)) ||
+        (!isForward && (velocity > 250 || _controller.value > 0.22));
+
+    if (completed) {
+      _controller.animateTo(
+        1.0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      // Snap back smoothly
+      _controller.animateBack(
+        0.0,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -171,14 +262,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               widget.onTapCenter();
             }
           },
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0.0;
-            if (velocity < -200) {
-              flipForward();
-            } else if (velocity > 200) {
-              flipBackward();
-            }
-          },
+          onHorizontalDragStart: (d) => _onHorizontalDragStart(d, constraints),
+          onHorizontalDragUpdate: (d) => _onHorizontalDragUpdate(d, constraints),
+          onHorizontalDragEnd: (d) => _onHorizontalDragEnd(d, constraints),
           child: Container(
             color: widget.theme.backgroundColor,
             child: widget.isTwoPageSpread
@@ -198,9 +284,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1300),
         child: AnimatedBuilder(
-          animation: _animation,
+          animation: _controller,
           builder: (context, _) {
-            final t = _animation.value;
+            final t = _controller.value;
 
             // Static state: left and right flat
             if (!_isFlipping || _targetPageIndex == null) {
@@ -220,7 +306,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               );
             }
 
-            // Animated 3D book leaf turn
+            // Animated realistic book leaf turn
             if (_direction == FlipDirection.forward) {
               return _buildForwardSpreadFlip(t);
             } else {
@@ -257,22 +343,22 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               // Underneath: curLeft flat
               _buildSolidPage(curLeft, isLeftPage: true),
 
-              // Phase 2 (t > 0.5): nextLeft lands down onto left page (from 90 deg to 0 deg)
+              // Phase 2 (t > 0.5): nextLeft lands down onto left page (from 90 deg down to 0 deg)
               if (t > 0.5 && nextLeft != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
+                    ..setEntry(3, 2, _kPerspective)
                     ..rotateY((1.0 - t) * math.pi), // from +pi/2 to 0
                   alignment: Alignment.centerRight, // Hinges at spine
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       _buildSolidPage(nextLeft, isLeftPage: true),
-                      // Soft landing shadow that clears out
+                      // Soft landing shadow that clears out as leaf lays flat
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 160).toInt()),
+                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
                           ),
                         ),
                       ),
@@ -299,7 +385,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Container(
-                      color: Colors.black.withAlpha(((1.0 - t) * 80).toInt()),
+                      color: Colors.black.withAlpha(((1.0 - t) * 60).toInt()),
                     ),
                   ),
                 ),
@@ -308,14 +394,14 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               if (t <= 0.5 && curRight != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
+                    ..setEntry(3, 2, _kPerspective)
                     ..rotateY(-t * math.pi), // from 0 to -pi/2
                   alignment: Alignment.centerLeft, // Hinges at spine
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       _buildSolidPage(curRight, isLeftPage: false),
-                      // Sheen shadow as it curls up
+                      // Sheen shadow as it curls up towards vertical
                       Positioned.fill(
                         child: IgnorePointer(
                           child: DecoratedBox(
@@ -325,7 +411,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                                 end: Alignment.centerRight,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withAlpha((t * 220).toInt()),
+                                  Colors.black.withAlpha((t * 180).toInt()),
                                 ],
                               ),
                             ),
@@ -372,7 +458,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                 Positioned.fill(
                   child: IgnorePointer(
                     child: Container(
-                      color: Colors.black.withAlpha(((1.0 - t) * 80).toInt()),
+                      color: Colors.black.withAlpha(((1.0 - t) * 60).toInt()),
                     ),
                   ),
                 ),
@@ -381,7 +467,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               if (t <= 0.5 && curLeft != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
+                    ..setEntry(3, 2, _kPerspective)
                     ..rotateY(t * math.pi), // from 0 to +pi/2
                   alignment: Alignment.centerRight, // Hinges at spine
                   child: Stack(
@@ -397,7 +483,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                                 end: Alignment.centerLeft,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withAlpha((t * 220).toInt()),
+                                  Colors.black.withAlpha((t * 180).toInt()),
                                 ],
                               ),
                             ),
@@ -426,7 +512,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               if (t > 0.5 && prevRight != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
+                    ..setEntry(3, 2, _kPerspective)
                     ..rotateY(-(1.0 - t) * math.pi), // from -pi/2 to 0
                   alignment: Alignment.centerLeft, // Hinges at spine
                   child: Stack(
@@ -436,7 +522,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 160).toInt()),
+                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
                           ),
                         ),
                       ),
@@ -455,9 +541,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
   // ==========================================
   Widget _buildSinglePageMobile(BoxConstraints constraints) {
     return AnimatedBuilder(
-      animation: _animation,
+      animation: _controller,
       builder: (context, _) {
-        final t = _animation.value;
+        final t = _controller.value;
 
         if (!_isFlipping || _targetPageIndex == null) {
           final curPage = _currentPageIndex < widget.pages.length
@@ -476,7 +562,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
         final isForward = _direction == FlipDirection.forward;
 
         if (isForward) {
-          // Turning forward: target page is underneath, curPage rotates from 0 to -90 deg
+          // Turning forward: target page is underneath, curPage rotates away
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -487,7 +573,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(
-                    color: Colors.black.withAlpha(((1.0 - t) * 100).toInt()),
+                    color: Colors.black.withAlpha(((1.0 - t) * 80).toInt()),
                   ),
                 ),
               ),
@@ -496,8 +582,8 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               if (curPage != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
-                    ..rotateY(-t * (math.pi / 2)),
+                    ..setEntry(3, 2, _kPerspective)
+                    ..rotateY(-t * (math.pi / 2.2)),
                   alignment: Alignment.centerLeft,
                   child: Stack(
                     fit: StackFit.expand,
@@ -512,7 +598,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                                 end: Alignment.centerRight,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withAlpha((t * 190).toInt()),
+                                  Colors.black.withAlpha((t * 160).toInt()),
                                 ],
                               ),
                             ),
@@ -525,7 +611,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
             ],
           );
         } else {
-          // Turning backward: curPage is underneath, targetPage unfolds from -90 to 0 deg
+          // Turning backward: curPage is underneath, targetPage unfolds onto screen
           return Stack(
             fit: StackFit.expand,
             children: [
@@ -536,8 +622,8 @@ class BookPageTurnViewState extends State<BookPageTurnView>
               if (targetPage != null)
                 Transform(
                   transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0006)
-                    ..rotateY(-(1.0 - t) * (math.pi / 2)),
+                    ..setEntry(3, 2, _kPerspective)
+                    ..rotateY(-(1.0 - t) * (math.pi / 2.2)),
                   alignment: Alignment.centerLeft,
                   child: Stack(
                     fit: StackFit.expand,
@@ -546,7 +632,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 150).toInt()),
+                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
                           ),
                         ),
                       ),
@@ -560,7 +646,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
     );
   }
 
-  // Helper: Guarantees 100% solid opaque surface with strict clipping
+  // Helper: Guarantees 100% solid opaque surface with RepaintBoundary
   Widget _buildSolidPage(ReflowablePageContent? page, {bool? isLeftPage}) {
     if (page == null) {
       return Container(
@@ -568,10 +654,12 @@ class BookPageTurnViewState extends State<BookPageTurnView>
       );
     }
 
-    return Container(
-      color: widget.theme.backgroundColor, // Guaranteed 100% OPAQUE
-      child: ClipRect(
-        child: widget.pageBuilder(page, isLeftPage: isLeftPage),
+    return RepaintBoundary(
+      child: Container(
+        color: widget.theme.backgroundColor, // Guaranteed 100% OPAQUE
+        child: ClipRect(
+          child: widget.pageBuilder(page, isLeftPage: isLeftPage),
+        ),
       ),
     );
   }
@@ -579,13 +667,13 @@ class BookPageTurnViewState extends State<BookPageTurnView>
   // Physical Book Center Spine Crease
   Widget _buildSpineCrease() {
     return Container(
-      width: 28,
+      width: 24,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.black.withAlpha(widget.theme.isDark ? 90 : 30),
-            Colors.black.withAlpha(widget.theme.isDark ? 210 : 80),
-            Colors.black.withAlpha(widget.theme.isDark ? 90 : 30),
+            Colors.black.withAlpha(widget.theme.isDark ? 80 : 25),
+            Colors.black.withAlpha(widget.theme.isDark ? 190 : 70),
+            Colors.black.withAlpha(widget.theme.isDark ? 80 : 25),
           ],
           stops: const [0.0, 0.5, 1.0],
         ),

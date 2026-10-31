@@ -1,10 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
+import '../../../../core/providers/database_providers.dart';
+import '../../../../core/utils/file_storage_service.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
+import 'book_details_dialog.dart';
 
-class BookCard extends StatelessWidget {
+class BookCard extends ConsumerWidget {
   final Book book;
   final double? progressPercentage;
   final VoidCallback? onDetails;
@@ -17,21 +21,27 @@ class BookCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasProgress = progressPercentage != null && progressPercentage! > 0.0;
+    final activeMode = ref.watch(activeReadingModeProvider(book.id));
+    final defaultMode = book.isScanned ? ReadingMode.originalPdf : activeMode;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ReadingScreen(
               book: book,
-              initialMode: book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable,
+              initialMode: defaultMode,
             ),
           ),
         );
       },
-      onLongPress: onDetails,
+      onSecondaryTapUp: (details) {
+        _showContextMenu(context, ref, details.globalPosition);
+      },
+      onLongPress: () => _openInfo(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -154,29 +164,266 @@ class BookCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Book Title
-          Text(
-            book.title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          // Title & 3-Dots Button Row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      book.title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      book.author,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade500,
+                        height: 1.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              _buildMoreButton(context, ref),
+            ],
           ),
-          const SizedBox(height: 2),
+        ],
+      ),
+    );
+  }
 
-          // Book Author
-          Text(
-            book.author,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade500,
-              height: 1.1,
+  Widget _buildMoreButton(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: 24,
+      height: 24,
+      child: PopupMenuButton<String>(
+        tooltip: 'Pilihan buku',
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          Icons.more_horiz,
+          size: 18,
+          color: Colors.grey.shade400,
+        ),
+        color: const Color(0xFF222226),
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.white.withAlpha(25)),
+        ),
+        onSelected: (value) {
+          if (value == 'info') {
+            _openInfo(context);
+          } else if (value == 'delete') {
+            _confirmDelete(context, ref);
+          }
+        },
+        itemBuilder: (ctx) => [
+          const PopupMenuItem<String>(
+            value: 'info',
+            height: 38,
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 17, color: Colors.white70),
+                SizedBox(width: 10),
+                Text(
+                  'Info About Book',
+                  style: TextStyle(fontSize: 13, color: Colors.white),
+                ),
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          ),
+          const PopupMenuDivider(height: 1),
+          const PopupMenuItem<String>(
+            value: 'delete',
+            height: 38,
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
+                SizedBox(width: 10),
+                Text(
+                  'Delete Book',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContextMenu(BuildContext context, WidgetRef ref, Offset position) async {
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      color: const Color(0xFF222226),
+      elevation: 12,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.white.withAlpha(25)),
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'info',
+          height: 38,
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, size: 17, color: Colors.white70),
+              SizedBox(width: 10),
+              Text(
+                'Info About Book',
+                style: TextStyle(fontSize: 13, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          height: 38,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
+              SizedBox(width: 10),
+              Text(
+                'Delete Book',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.redAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (!context.mounted) return;
+
+    if (selected == 'info') {
+      _openInfo(context);
+    } else if (selected == 'delete') {
+      _confirmDelete(context, ref);
+    }
+  }
+
+  void _openInfo(BuildContext context) {
+    if (onDetails != null) {
+      onDetails!();
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => BookDetailsDialog(book: book),
+      );
+    }
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E22),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withAlpha(25)),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withAlpha(30),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline,
+                color: Colors.redAccent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Hapus Buku?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus "${book.title}"?\n\nBuku, file PDF, cover, dan progres membaca akan dihapus secara permanen.',
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: Colors.white70,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await FileStorageService.deleteBookFiles(
+                bookId: book.id,
+                originalPdfPath: book.originalPdfPath,
+                processedBookPath: book.processedBookPath,
+                coverPath: book.coverPath,
+              );
+              await ref.read(databaseServiceProvider).deleteBook(book.id);
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text('Buku "${book.title}" berhasil dihapus.'),
+                  backgroundColor: const Color(0xFF2C2C2E),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
+            },
+            child: const Text(
+              'Hapus Buku',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -197,9 +444,9 @@ class BookCard extends StatelessWidget {
               book.title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -210,4 +457,3 @@ class BookCard extends StatelessWidget {
     );
   }
 }
-

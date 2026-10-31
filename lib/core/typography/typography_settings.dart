@@ -124,7 +124,7 @@ class TypographySettings {
     this.fontWeight = FontWeight.normal,
     this.lineSpacing = 1.65,
     this.letterSpacing = 0.2,
-    this.textAlign = TextAlign.start,
+    this.textAlign = TextAlign.justify,
     this.horizontalMargin = 32.0,
     this.twoPageSpread = true,
   });

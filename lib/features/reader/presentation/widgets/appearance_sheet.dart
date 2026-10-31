@@ -256,7 +256,8 @@ class AppearanceSheet extends ConsumerWidget {
                             IconButton(
                               icon: Icon(
                                 Icons.format_align_left,
-                                color: typoSettings.textAlign == TextAlign.left
+                                color: (typoSettings.textAlign == TextAlign.left ||
+                                        typoSettings.textAlign == TextAlign.start)
                                     ? const Color(0xFF007AFF)
                                     : activeTheme.secondaryTextColor,
                               ),
