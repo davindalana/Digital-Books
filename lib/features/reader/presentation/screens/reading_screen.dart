@@ -81,15 +81,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
 
   Future<void> _loadBookDocumentAndProgress() async {
     // 1. Load progress
-    final dbService = ref.read(databaseServiceProvider);
-    final progress = await dbService.getProgress(widget.book.id);
-    if (progress != null) {
-      setState(() {
-        _currentChapter = progress.currentChapter;
-        _currentPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
-        _progressPercentage = progress.progressPercentage;
-      });
-    }
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      final progress = await dbService.getProgress(widget.book.id);
+      if (progress != null && mounted) {
+        setState(() {
+          _currentChapter = progress.currentChapter;
+          _currentPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
+          _progressPercentage = progress.progressPercentage;
+        });
+      }
+    } catch (_) {}
 
     // 2. Load processed book document if available
     if (widget.book.processedBookPath != null) {
@@ -105,10 +107,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       } catch (_) {}
     }
 
-    setState(() {
-      _isLoadingDoc = false;
-      _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoadingDoc = false;
+        _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
+      });
+    }
   }
 
   void _handleHighlightCreated(String text, String color, int pageNumber) async {

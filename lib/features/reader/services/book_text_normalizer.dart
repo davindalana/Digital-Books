@@ -169,7 +169,7 @@ class BookTextNormalizer {
 
     for (int i = 0; i < cleaned.length; i++) {
       final item = cleaned[i];
-      var line = item.text.trim();
+      var line = item.text.trim().replaceAll(RegExp(r'[ \t]+'), ' ');
 
       // Clean leading isolated capital letters noise like "K H Sanksi..."
       final leadingNoiseRegex = RegExp(r'^[A-Z](\s+[A-Z]){1,3}\s+([A-Za-z].*)$');
@@ -254,7 +254,17 @@ class BookTextNormalizer {
               line.startsWith('—');
           final prevEndsTerminal = RegExp(r'[.!?":]\s*$').hasMatch(currentParagraphText);
 
-          if (prevEndsTerminal && startsDialogue) {
+          // Natural paragraph boundary:
+          // 1. Dialogue start after a terminal
+          // 2. Previous sentence ended and accumulated paragraph is substantial (> 280 chars) and new line starts with a Capital letter
+          // 3. Accumulated text is very long (> 700 chars) and previous sentence ended
+          final isNewParagraph = prevEndsTerminal && (
+            startsDialogue ||
+            (currentParagraphText.length > 280 && RegExp(r'^[A-Z]').hasMatch(line)) ||
+            currentParagraphText.length > 700
+          );
+
+          if (isNewParagraph) {
             flushParagraph();
             currentParagraphText = line;
             currentParagraphPage = item.originalPage;

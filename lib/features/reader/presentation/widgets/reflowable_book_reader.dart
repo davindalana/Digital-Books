@@ -278,15 +278,18 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       int endIndex = math.min(startIndex + maxCharsPerSlide, text.length);
 
       if (endIndex < text.length) {
-        // Try breaking at a sentence end (. ! ? ")
-        int sentenceBreak = text.lastIndexOf(RegExp(r'[.!?"]\s'), endIndex);
-        if (sentenceBreak > startIndex + (maxCharsPerSlide ~/ 2)) {
-          endIndex = sentenceBreak + 1;
+        final searchStart = startIndex + (maxCharsPerSlide ~/ 2);
+        final candidateSlice = text.substring(searchStart, endIndex);
+
+        // Try breaking at sentence end (. ! ? ")
+        final sentenceBreak = candidateSlice.lastIndexOf(RegExp(r'[.!?"]\s'));
+        if (sentenceBreak != -1) {
+          endIndex = searchStart + sentenceBreak + 1;
         } else {
           // Break at word space
-          int spaceBreak = text.lastIndexOf(' ', endIndex);
-          if (spaceBreak > startIndex) {
-            endIndex = spaceBreak;
+          final spaceBreak = candidateSlice.lastIndexOf(' ');
+          if (spaceBreak != -1) {
+            endIndex = searchStart + spaceBreak;
           }
         }
       }

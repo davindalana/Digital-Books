@@ -64,8 +64,8 @@ class FileStorageService {
 
   static Future<String?> readProcessedBook(String path) async {
     final file = File(path);
-    if (await file.exists()) {
-      return file.readAsString();
+    if (file.existsSync()) {
+      return file.readAsStringSync();
     }
     return null;
   }
