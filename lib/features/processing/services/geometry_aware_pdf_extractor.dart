@@ -111,7 +111,7 @@ class GeometryAwarePdfExtractor {
       try {
         final images = await _extractImagesFromPage(
           page: page,
-          pageNumber: pageNum,
+          pageNumber: pageIdx,
           bookId: bookId,
           targetDirectory: bookImagesDir,
         );
@@ -253,7 +253,7 @@ class GeometryAwarePdfExtractor {
             filter: filterName ?? 'Unknown',
             imagePath: savedImagePath,
             bytesLength: bytesLen,
-            isCover: pageNumber == 1,
+            isCover: pageNumber == 0,
           ),
         );
       }

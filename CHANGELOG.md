@@ -4,6 +4,19 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.2] - Semantic Reconstruction Engine (Phase 2.7D)
+
+### Added
+- **Reading Order Reconstruction (`ReadingOrderResolver`)**: Spatially aware line clustering, two-column gutter detection ($\ge 14.0\text{ pt}$), full-width title/banner precedence, and strictly separated column flows without line interleaving.
+- **Paragraph Reconstruction (`ParagraphReconstructor`)**: Line gap analysis ($\Delta Y > 1.45 \times \text{modalGap}$), first-line indent detection, de-hyphenation, dialogue preservation, and cross-page sentence stitching while filtering running chrome.
+- **Semantic Classification (`SemanticClassifier`)**: Document-wide modal font analysis, H1-H3 heading hierarchy, block quotes, footnote isolation via index markers and smaller font size, and header/footer filtering.
+- **Image Placement & Caption Binding (`ImagePlacementResolver`)**: Spatial caption matching to embedded images, role classification (`coverImage`, `diagram`, `fullPageIllustration`, `inlineFigure`), and in-stream positioning.
+- **Reconstruction Quality Assessment (`ReconstructionQualityAnalyzer`)**: Quantitative scoring (0.0 to 1.0) and tier recommendation (`good`, `partial`, `poor`) routing low-confidence or scanned books to `Original PDF Reader`.
+- **Master Orchestrator (`SemanticDocumentReconstructor`)**: Unified service coordinating D1–D5 and outputting `ReconstructedDocument` convertible to `BookDocument`.
+- **Automated Regression Suite (`test/phase_2_7d_semantic_reconstruction_test.dart`)**: 12 comprehensive tests covering all 10 corpus categories plus the real-world 394-page book *Laut Bercerita*.
+
+---
+
 ## [1.1.0-alpha.1] - Representative PDF Corpus & Geometry-Aware Extraction (Phase 2.7B & 2.7C)
 
 ### Added
