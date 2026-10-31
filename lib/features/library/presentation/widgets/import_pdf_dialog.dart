@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/utils/file_storage_service.dart';
 import '../../../processing/models/processing_status.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../processing/services/pdf_processing_pipeline.dart';
@@ -48,14 +49,12 @@ class ImportPdfHelper {
 
       if (!context.mounted) return;
 
-      // Duplicate Check
-      final peek = await PdfProcessingPipeline.peekPdfMetadata(selectedFile);
-      final existing = await ref.read(databaseServiceProvider).findDuplicateBook(
-            title: peek.title,
-            author: peek.author,
-          );
+      // Duplicate Check: 1. SHA-256 Exact Check, 2. Title/Author Edition Check
+      final fileHash = await FileStorageService.computeFileSha256(selectedFile);
+      final exactMatch =
+          await ref.read(databaseServiceProvider).findBookByFileHash(fileHash);
 
-      if (existing != null && context.mounted) {
+      if (exactMatch != null && context.mounted) {
         final action = await showDialog<_DuplicatePromptAction>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -69,19 +68,19 @@ class ImportPdfHelper {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF007AFF).withAlpha(30),
+                    color: Colors.orangeAccent.withAlpha(30),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.copy_rounded,
-                    color: Color(0xFF007AFF),
+                    Icons.warning_amber_rounded,
+                    color: Colors.orangeAccent,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Book Already in Library',
+                    'Exact File Already in Library',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -92,7 +91,7 @@ class ImportPdfHelper {
               ],
             ),
             content: Text(
-              '"${existing.title}" is already in your library.\n\nWould you like to open the existing book, or import it anyway?',
+              'An identical file of "${exactMatch.title}" is already in your library (matching SHA-256 checksum).\n\nWould you like to open the existing book, import a duplicate copy, or cancel?',
               style: const TextStyle(
                 fontSize: 13,
                 height: 1.4,
@@ -114,7 +113,7 @@ class ImportPdfHelper {
                 ),
                 onPressed: () =>
                     Navigator.of(ctx).pop(_DuplicatePromptAction.importAnyway),
-                child: const Text('Import Anyway',
+                child: const Text('Import Duplicate Copy',
                     style: TextStyle(color: Colors.white)),
               ),
               ElevatedButton(
@@ -140,8 +139,8 @@ class ImportPdfHelper {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ReadingScreen(
-                  book: existing,
-                  initialMode: existing.isScanned
+                  book: exactMatch,
+                  initialMode: exactMatch.isScanned
                       ? ReadingMode.originalPdf
                       : ReadingMode.reflowable,
                 ),
@@ -149,6 +148,111 @@ class ImportPdfHelper {
             );
           }
           return;
+        }
+      } else {
+        // 2. Different Edition / Title & Author Match Check
+        final peek = await PdfProcessingPipeline.peekPdfMetadata(selectedFile);
+        final editionMatch =
+            await ref.read(databaseServiceProvider).findDuplicateBook(
+                  title: peek.title,
+                  author: peek.author,
+                );
+
+        if (editionMatch != null && context.mounted) {
+          final action = await showDialog<_DuplicatePromptAction>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1E1E22),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.white.withAlpha(25)),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF007AFF).withAlpha(30),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.auto_stories_rounded,
+                      color: Color(0xFF007AFF),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Different Edition Detected',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'A book with the title "${editionMatch.title}" by ${editionMatch.author} is already in your library, but this file has different contents.\n\nWould you like to import this as a new edition, or open your existing copy?',
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: Colors.white70,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(_DuplicatePromptAction.cancel),
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.white70)),
+                ),
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.white.withAlpha(40)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(_DuplicatePromptAction.importAnyway),
+                  child: const Text('Import as New Edition',
+                      style: TextStyle(color: Colors.white)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(_DuplicatePromptAction.openExisting),
+                  child: const Text('Open Existing Book'),
+                ),
+              ],
+            ),
+          );
+
+          if (action == null || action == _DuplicatePromptAction.cancel) {
+            return;
+          }
+          if (action == _DuplicatePromptAction.openExisting) {
+            if (context.mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReadingScreen(
+                    book: editionMatch,
+                    initialMode: editionMatch.isScanned
+                        ? ReadingMode.originalPdf
+                        : ReadingMode.reflowable,
+                  ),
+                ),
+              );
+            }
+            return;
+          }
         }
       }
 

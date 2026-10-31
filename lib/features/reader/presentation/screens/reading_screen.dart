@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:drift/drift.dart' as drift;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,10 +42,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   BookDocument? _document;
   bool _isLoadingDoc = true;
 
+  late String _currentPdfPath;
   late ReadingMode _readingMode;
   int _currentPage = 1;
   int _totalPages = 1;
   int _currentChapter = 0;
+  int _pdfPage = 1;
+  int _reflowableChapter = 0;
+  int _reflowablePosition = 0;
   double _progressPercentage = 0.0;
   double? _sliderDragValue;
   String _currentChapterTitle = '';
@@ -57,6 +63,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   @override
   void initState() {
     super.initState();
+    _currentPdfPath = widget.book.originalPdfPath;
     final currentProviderMode = ref.read(
       activeReadingModeProvider(widget.book.id),
     );
@@ -79,14 +86,22 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       _readingMode = mode;
       if (mode == ReadingMode.originalPdf) {
         _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
+        _currentPage = _pdfPage;
       } else {
         final reflowableTotal = _reflowableKey.currentState?.totalPages;
         if (reflowableTotal != null && reflowableTotal > 0) {
           _totalPages = reflowableTotal;
         }
+        _currentChapter = _reflowableChapter;
+        _currentPage = _reflowablePosition;
       }
     });
     ref.read(activeReadingModeProvider(widget.book.id).notifier).state = mode;
+    _saveProgress(
+      chapter: _reflowableChapter,
+      position: mode == ReadingMode.originalPdf ? _pdfPage : _reflowablePosition,
+      percentage: _progressPercentage,
+    );
   }
 
   Future<void> _loadBookDocumentAndProgress() async {
@@ -98,14 +113,33 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         setState(() {
           if (progress != null) {
             _currentChapter = progress.currentChapter;
+            _reflowableChapter = progress.currentChapter;
             _progressPercentage = progress.progressPercentage;
+            if (widget.initialMode == null && progress.lastReadingMode != null) {
+              final restoredMode = ReadingMode.values
+                  .where((m) => m.name == progress.lastReadingMode)
+                  .firstOrNull;
+              if (restoredMode != null) {
+                _readingMode = restoredMode;
+                ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
+                    restoredMode;
+              }
+            }
+            if (_readingMode == ReadingMode.originalPdf) {
+              _pdfPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
+              _currentPage = _pdfPage;
+            } else {
+              _reflowablePosition = progress.currentPosition > 0 ? progress.currentPosition : 0;
+              _currentPage = _reflowablePosition;
+            }
           }
           if (widget.initialPage != null && widget.initialPage! > 0) {
             _currentPage = widget.initialPage!;
-          } else if (progress != null && progress.currentPosition > 0) {
-            _currentPage = progress.currentPosition;
-          } else {
-            _currentPage = 1;
+            if (_readingMode == ReadingMode.originalPdf) {
+              _pdfPage = widget.initialPage!;
+            } else {
+              _reflowablePosition = widget.initialPage!;
+            }
           }
         });
       }
@@ -262,10 +296,92 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           currentChapter: drift.Value(chapter),
           currentPosition: drift.Value(position),
           progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
+          lastReadingMode: drift.Value(_readingMode.name),
           lastReadAt: drift.Value(DateTime.now()),
         ),
       );
     } catch (_) {}
+  }
+
+  Future<void> _handleRelinkPdf() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (result.isEmpty || result.first.path == null) return;
+
+      final newFile = File(result.first.path!);
+      if (!await newFile.exists()) return;
+
+      final storedPdf =
+          await FileStorageService.copyPdfToStorage(newFile, widget.book.id);
+      await ref
+          .read(databaseServiceProvider)
+          .updateBookPdfPath(widget.book.id, storedPdf.path);
+
+      if (mounted) {
+        setState(() {
+          _currentPdfPath = storedPdf.path;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Berkas PDF berhasil ditautkan kembali.'),
+            backgroundColor: Color(0xFF2C2C2E),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menautkan PDF: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRemoveBook() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E22),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withAlpha(25)),
+        ),
+        title: const Text('Hapus Buku', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus "${widget.book.title}" dari perpustakaan?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Batal', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(databaseServiceProvider).safeDeleteBook(widget.book.id);
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   void _toggleControls() {
@@ -461,6 +577,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           }
                         },
                         onProgressChanged: (ch, page, pct) {
+                          _reflowableChapter = ch;
+                          _reflowablePosition = page;
                           _updateChapterInfo(ch);
                           _saveProgress(
                             chapter: ch,
@@ -471,7 +589,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       )
                     : OriginalPdfReader(
                         key: _pdfKey,
-                        pdfPath: widget.book.originalPdfPath,
+                        pdfPath: _currentPdfPath,
                         initialPage: _currentPage,
                         theme: activeTheme,
                         viewMode: ref.watch(pdfViewModeProvider),
@@ -481,6 +599,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                             ? () => _setReadingMode(ReadingMode.reflowable)
                             : null,
                         onBack: () => Navigator.of(context).pop(),
+                        onRelinkPdf: _handleRelinkPdf,
+                        onRemoveBook: _handleRemoveBook,
                         onToggleViewMode: () {
                           final current = ref.read(pdfViewModeProvider);
                           ref
@@ -490,6 +610,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                               : PdfViewMode.paginated;
                         },
                         onPageChanged: (page, total) {
+                          _pdfPage = page;
                           setState(() {
                             _currentPage = page;
                             _totalPages = total;
@@ -498,7 +619,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                                 : 0.0;
                           });
                           _saveProgress(
-                            chapter: 0,
+                            chapter: _reflowableChapter,
                             position: page,
                             percentage: total > 0 ? (page / total) : 0.0,
                           );

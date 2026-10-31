@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
-import '../../../../core/utils/file_storage_service.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import 'book_details_dialog.dart';
@@ -445,13 +444,7 @@ class BookListTile extends ConsumerWidget {
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await FileStorageService.deleteBookFiles(
-                bookId: book.id,
-                originalPdfPath: book.originalPdfPath,
-                processedBookPath: book.processedBookPath,
-                coverPath: book.coverPath,
-              );
-              await ref.read(databaseServiceProvider).deleteBook(book.id);
+              await ref.read(databaseServiceProvider).safeDeleteBook(book.id);
               messenger.showSnackBar(
                 SnackBar(
                   content: Text('Buku "${book.title}" berhasil dihapus.'),

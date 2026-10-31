@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'app_database.dart';
+import '../utils/file_storage_service.dart';
 
 class DatabaseService {
   final AppDatabase db;
@@ -124,8 +125,55 @@ class DatabaseService {
     return null;
   }
 
+  Future<List<Book>> getAllBooks() {
+    return db.select(db.books).get();
+  }
+
+  Future<Book?> findBookByFileHash(String fileHash) {
+    return (db.select(db.books)..where((t) => t.fileHash.equals(fileHash)))
+        .getSingleOrNull();
+  }
+
+  Future<bool> isPathReferencedByOtherBook(
+    String path, {
+    required String excludeBookId,
+  }) async {
+    final matches = await (db.select(db.books)
+          ..where((t) =>
+              t.id.equals(excludeBookId).not() &
+              (t.originalPdfPath.equals(path) |
+                  t.coverPath.equals(path) |
+                  t.processedBookPath.equals(path))))
+        .get();
+    return matches.isNotEmpty;
+  }
+
+  Future<int> updateBookPdfPath(String bookId, String newPdfPath) {
+    return (db.update(db.books)..where((t) => t.id.equals(bookId))).write(
+      BooksCompanion(
+        originalPdfPath: Value(newPdfPath),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<int> deleteBook(String id) {
     return (db.delete(db.books)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> safeDeleteBook(String bookId) async {
+    final book = await getBookById(bookId);
+    if (book == null) return;
+
+    await FileStorageService.deleteBookFilesSafe(
+      dbService: this,
+      bookId: book.id,
+      originalPdfPath: book.originalPdfPath,
+      processedBookPath: book.processedBookPath,
+      coverPath: book.coverPath,
+    );
+
+    await deleteBook(bookId);
   }
 
   Stream<List<Book>> searchBooks(String query) {
@@ -181,6 +229,9 @@ class DatabaseService {
           currentChapter: progress.currentChapter,
           currentPosition: progress.currentPosition,
           progressPercentage: progress.progressPercentage,
+          lastReadingMode: progress.lastReadingMode.present
+              ? progress.lastReadingMode
+              : Value(existing.lastReadingMode),
           lastReadAt: progress.lastReadAt,
         ),
       );

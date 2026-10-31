@@ -9,6 +9,7 @@ class Books extends Table {
   TextColumn get coverPath => text().nullable()();
   TextColumn get originalPdfPath => text()();
   TextColumn get processedBookPath => text().nullable()();
+  TextColumn get fileHash => text().nullable()();
   IntColumn get totalPages => integer().withDefault(const Constant(0))();
   BoolColumn get isScanned => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
@@ -37,6 +38,7 @@ class ReadingProgresses extends Table {
   IntColumn get currentChapter => integer().withDefault(const Constant(0))();
   IntColumn get currentPosition => integer().withDefault(const Constant(0))();
   RealColumn get progressPercentage => real().withDefault(const Constant(0.0))();
+  TextColumn get lastReadingMode => text().nullable()();
   DateTimeColumn get lastReadAt => dateTime()();
 
   @override

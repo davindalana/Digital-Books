@@ -45,6 +45,8 @@ class OriginalPdfReader extends StatefulWidget {
   final VoidCallback? onSwitchToReflowable;
   final VoidCallback? onBack;
   final VoidCallback? onToggleViewMode;
+  final VoidCallback? onRelinkPdf;
+  final VoidCallback? onRemoveBook;
 
   const OriginalPdfReader({
     super.key,
@@ -58,6 +60,8 @@ class OriginalPdfReader extends StatefulWidget {
     this.onSwitchToReflowable,
     this.onBack,
     this.onToggleViewMode,
+    this.onRelinkPdf,
+    this.onRemoveBook,
   });
 
   @override
@@ -662,6 +666,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           onRetry: _retryLoad,
           onSwitchToReflowable: widget.onSwitchToReflowable,
           onBack: widget.onBack,
+          onRelinkPdf: widget.onRelinkPdf,
+          onRemoveBook: widget.onRemoveBook,
         ),
       );
     }
@@ -1718,6 +1724,8 @@ class _PdfErrorView extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback? onSwitchToReflowable;
   final VoidCallback? onBack;
+  final VoidCallback? onRelinkPdf;
+  final VoidCallback? onRemoveBook;
 
   const _PdfErrorView({
     required this.title,
@@ -1726,6 +1734,8 @@ class _PdfErrorView extends StatelessWidget {
     required this.onRetry,
     this.onSwitchToReflowable,
     this.onBack,
+    this.onRelinkPdf,
+    this.onRemoveBook,
   });
 
   @override
@@ -1843,6 +1853,54 @@ class _PdfErrorView extends StatelessWidget {
                         ),
                       ),
                       onPressed: onSwitchToReflowable,
+                    ),
+                  if (onRelinkPdf != null)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF007AFF),
+                        side: const BorderSide(color: Color(0xFF007AFF)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.link_rounded, size: 18),
+                      label: const Text(
+                        'Tautkan Ulang PDF',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      onPressed: onRelinkPdf,
+                    ),
+                  if (onRemoveBook != null)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.redAccent,
+                        side: BorderSide(
+                          color: Colors.redAccent.withAlpha(120),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text(
+                        'Hapus Buku',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      onPressed: onRemoveBook,
                     ),
                   if (onBack != null)
                     TextButton.icon(

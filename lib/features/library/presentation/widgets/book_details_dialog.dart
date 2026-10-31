@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
-import '../../../../core/utils/file_storage_service.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import 'manage_collections_dialog.dart';
@@ -469,15 +468,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
 
-              await FileStorageService.deleteBookFiles(
-                bookId: _currentBook.id,
-                originalPdfPath: _currentBook.originalPdfPath,
-                processedBookPath: _currentBook.processedBookPath,
-                coverPath: _currentBook.coverPath,
-              );
               await ref
                   .read(databaseServiceProvider)
-                  .deleteBook(_currentBook.id);
+                  .safeDeleteBook(_currentBook.id);
             },
             child: const Text('Delete',
                 style: TextStyle(color: Colors.redAccent)),

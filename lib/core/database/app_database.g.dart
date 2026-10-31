@@ -91,6 +91,17 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _fileHashMeta = const VerificationMeta(
+    'fileHash',
+  );
+  @override
+  late final GeneratedColumn<String> fileHash = GeneratedColumn<String>(
+    'file_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _totalPagesMeta = const VerificationMeta(
     'totalPages',
   );
@@ -150,6 +161,7 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
     coverPath,
     originalPdfPath,
     processedBookPath,
+    fileHash,
     totalPages,
     isScanned,
     createdAt,
@@ -229,6 +241,12 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         ),
       );
     }
+    if (data.containsKey('file_hash')) {
+      context.handle(
+        _fileHashMeta,
+        fileHash.isAcceptableOrUnknown(data['file_hash']!, _fileHashMeta),
+      );
+    }
     if (data.containsKey('total_pages')) {
       context.handle(
         _totalPagesMeta,
@@ -298,6 +316,10 @@ class $BooksTable extends Books with TableInfo<$BooksTable, Book> {
         DriftSqlType.string,
         data['${effectivePrefix}processed_book_path'],
       ),
+      fileHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_hash'],
+      ),
       totalPages: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}total_pages'],
@@ -332,6 +354,7 @@ class Book extends DataClass implements Insertable<Book> {
   final String? coverPath;
   final String originalPdfPath;
   final String? processedBookPath;
+  final String? fileHash;
   final int totalPages;
   final bool isScanned;
   final DateTime createdAt;
@@ -345,6 +368,7 @@ class Book extends DataClass implements Insertable<Book> {
     this.coverPath,
     required this.originalPdfPath,
     this.processedBookPath,
+    this.fileHash,
     required this.totalPages,
     required this.isScanned,
     required this.createdAt,
@@ -368,6 +392,9 @@ class Book extends DataClass implements Insertable<Book> {
     map['original_pdf_path'] = Variable<String>(originalPdfPath);
     if (!nullToAbsent || processedBookPath != null) {
       map['processed_book_path'] = Variable<String>(processedBookPath);
+    }
+    if (!nullToAbsent || fileHash != null) {
+      map['file_hash'] = Variable<String>(fileHash);
     }
     map['total_pages'] = Variable<int>(totalPages);
     map['is_scanned'] = Variable<bool>(isScanned);
@@ -394,6 +421,9 @@ class Book extends DataClass implements Insertable<Book> {
       processedBookPath: processedBookPath == null && nullToAbsent
           ? const Value.absent()
           : Value(processedBookPath),
+      fileHash: fileHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileHash),
       totalPages: Value(totalPages),
       isScanned: Value(isScanned),
       createdAt: Value(createdAt),
@@ -417,6 +447,7 @@ class Book extends DataClass implements Insertable<Book> {
       processedBookPath: serializer.fromJson<String?>(
         json['processedBookPath'],
       ),
+      fileHash: serializer.fromJson<String?>(json['fileHash']),
       totalPages: serializer.fromJson<int>(json['totalPages']),
       isScanned: serializer.fromJson<bool>(json['isScanned']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -435,6 +466,7 @@ class Book extends DataClass implements Insertable<Book> {
       'coverPath': serializer.toJson<String?>(coverPath),
       'originalPdfPath': serializer.toJson<String>(originalPdfPath),
       'processedBookPath': serializer.toJson<String?>(processedBookPath),
+      'fileHash': serializer.toJson<String?>(fileHash),
       'totalPages': serializer.toJson<int>(totalPages),
       'isScanned': serializer.toJson<bool>(isScanned),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -451,6 +483,7 @@ class Book extends DataClass implements Insertable<Book> {
     Value<String?> coverPath = const Value.absent(),
     String? originalPdfPath,
     Value<String?> processedBookPath = const Value.absent(),
+    Value<String?> fileHash = const Value.absent(),
     int? totalPages,
     bool? isScanned,
     DateTime? createdAt,
@@ -466,6 +499,7 @@ class Book extends DataClass implements Insertable<Book> {
     processedBookPath: processedBookPath.present
         ? processedBookPath.value
         : this.processedBookPath,
+    fileHash: fileHash.present ? fileHash.value : this.fileHash,
     totalPages: totalPages ?? this.totalPages,
     isScanned: isScanned ?? this.isScanned,
     createdAt: createdAt ?? this.createdAt,
@@ -487,6 +521,7 @@ class Book extends DataClass implements Insertable<Book> {
       processedBookPath: data.processedBookPath.present
           ? data.processedBookPath.value
           : this.processedBookPath,
+      fileHash: data.fileHash.present ? data.fileHash.value : this.fileHash,
       totalPages: data.totalPages.present
           ? data.totalPages.value
           : this.totalPages,
@@ -507,6 +542,7 @@ class Book extends DataClass implements Insertable<Book> {
           ..write('coverPath: $coverPath, ')
           ..write('originalPdfPath: $originalPdfPath, ')
           ..write('processedBookPath: $processedBookPath, ')
+          ..write('fileHash: $fileHash, ')
           ..write('totalPages: $totalPages, ')
           ..write('isScanned: $isScanned, ')
           ..write('createdAt: $createdAt, ')
@@ -525,6 +561,7 @@ class Book extends DataClass implements Insertable<Book> {
     coverPath,
     originalPdfPath,
     processedBookPath,
+    fileHash,
     totalPages,
     isScanned,
     createdAt,
@@ -542,6 +579,7 @@ class Book extends DataClass implements Insertable<Book> {
           other.coverPath == this.coverPath &&
           other.originalPdfPath == this.originalPdfPath &&
           other.processedBookPath == this.processedBookPath &&
+          other.fileHash == this.fileHash &&
           other.totalPages == this.totalPages &&
           other.isScanned == this.isScanned &&
           other.createdAt == this.createdAt &&
@@ -557,6 +595,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
   final Value<String?> coverPath;
   final Value<String> originalPdfPath;
   final Value<String?> processedBookPath;
+  final Value<String?> fileHash;
   final Value<int> totalPages;
   final Value<bool> isScanned;
   final Value<DateTime> createdAt;
@@ -571,6 +610,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     this.coverPath = const Value.absent(),
     this.originalPdfPath = const Value.absent(),
     this.processedBookPath = const Value.absent(),
+    this.fileHash = const Value.absent(),
     this.totalPages = const Value.absent(),
     this.isScanned = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -586,6 +626,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     this.coverPath = const Value.absent(),
     required String originalPdfPath,
     this.processedBookPath = const Value.absent(),
+    this.fileHash = const Value.absent(),
     this.totalPages = const Value.absent(),
     this.isScanned = const Value.absent(),
     required DateTime createdAt,
@@ -606,6 +647,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     Expression<String>? coverPath,
     Expression<String>? originalPdfPath,
     Expression<String>? processedBookPath,
+    Expression<String>? fileHash,
     Expression<int>? totalPages,
     Expression<bool>? isScanned,
     Expression<DateTime>? createdAt,
@@ -621,6 +663,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
       if (coverPath != null) 'cover_path': coverPath,
       if (originalPdfPath != null) 'original_pdf_path': originalPdfPath,
       if (processedBookPath != null) 'processed_book_path': processedBookPath,
+      if (fileHash != null) 'file_hash': fileHash,
       if (totalPages != null) 'total_pages': totalPages,
       if (isScanned != null) 'is_scanned': isScanned,
       if (createdAt != null) 'created_at': createdAt,
@@ -638,6 +681,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
     Value<String?>? coverPath,
     Value<String>? originalPdfPath,
     Value<String?>? processedBookPath,
+    Value<String?>? fileHash,
     Value<int>? totalPages,
     Value<bool>? isScanned,
     Value<DateTime>? createdAt,
@@ -653,6 +697,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
       coverPath: coverPath ?? this.coverPath,
       originalPdfPath: originalPdfPath ?? this.originalPdfPath,
       processedBookPath: processedBookPath ?? this.processedBookPath,
+      fileHash: fileHash ?? this.fileHash,
       totalPages: totalPages ?? this.totalPages,
       isScanned: isScanned ?? this.isScanned,
       createdAt: createdAt ?? this.createdAt,
@@ -688,6 +733,9 @@ class BooksCompanion extends UpdateCompanion<Book> {
     if (processedBookPath.present) {
       map['processed_book_path'] = Variable<String>(processedBookPath.value);
     }
+    if (fileHash.present) {
+      map['file_hash'] = Variable<String>(fileHash.value);
+    }
     if (totalPages.present) {
       map['total_pages'] = Variable<int>(totalPages.value);
     }
@@ -717,6 +765,7 @@ class BooksCompanion extends UpdateCompanion<Book> {
           ..write('coverPath: $coverPath, ')
           ..write('originalPdfPath: $originalPdfPath, ')
           ..write('processedBookPath: $processedBookPath, ')
+          ..write('fileHash: $fileHash, ')
           ..write('totalPages: $totalPages, ')
           ..write('isScanned: $isScanned, ')
           ..write('createdAt: $createdAt, ')
@@ -1209,6 +1258,17 @@ class $ReadingProgressesTable extends ReadingProgresses
         requiredDuringInsert: false,
         defaultValue: const Constant(0.0),
       );
+  static const VerificationMeta _lastReadingModeMeta = const VerificationMeta(
+    'lastReadingMode',
+  );
+  @override
+  late final GeneratedColumn<String> lastReadingMode = GeneratedColumn<String>(
+    'last_reading_mode',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _lastReadAtMeta = const VerificationMeta(
     'lastReadAt',
   );
@@ -1227,6 +1287,7 @@ class $ReadingProgressesTable extends ReadingProgresses
     currentChapter,
     currentPosition,
     progressPercentage,
+    lastReadingMode,
     lastReadAt,
   ];
   @override
@@ -1281,6 +1342,15 @@ class $ReadingProgressesTable extends ReadingProgresses
         ),
       );
     }
+    if (data.containsKey('last_reading_mode')) {
+      context.handle(
+        _lastReadingModeMeta,
+        lastReadingMode.isAcceptableOrUnknown(
+          data['last_reading_mode']!,
+          _lastReadingModeMeta,
+        ),
+      );
+    }
     if (data.containsKey('last_read_at')) {
       context.handle(
         _lastReadAtMeta,
@@ -1321,6 +1391,10 @@ class $ReadingProgressesTable extends ReadingProgresses
         DriftSqlType.double,
         data['${effectivePrefix}progress_percentage'],
       )!,
+      lastReadingMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_reading_mode'],
+      ),
       lastReadAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_read_at'],
@@ -1340,6 +1414,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
   final int currentChapter;
   final int currentPosition;
   final double progressPercentage;
+  final String? lastReadingMode;
   final DateTime lastReadAt;
   const ReadingProgress({
     required this.id,
@@ -1347,6 +1422,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
     required this.currentChapter,
     required this.currentPosition,
     required this.progressPercentage,
+    this.lastReadingMode,
     required this.lastReadAt,
   });
   @override
@@ -1357,6 +1433,9 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
     map['current_chapter'] = Variable<int>(currentChapter);
     map['current_position'] = Variable<int>(currentPosition);
     map['progress_percentage'] = Variable<double>(progressPercentage);
+    if (!nullToAbsent || lastReadingMode != null) {
+      map['last_reading_mode'] = Variable<String>(lastReadingMode);
+    }
     map['last_read_at'] = Variable<DateTime>(lastReadAt);
     return map;
   }
@@ -1368,6 +1447,9 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
       currentChapter: Value(currentChapter),
       currentPosition: Value(currentPosition),
       progressPercentage: Value(progressPercentage),
+      lastReadingMode: lastReadingMode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReadingMode),
       lastReadAt: Value(lastReadAt),
     );
   }
@@ -1385,6 +1467,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
       progressPercentage: serializer.fromJson<double>(
         json['progressPercentage'],
       ),
+      lastReadingMode: serializer.fromJson<String?>(json['lastReadingMode']),
       lastReadAt: serializer.fromJson<DateTime>(json['lastReadAt']),
     );
   }
@@ -1397,6 +1480,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
       'currentChapter': serializer.toJson<int>(currentChapter),
       'currentPosition': serializer.toJson<int>(currentPosition),
       'progressPercentage': serializer.toJson<double>(progressPercentage),
+      'lastReadingMode': serializer.toJson<String?>(lastReadingMode),
       'lastReadAt': serializer.toJson<DateTime>(lastReadAt),
     };
   }
@@ -1407,6 +1491,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
     int? currentChapter,
     int? currentPosition,
     double? progressPercentage,
+    Value<String?> lastReadingMode = const Value.absent(),
     DateTime? lastReadAt,
   }) => ReadingProgress(
     id: id ?? this.id,
@@ -1414,6 +1499,9 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
     currentChapter: currentChapter ?? this.currentChapter,
     currentPosition: currentPosition ?? this.currentPosition,
     progressPercentage: progressPercentage ?? this.progressPercentage,
+    lastReadingMode: lastReadingMode.present
+        ? lastReadingMode.value
+        : this.lastReadingMode,
     lastReadAt: lastReadAt ?? this.lastReadAt,
   );
   ReadingProgress copyWithCompanion(ReadingProgressesCompanion data) {
@@ -1429,6 +1517,9 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
       progressPercentage: data.progressPercentage.present
           ? data.progressPercentage.value
           : this.progressPercentage,
+      lastReadingMode: data.lastReadingMode.present
+          ? data.lastReadingMode.value
+          : this.lastReadingMode,
       lastReadAt: data.lastReadAt.present
           ? data.lastReadAt.value
           : this.lastReadAt,
@@ -1443,6 +1534,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
           ..write('currentChapter: $currentChapter, ')
           ..write('currentPosition: $currentPosition, ')
           ..write('progressPercentage: $progressPercentage, ')
+          ..write('lastReadingMode: $lastReadingMode, ')
           ..write('lastReadAt: $lastReadAt')
           ..write(')'))
         .toString();
@@ -1455,6 +1547,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
     currentChapter,
     currentPosition,
     progressPercentage,
+    lastReadingMode,
     lastReadAt,
   );
   @override
@@ -1466,6 +1559,7 @@ class ReadingProgress extends DataClass implements Insertable<ReadingProgress> {
           other.currentChapter == this.currentChapter &&
           other.currentPosition == this.currentPosition &&
           other.progressPercentage == this.progressPercentage &&
+          other.lastReadingMode == this.lastReadingMode &&
           other.lastReadAt == this.lastReadAt);
 }
 
@@ -1475,6 +1569,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
   final Value<int> currentChapter;
   final Value<int> currentPosition;
   final Value<double> progressPercentage;
+  final Value<String?> lastReadingMode;
   final Value<DateTime> lastReadAt;
   final Value<int> rowid;
   const ReadingProgressesCompanion({
@@ -1483,6 +1578,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
     this.currentChapter = const Value.absent(),
     this.currentPosition = const Value.absent(),
     this.progressPercentage = const Value.absent(),
+    this.lastReadingMode = const Value.absent(),
     this.lastReadAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1492,6 +1588,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
     this.currentChapter = const Value.absent(),
     this.currentPosition = const Value.absent(),
     this.progressPercentage = const Value.absent(),
+    this.lastReadingMode = const Value.absent(),
     required DateTime lastReadAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1503,6 +1600,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
     Expression<int>? currentChapter,
     Expression<int>? currentPosition,
     Expression<double>? progressPercentage,
+    Expression<String>? lastReadingMode,
     Expression<DateTime>? lastReadAt,
     Expression<int>? rowid,
   }) {
@@ -1512,6 +1610,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
       if (currentChapter != null) 'current_chapter': currentChapter,
       if (currentPosition != null) 'current_position': currentPosition,
       if (progressPercentage != null) 'progress_percentage': progressPercentage,
+      if (lastReadingMode != null) 'last_reading_mode': lastReadingMode,
       if (lastReadAt != null) 'last_read_at': lastReadAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1523,6 +1622,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
     Value<int>? currentChapter,
     Value<int>? currentPosition,
     Value<double>? progressPercentage,
+    Value<String?>? lastReadingMode,
     Value<DateTime>? lastReadAt,
     Value<int>? rowid,
   }) {
@@ -1532,6 +1632,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
       currentChapter: currentChapter ?? this.currentChapter,
       currentPosition: currentPosition ?? this.currentPosition,
       progressPercentage: progressPercentage ?? this.progressPercentage,
+      lastReadingMode: lastReadingMode ?? this.lastReadingMode,
       lastReadAt: lastReadAt ?? this.lastReadAt,
       rowid: rowid ?? this.rowid,
     );
@@ -1555,6 +1656,9 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
     if (progressPercentage.present) {
       map['progress_percentage'] = Variable<double>(progressPercentage.value);
     }
+    if (lastReadingMode.present) {
+      map['last_reading_mode'] = Variable<String>(lastReadingMode.value);
+    }
     if (lastReadAt.present) {
       map['last_read_at'] = Variable<DateTime>(lastReadAt.value);
     }
@@ -1572,6 +1676,7 @@ class ReadingProgressesCompanion extends UpdateCompanion<ReadingProgress> {
           ..write('currentChapter: $currentChapter, ')
           ..write('currentPosition: $currentPosition, ')
           ..write('progressPercentage: $progressPercentage, ')
+          ..write('lastReadingMode: $lastReadingMode, ')
           ..write('lastReadAt: $lastReadAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3183,6 +3288,7 @@ typedef $$BooksTableCreateCompanionBuilder =
       Value<String?> coverPath,
       required String originalPdfPath,
       Value<String?> processedBookPath,
+      Value<String?> fileHash,
       Value<int> totalPages,
       Value<bool> isScanned,
       required DateTime createdAt,
@@ -3199,6 +3305,7 @@ typedef $$BooksTableUpdateCompanionBuilder =
       Value<String?> coverPath,
       Value<String> originalPdfPath,
       Value<String?> processedBookPath,
+      Value<String?> fileHash,
       Value<int> totalPages,
       Value<bool> isScanned,
       Value<DateTime> createdAt,
@@ -3352,6 +3459,11 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
 
   ColumnFilters<String> get processedBookPath => $composableBuilder(
     column: $table.processedBookPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3550,6 +3662,11 @@ class $$BooksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get totalPages => $composableBuilder(
     column: $table.totalPages,
     builder: (column) => ColumnOrderings(column),
@@ -3609,6 +3726,9 @@ class $$BooksTableAnnotationComposer
     column: $table.processedBookPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get fileHash =>
+      $composableBuilder(column: $table.fileHash, builder: (column) => column);
 
   GeneratedColumn<int> get totalPages => $composableBuilder(
     column: $table.totalPages,
@@ -3793,6 +3913,7 @@ class $$BooksTableTableManager
                 Value<String?> coverPath = const Value.absent(),
                 Value<String> originalPdfPath = const Value.absent(),
                 Value<String?> processedBookPath = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
                 Value<int> totalPages = const Value.absent(),
                 Value<bool> isScanned = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -3807,6 +3928,7 @@ class $$BooksTableTableManager
                 coverPath: coverPath,
                 originalPdfPath: originalPdfPath,
                 processedBookPath: processedBookPath,
+                fileHash: fileHash,
                 totalPages: totalPages,
                 isScanned: isScanned,
                 createdAt: createdAt,
@@ -3823,6 +3945,7 @@ class $$BooksTableTableManager
                 Value<String?> coverPath = const Value.absent(),
                 required String originalPdfPath,
                 Value<String?> processedBookPath = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
                 Value<int> totalPages = const Value.absent(),
                 Value<bool> isScanned = const Value.absent(),
                 required DateTime createdAt,
@@ -3837,6 +3960,7 @@ class $$BooksTableTableManager
                 coverPath: coverPath,
                 originalPdfPath: originalPdfPath,
                 processedBookPath: processedBookPath,
+                fileHash: fileHash,
                 totalPages: totalPages,
                 isScanned: isScanned,
                 createdAt: createdAt,
@@ -4339,6 +4463,7 @@ typedef $$ReadingProgressesTableCreateCompanionBuilder =
       Value<int> currentChapter,
       Value<int> currentPosition,
       Value<double> progressPercentage,
+      Value<String?> lastReadingMode,
       required DateTime lastReadAt,
       Value<int> rowid,
     });
@@ -4349,6 +4474,7 @@ typedef $$ReadingProgressesTableUpdateCompanionBuilder =
       Value<int> currentChapter,
       Value<int> currentPosition,
       Value<double> progressPercentage,
+      Value<String?> lastReadingMode,
       Value<DateTime> lastReadAt,
       Value<int> rowid,
     });
@@ -4413,6 +4539,11 @@ class $$ReadingProgressesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get lastReadingMode => $composableBuilder(
+    column: $table.lastReadingMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get lastReadAt => $composableBuilder(
     column: $table.lastReadAt,
     builder: (column) => ColumnFilters(column),
@@ -4471,6 +4602,11 @@ class $$ReadingProgressesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get lastReadingMode => $composableBuilder(
+    column: $table.lastReadingMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get lastReadAt => $composableBuilder(
     column: $table.lastReadAt,
     builder: (column) => ColumnOrderings(column),
@@ -4524,6 +4660,11 @@ class $$ReadingProgressesTableAnnotationComposer
 
   GeneratedColumn<double> get progressPercentage => $composableBuilder(
     column: $table.progressPercentage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastReadingMode => $composableBuilder(
+    column: $table.lastReadingMode,
     builder: (column) => column,
   );
 
@@ -4594,6 +4735,7 @@ class $$ReadingProgressesTableTableManager
                 Value<int> currentChapter = const Value.absent(),
                 Value<int> currentPosition = const Value.absent(),
                 Value<double> progressPercentage = const Value.absent(),
+                Value<String?> lastReadingMode = const Value.absent(),
                 Value<DateTime> lastReadAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReadingProgressesCompanion(
@@ -4602,6 +4744,7 @@ class $$ReadingProgressesTableTableManager
                 currentChapter: currentChapter,
                 currentPosition: currentPosition,
                 progressPercentage: progressPercentage,
+                lastReadingMode: lastReadingMode,
                 lastReadAt: lastReadAt,
                 rowid: rowid,
               ),
@@ -4612,6 +4755,7 @@ class $$ReadingProgressesTableTableManager
                 Value<int> currentChapter = const Value.absent(),
                 Value<int> currentPosition = const Value.absent(),
                 Value<double> progressPercentage = const Value.absent(),
+                Value<String?> lastReadingMode = const Value.absent(),
                 required DateTime lastReadAt,
                 Value<int> rowid = const Value.absent(),
               }) => ReadingProgressesCompanion.insert(
@@ -4620,6 +4764,7 @@ class $$ReadingProgressesTableTableManager
                 currentChapter: currentChapter,
                 currentPosition: currentPosition,
                 progressPercentage: progressPercentage,
+                lastReadingMode: lastReadingMode,
                 lastReadAt: lastReadAt,
                 rowid: rowid,
               ),

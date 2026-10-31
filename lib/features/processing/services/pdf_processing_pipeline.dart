@@ -31,6 +31,9 @@ class PdfProcessingPipeline {
   }) async {
     _isCancelled = false;
     final bookId = const Uuid().v4();
+    File? createdCoverFile;
+    File? createdStoredPdf;
+    File? createdProcessedBook;
 
     void notify(ProcessingStage stage, double progress, String message) {
       if (!_isCancelled && onProgress != null) {
@@ -58,6 +61,8 @@ class PdfProcessingPipeline {
       if (!headerStr.contains('%PDF-')) {
         throw Exception('Invalid file format. The file is not a valid PDF.');
       }
+
+      final fileHash = await FileStorageService.computeFileSha256(pdfFile);
 
       if (_isCancelled) throw Exception('Operation cancelled by user.');
 
@@ -167,6 +172,8 @@ class PdfProcessingPipeline {
         title: title,
         author: author,
       );
+      createdCoverFile = coverFile;
+      FileStorageService.lockPath(coverFile.path);
 
       if (_isCancelled) {
         document.dispose();
@@ -176,6 +183,8 @@ class PdfProcessingPipeline {
       // 6. Generate Internal Book Document & Save Original PDF
       notify(ProcessingStage.generatingBook, 0.90, 'Generating digital book format...');
       final storedPdf = await FileStorageService.copyPdfToStorage(pdfFile, bookId);
+      createdStoredPdf = storedPdf;
+      FileStorageService.lockPath(storedPdf.path);
 
       final rawBookDoc = BookDocument(
         id: bookId,
@@ -197,6 +206,8 @@ class PdfProcessingPipeline {
         bookId,
         bookDoc.toJsonString(),
       );
+      createdProcessedBook = processedBookFile;
+      FileStorageService.lockPath(processedBookFile.path);
 
       // 7. Save to Database
       final now = DateTime.now();
@@ -209,6 +220,7 @@ class PdfProcessingPipeline {
         coverPath: Value(coverFile.path),
         originalPdfPath: Value(storedPdf.path),
         processedBookPath: Value(processedBookFile.path),
+        fileHash: Value(fileHash),
         totalPages: Value(totalPages),
         isScanned: Value(isScanned),
         createdAt: Value(now),
@@ -249,10 +261,38 @@ class PdfProcessingPipeline {
       final createdBook = await _dbService.getBookById(bookId);
       return createdBook!;
     } catch (e) {
+      // Safe cleanup of intermediate files on failed or cancelled import
+      try {
+        if (createdStoredPdf != null && await createdStoredPdf.exists()) {
+          await createdStoredPdf.delete();
+        }
+        if (createdProcessedBook != null && await createdProcessedBook.exists()) {
+          await createdProcessedBook.delete();
+        }
+        if (createdCoverFile != null && await createdCoverFile.exists()) {
+          await createdCoverFile.delete();
+        }
+        final imagesDir = await FileStorageService.getImagesDirectory();
+        final bookImages = Directory(p.join(imagesDir.path, bookId));
+        if (await bookImages.exists()) {
+          await bookImages.delete(recursive: true);
+        }
+      } catch (_) {}
+
       if (onProgress != null) {
         onProgress(ProcessingProgress.failed(e.toString()));
       }
       rethrow;
+    } finally {
+      if (createdStoredPdf != null) {
+        FileStorageService.unlockPath(createdStoredPdf.path);
+      }
+      if (createdCoverFile != null) {
+        FileStorageService.unlockPath(createdCoverFile.path);
+      }
+      if (createdProcessedBook != null) {
+        FileStorageService.unlockPath(createdProcessedBook.path);
+      }
     }
   }
 
