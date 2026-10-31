@@ -6,7 +6,8 @@ import '../../../../core/typography/typography_settings.dart';
 import '../../providers/reader_settings_provider.dart';
 
 class AppearanceSheet extends ConsumerWidget {
-  const AppearanceSheet({super.key});
+  final String? bookId;
+  const AppearanceSheet({super.key, this.bookId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -180,6 +181,17 @@ class AppearanceSheet extends ConsumerWidget {
                 Consumer(
                   builder: (context, ref, _) {
                     final pdfViewMode = ref.watch(pdfViewModeProvider);
+                    final isPdf = bookId != null
+                        ? ref.watch(activeReadingModeProvider(bookId!)) == ReadingMode.originalPdf
+                        : true;
+                    final reflowableLayout = bookId != null
+                        ? ref.watch(reflowableLayoutModeProvider(bookId!))
+                        : ReflowableLayoutMode.paginated;
+
+                    final isPaginated = isPdf
+                        ? pdfViewMode == PdfViewMode.paginated
+                        : reflowableLayout == ReflowableLayoutMode.paginated;
+
                     return Container(
                       decoration: BoxDecoration(
                         color: activeTheme.isDark
@@ -193,13 +205,18 @@ class AppearanceSheet extends ConsumerWidget {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
                               onTap: () {
-                                ref.read(pdfViewModeProvider.notifier).state =
-                                    PdfViewMode.paginated;
+                                if (isPdf) {
+                                  ref.read(pdfViewModeProvider.notifier).state =
+                                      PdfViewMode.paginated;
+                                } else if (bookId != null) {
+                                  ref.read(reflowableLayoutModeProvider(bookId!).notifier).state =
+                                      ReflowableLayoutMode.paginated;
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: pdfViewMode == PdfViewMode.paginated
+                                  color: isPaginated
                                       ? const Color(0xFF007AFF)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
@@ -210,7 +227,7 @@ class AppearanceSheet extends ConsumerWidget {
                                     Icon(
                                       Icons.view_carousel_outlined,
                                       size: 18,
-                                      color: pdfViewMode == PdfViewMode.paginated
+                                      color: isPaginated
                                           ? Colors.white
                                           : activeTheme.textColor,
                                     ),
@@ -220,7 +237,7 @@ class AppearanceSheet extends ConsumerWidget {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: pdfViewMode == PdfViewMode.paginated
+                                        color: isPaginated
                                             ? Colors.white
                                             : activeTheme.textColor,
                                       ),
@@ -234,13 +251,18 @@ class AppearanceSheet extends ConsumerWidget {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
                               onTap: () {
-                                ref.read(pdfViewModeProvider.notifier).state =
-                                    PdfViewMode.continuous;
+                                if (isPdf) {
+                                  ref.read(pdfViewModeProvider.notifier).state =
+                                      PdfViewMode.continuous;
+                                } else if (bookId != null) {
+                                  ref.read(reflowableLayoutModeProvider(bookId!).notifier).state =
+                                      ReflowableLayoutMode.scrolling;
+                                }
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: pdfViewMode == PdfViewMode.continuous
+                                  color: !isPaginated
                                       ? const Color(0xFF007AFF)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
@@ -251,7 +273,7 @@ class AppearanceSheet extends ConsumerWidget {
                                     Icon(
                                       Icons.view_headline_rounded,
                                       size: 18,
-                                      color: pdfViewMode == PdfViewMode.continuous
+                                      color: !isPaginated
                                           ? Colors.white
                                           : activeTheme.textColor,
                                     ),
@@ -261,7 +283,7 @@ class AppearanceSheet extends ConsumerWidget {
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: pdfViewMode == PdfViewMode.continuous
+                                        color: !isPaginated
                                             ? Colors.white
                                             : activeTheme.textColor,
                                       ),

@@ -14,11 +14,13 @@ import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/utils/file_storage_service.dart';
 import '../../models/book_document.dart';
 import '../../services/book_text_normalizer.dart';
+import '../../domain/engines/reflowable_engine.dart';
+import '../../domain/models/reader_content.dart';
 import '../../providers/reader_settings_provider.dart';
 import '../widgets/appearance_sheet.dart';
 import '../widgets/book_search_dialog.dart';
 import '../widgets/original_pdf_reader.dart';
-import '../widgets/reflowable_book_reader.dart';
+import '../widgets/reflowable/reflowable_reader_container.dart';
 import '../widgets/toc_dialog.dart';
 
 class ReadingScreen extends ConsumerStatefulWidget {
@@ -40,6 +42,7 @@ class ReadingScreen extends ConsumerStatefulWidget {
 class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   bool _showControls = true;
   BookDocument? _document;
+  ReaderDocument? _readerDocument;
   bool _isLoadingDoc = true;
 
   late String _currentPdfPath;
@@ -50,13 +53,15 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   int _pdfPage = 1;
   int _reflowableChapter = 0;
   int _reflowablePosition = 0;
+  String? _activeAnchorNodeId;
+  int _activeCharOffset = 0;
   double _progressPercentage = 0.0;
   double? _sliderDragValue;
   String _currentChapterTitle = '';
   int _estimatedMinutesLeftInChapter = 0;
 
-  final GlobalKey<ReflowableBookReaderState> _reflowableKey =
-      GlobalKey<ReflowableBookReaderState>();
+  final GlobalKey<ReflowableReaderContainerState> _reflowableKey =
+      GlobalKey<ReflowableReaderContainerState>();
   final GlobalKey<OriginalPdfReaderState> _pdfKey =
       GlobalKey<OriginalPdfReaderState>();
 
@@ -116,14 +121,24 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
             _reflowableChapter = progress.currentChapter;
             _progressPercentage = progress.progressPercentage;
             if (widget.initialMode == null && progress.lastReadingMode != null) {
-              final restoredMode = ReadingMode.values
-                  .where((m) => m.name == progress.lastReadingMode)
-                  .firstOrNull;
-              if (restoredMode != null) {
-                _readingMode = restoredMode;
-                ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
-                    restoredMode;
+              if (progress.lastReadingMode == 'reflowable_scrolling') {
+                _readingMode = ReadingMode.reflowable;
+                ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state =
+                    ReflowableLayoutMode.scrolling;
+              } else if (progress.lastReadingMode == 'reflowable_paginated') {
+                _readingMode = ReadingMode.reflowable;
+                ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state =
+                    ReflowableLayoutMode.paginated;
+              } else {
+                final restoredMode = ReadingMode.values
+                    .where((m) => m.name == progress.lastReadingMode)
+                    .firstOrNull;
+                if (restoredMode != null) {
+                  _readingMode = restoredMode;
+                }
               }
+              ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
+                  _readingMode;
             }
             if (_readingMode == ReadingMode.originalPdf) {
               _pdfPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
@@ -154,6 +169,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         if (jsonStr != null) {
           final loadedDoc = BookDocument.fromJsonString(jsonStr);
           _document = BookTextNormalizer.normalizeDocument(loadedDoc);
+          _readerDocument = ReflowableEngine.normalizeDocument(_document!);
           if (_currentChapter < _document!.chapters.length) {
             _currentChapterTitle = _document!.chapters[_currentChapter].title;
           }
@@ -281,6 +297,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     required int position,
     required double percentage,
   }) {
+    if (_currentChapter == chapter &&
+        _currentPage == position &&
+        (_progressPercentage - percentage).abs() < 0.001) {
+      return;
+    }
+
     setState(() {
       _currentChapter = chapter;
       _currentPage = position;
@@ -289,6 +311,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
 
     try {
       final dbService = ref.read(databaseServiceProvider);
+      String modeStr = _readingMode.name;
+      if (_readingMode == ReadingMode.reflowable) {
+        final layout = ref.read(reflowableLayoutModeProvider(widget.book.id));
+        modeStr = layout == ReflowableLayoutMode.scrolling
+            ? 'reflowable_scrolling'
+            : 'reflowable_paginated';
+      }
+
       dbService.upsertProgress(
         ReadingProgressesCompanion(
           id: drift.Value(const Uuid().v4()),
@@ -296,7 +326,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           currentChapter: drift.Value(chapter),
           currentPosition: drift.Value(position),
           progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
-          lastReadingMode: drift.Value(_readingMode.name),
+          lastReadingMode: drift.Value(modeStr),
           lastReadAt: drift.Value(DateTime.now()),
         ),
       );
@@ -395,7 +425,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const AppearanceSheet(),
+      builder: (_) => AppearanceSheet(bookId: widget.book.id),
     );
   }
 
@@ -557,16 +587,18 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       )
                     : (_readingMode == ReadingMode.reflowable &&
                           _document != null)
-                    ? ReflowableBookReader(
+                    ? ReflowableReaderContainer(
                         key: _reflowableKey,
-                        document: _document!,
+                        bookId: widget.book.id,
+                        document: _readerDocument ??
+                            ReflowableEngine.normalizeDocument(_document!),
                         theme: activeTheme,
                         typography: typoSettings,
                         initialChapterIndex: _currentChapter,
                         initialPosition: _currentPage,
+                        initialAnchorNodeId: _activeAnchorNodeId,
+                        initialCharOffset: _activeCharOffset,
                         onTapContent: _toggleControls,
-                        onSwitchToPdfMode: () =>
-                            _setReadingMode(ReadingMode.originalPdf),
                         onHighlightCreated: _handleHighlightCreated,
                         onTotalPagesCalculated: (total) {
                           if (_readingMode == ReadingMode.reflowable &&
@@ -576,9 +608,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                             });
                           }
                         },
-                        onProgressChanged: (ch, page, pct) {
+                        onProgressChanged: (ch, page, pct, anchorId, charOffset) {
                           _reflowableChapter = ch;
                           _reflowablePosition = page;
+                          _activeAnchorNodeId = anchorId;
+                          _activeCharOffset = charOffset;
                           _updateChapterInfo(ch);
                           _saveProgress(
                             chapter: ch,
@@ -793,11 +827,47 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     const SizedBox(width: 4),
                   ],
 
+                  // Reflowable Layout Mode Toggle (Paginated vs Continuous Scrolling)
+                  if (readingMode == ReadingMode.reflowable)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.book.id));
+                        return IconButton(
+                          tooltip: layoutMode == ReflowableLayoutMode.paginated
+                              ? 'Beralih ke Gulir Vertikal'
+                              : 'Beralih ke Halaman (Paginated)',
+                          icon: Icon(
+                            layoutMode == ReflowableLayoutMode.paginated
+                                ? Icons.view_headline_rounded
+                                : Icons.view_carousel_outlined,
+                            color: activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            final current = ref.read(reflowableLayoutModeProvider(widget.book.id));
+                            final next = current == ReflowableLayoutMode.paginated
+                                ? ReflowableLayoutMode.scrolling
+                                : ReflowableLayoutMode.paginated;
+                            ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state = next;
+                            _saveProgress(
+                              chapter: _reflowableChapter,
+                              position: _reflowablePosition,
+                              percentage: _progressPercentage,
+                            );
+                          },
+                        );
+                      },
+                    ),
+
                   // 1-Page vs 2-Page Slide Toggle in Reflowable Mode
                   if (readingMode == ReadingMode.reflowable &&
                       isDesktopOrTablet)
                     Consumer(
                       builder: (context, ref, _) {
+                        final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.book.id));
+                        if (layoutMode != ReflowableLayoutMode.paginated) {
+                          return const SizedBox.shrink();
+                        }
                         final typo = ref.watch(typographySettingsStateProvider);
                         return IconButton(
                           tooltip: typo.twoPageSpread

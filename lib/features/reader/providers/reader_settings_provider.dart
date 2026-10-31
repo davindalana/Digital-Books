@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/reading_theme.dart';
 import '../../../core/typography/typography_settings.dart';
+import '../domain/models/reading_location.dart';
+
+export '../domain/models/reading_location.dart' show ReflowableLayoutMode;
 
 enum ReadingMode {
   reflowable,
@@ -23,6 +26,10 @@ final typographySettingsStateProvider =
 
 final activeReadingModeProvider =
     StateProvider.family<ReadingMode, String>((ref, bookId) => ReadingMode.reflowable);
+
+final reflowableLayoutModeProvider =
+    StateProvider.family<ReflowableLayoutMode, String>(
+        (ref, bookId) => ReflowableLayoutMode.paginated);
 
 final pdfViewModeProvider =
     StateProvider<PdfViewMode>((ref) => PdfViewMode.paginated);
