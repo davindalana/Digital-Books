@@ -1909,7 +1909,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             children: [
               const ListTile(
                 title: Text('Personal Digital Library'),
-                subtitle: Text('Version 0.2.6 • Apple Books Experience'),
+                subtitle: Text('Version 1.0.0 • Apple Books Experience'),
               ),
               const Divider(height: 1),
               const ListTile(

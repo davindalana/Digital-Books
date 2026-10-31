@@ -115,7 +115,7 @@ void main() {
 
         final data = jsonDecode(jsonStr) as Map<String, dynamic>;
         expect(data['metadata']['formatVersion'], '1.0');
-        expect(data['metadata']['appVersion'], '0.2.6');
+        expect(data['metadata']['appVersion'], '1.0.0');
         expect(data['preferences']['defaultTheme'], 'sepia');
 
         final books = data['books'] as List;

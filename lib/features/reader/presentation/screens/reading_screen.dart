@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -75,6 +76,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   int _currentSearchMatchIndex = 0;
   String _activeSearchQuery = '';
   bool _showSearchTraversal = false;
+  Timer? _periodicProgressTimer;
 
   final GlobalKey<ReflowableReaderContainerState> _reflowableKey =
       GlobalKey<ReflowableReaderContainerState>();
@@ -106,10 +108,25 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             _readingMode;
       }
     });
+
+    // Periodic auto-save timer ensures progress is continuously durable
+    // even during sudden crashes or power loss without page-turn events.
+    _periodicProgressTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        _saveProgress(
+          chapter: _reflowableChapter,
+          position: _readingMode == ReadingMode.originalPdf
+              ? _pdfPage
+              : _reflowablePosition,
+          percentage: _progressPercentage,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _periodicProgressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _saveProgress(
       chapter: _reflowableChapter,

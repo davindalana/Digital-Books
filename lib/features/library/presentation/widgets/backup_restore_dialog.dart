@@ -92,6 +92,60 @@ class _BackupRestoreDialogState extends ConsumerState<BackupRestoreDialog>
     }
   }
 
+  Future<void> _handleExportFullBundle() async {
+    try {
+      final selectedDir = await FilePicker.getDirectoryPath();
+      if (selectedDir == null) return;
+
+      setState(() {
+        _isLoading = true;
+        _statusMessage =
+            'Copying PDFs and generating complete library bundle...';
+      });
+
+      final dbService = ref.read(databaseServiceProvider);
+      final activeTheme = ref.read(readingThemeStateProvider);
+      final typography = ref.read(typographySettingsStateProvider);
+
+      final preferences = {
+        'defaultTheme': activeTheme.name,
+        'fontFamily': typography.fontFamily.name,
+        'twoPageSpread': typography.twoPageSpread,
+      };
+
+      final result = await BackupRestoreService.exportFullLibraryBundle(
+        dbService: dbService,
+        targetDirectoryPath: selectedDir,
+        preferences: preferences,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage =
+              'Full Library Bundle exported successfully!\nLocation:\n${result.bundleDirectory.path}\n• Copied ${result.copiedPdfsCount} book PDFs\n• Total size: ${(result.totalBytes / 1024.0 / 1024.0).toStringAsFixed(2)} MB';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Full Library Bundle saved (${result.copiedPdfsCount} PDFs copied)',
+            ),
+            backgroundColor: const Color(0xFF2C2C2E),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'Bundle export failed: $e';
+        });
+      }
+    }
+  }
+
   Future<void> _handlePickBackupFile() async {
     try {
       final result = await FilePicker.pickFiles(
@@ -312,7 +366,7 @@ class _BackupRestoreDialogState extends ConsumerState<BackupRestoreDialog>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF007AFF),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -326,8 +380,25 @@ class _BackupRestoreDialogState extends ConsumerState<BackupRestoreDialog>
                         strokeWidth: 2,
                       ),
                     )
-                  : const Icon(Icons.save_alt, size: 18),
-              label: Text(_isLoading ? 'Exporting...' : 'Export JSON Backup'),
+                  : const Icon(Icons.description_outlined, size: 18),
+              label: const Text('Export Library Metadata (.json)'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _isLoading ? null : _handleExportFullBundle,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.folder_zip_outlined, size: 18),
+              label: const Text(
+                'Export Full Library Bundle (with original PDFs)',
+              ),
             ),
           ),
         ],

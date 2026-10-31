@@ -10,8 +10,22 @@ enum RestoreConflictPolicy {
   /// Keep existing books and reading progress; add new books and merge non-duplicate annotations
   skipExisting,
 
-  /// Update metadata and progress of existing books if backup is newer; merge annotations
+  /// Update metadata of existing books; update progress only if backup is newer; merge annotations
   mergeUpdateExisting,
+}
+
+class FullBackupResult {
+  final Directory bundleDirectory;
+  final File manifestFile;
+  final int copiedPdfsCount;
+  final int totalBytes;
+
+  const FullBackupResult({
+    required this.bundleDirectory,
+    required this.manifestFile,
+    required this.copiedPdfsCount,
+    required this.totalBytes,
+  });
 }
 
 class RestorePreview {
@@ -60,7 +74,7 @@ class RestoreResult {
 
 class BackupRestoreService {
   static const String currentBackupVersion = '1.0';
-  static const String defaultAppVersion = '0.2.6';
+  static const String defaultAppVersion = '1.0.0';
 
   /// Generates a comprehensive JSON backup string of the database
   static Future<String> generateBackupJson({
@@ -215,12 +229,96 @@ class BackupRestoreService {
     );
   }
 
+  /// Exports a Full Library Bundle: copies metadata manifest.json and all original PDF files
+  /// into an organized, self-contained backup folder.
+  static Future<FullBackupResult> exportFullLibraryBundle({
+    required DatabaseService dbService,
+    required String targetDirectoryPath,
+    Map<String, dynamic>? preferences,
+  }) async {
+    final timestamp = DateTime.now()
+        .toIso8601String()
+        .replaceAll(':', '-')
+        .split('.')
+        .first;
+    final bundleDir = Directory(
+      p.join(targetDirectoryPath, 'DigitalBooks_Full_Backup_$timestamp'),
+    );
+    await bundleDir.create(recursive: true);
+
+    // 1. Generate and save manifest.json
+    final jsonString = await generateBackupJson(
+      dbService: dbService,
+      preferences: preferences,
+    );
+    final manifestFile = File(p.join(bundleDir.path, 'manifest.json'));
+    await manifestFile.writeAsString(jsonString);
+
+    // 2. Copy original PDFs to originals/ folder
+    final originalsDir = Directory(p.join(bundleDir.path, 'originals'));
+    await originalsDir.create(recursive: true);
+
+    final allBooks = await dbService.getAllBooks();
+    int copiedPdfs = 0;
+    int totalBytes = manifestFile.lengthSync();
+
+    for (final book in allBooks) {
+      final srcFile = File(book.originalPdfPath);
+      if (await srcFile.exists()) {
+        final ext = p.extension(srcFile.path).isEmpty
+            ? '.pdf'
+            : p.extension(srcFile.path);
+        final dest = File(p.join(originalsDir.path, '${book.id}$ext'));
+        await srcFile.copy(dest.path);
+        copiedPdfs++;
+        totalBytes += await dest.length();
+      }
+    }
+
+    return FullBackupResult(
+      bundleDirectory: bundleDir,
+      manifestFile: manifestFile,
+      copiedPdfsCount: copiedPdfs,
+      totalBytes: totalBytes,
+    );
+  }
+
+  /// Validates the integrity and schema version of the backup data
+  static void validateBackupData(Map<String, dynamic> data) {
+    if (!data.containsKey('metadata') ||
+        data['metadata'] is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Corrupted backup file: missing or invalid "metadata" header.',
+      );
+    }
+    final metadata = data['metadata'] as Map<String, dynamic>;
+    final formatVersion = metadata['formatVersion'] as String?;
+    if (formatVersion == null || formatVersion != currentBackupVersion) {
+      throw FormatException(
+        'Unsupported backup format version: "${formatVersion ?? "unknown"}". '
+        'This version of Digital Books supports format version "$currentBackupVersion".',
+      );
+    }
+    if (!data.containsKey('books') || data['books'] is! List) {
+      throw const FormatException(
+        'Corrupted backup file: missing or invalid "books" array.',
+      );
+    }
+  }
+
   /// Parses and inspects backup JSON without modifying any database records
   static Future<RestorePreview> previewBackup(
     String backupJson, {
     required DatabaseService dbService,
   }) async {
-    final Map<String, dynamic> data = jsonDecode(backupJson);
+    final dynamic rawDecoded = jsonDecode(backupJson);
+    if (rawDecoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Invalid backup: Root JSON is not an object.',
+      );
+    }
+    validateBackupData(rawDecoded);
+    final data = rawDecoded;
 
     final metadata = data['metadata'] as Map<String, dynamic>? ?? {};
     final exportedAtStr = metadata['exportedAt'] as String?;
@@ -288,7 +386,15 @@ class BackupRestoreService {
     required DatabaseService dbService,
     RestoreConflictPolicy policy = RestoreConflictPolicy.skipExisting,
   }) async {
-    final Map<String, dynamic> data = jsonDecode(backupJson);
+    final dynamic rawDecoded = jsonDecode(backupJson);
+    if (rawDecoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Invalid backup: Root JSON is not an object.',
+      );
+    }
+    validateBackupData(rawDecoded);
+    final data = rawDecoded;
+
     final rawCollections = (data['collections'] as List?) ?? [];
     final rawBooks = (data['books'] as List?) ?? [];
     final preferences = data['preferences'] as Map<String, dynamic>?;
@@ -417,17 +523,23 @@ class BackupRestoreService {
           await dbService.replaceChaptersForBook(bookId, chapters);
         }
 
-        // Reading Progress
+        // Reading Progress: Safely merge based on timestamp comparison
         final rawProgress = raw['readingProgress'] as Map<String, dynamic>?;
         if (rawProgress != null) {
           final currentProg = await dbService.getProgress(bookId);
-          if (currentProg == null ||
-              policy == RestoreConflictPolicy.mergeUpdateExisting) {
-            final lastReadAtStr = rawProgress['lastReadAt'] as String?;
-            final lastReadAt = lastReadAtStr != null
-                ? DateTime.tryParse(lastReadAtStr) ?? DateTime.now()
-                : DateTime.now();
+          final lastReadAtStr = rawProgress['lastReadAt'] as String?;
+          final lastReadAt = lastReadAtStr != null
+              ? DateTime.tryParse(lastReadAtStr) ?? DateTime.now()
+              : DateTime.now();
 
+          // Only update reading progress if no local progress exists,
+          // or if mergeUpdateExisting is selected AND the backup progress is strictly newer
+          final shouldUpdateProgress =
+              currentProg == null ||
+              (policy == RestoreConflictPolicy.mergeUpdateExisting &&
+                  lastReadAt.isAfter(currentProg.lastReadAt));
+
+          if (shouldUpdateProgress) {
             await dbService.upsertProgress(
               ReadingProgressesCompanion(
                 id: drift.Value(currentProg?.id ?? 'prog_$bookId'),
