@@ -4,6 +4,32 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.5] - Visual Regression & Pagination Stress Validation (Phase 2.8.1)
+
+### Fixed
+- **Geometry Alignment in `paginateDocument`**:
+  - Aligned default non-content deduction in `PaginationEngine.paginateDocument` from 124 pt to 68 pt (`headerHeight = 28.0`, `footerHeight = 24.0`, `verticalPadding = 8.0`), matching `paginateChapter` and `ReflowablePageRenderer` to permanently eliminate the 56 pt artificial gap at the bottom of pages.
+- **Max Content Width Clamping**:
+  - Aligned maximum content width in `PaginationEngine` to `isTwoPageSpread ? 800.0 : 900.0 pt`, matching `PaginatedReflowableReader` and eliminating line wrapping discrepancies on ultrawide viewports.
+- **Vertical Padding Budgeting**:
+  - Calibrated heading vertical padding ($24.8\text{ pt}$), footnote vertical padding ($12.4\text{ pt}$), and quote container vertical padding ($8.0\text{ pt}$) to match exact widget decorations.
+- **Elimination of Word-Slicing Fallback in `_findBestWordBreak`**:
+  - Prevented forced 50% character-count split when remaining text slightly exceeds height budget. Slices now clamp to `text.length - 1` and walk backward to the nearest whitespace boundary, guaranteeing words are never cut in half.
+- **Continuation Whitespace Elimination**:
+  - Advances `charStart` past trailing spaces so continuation slices on facing pages do not begin with accidental indentation or stray whitespace.
+- **Roman Numeral Chapter Heading Guard**:
+  - Constrained standalone Roman numeral matching in `SemanticClassifier` to single-line blocks situated in the top 70% of a page, preventing false positive headings on outline items or tables.
+
+### Added
+- **Phase 2.8.1 Visual Regression & Pagination Stress Test Suite (`test/phase_2_8_1_visual_regression_test.dart`)**:
+  - Mathematical 1:1 geometry alignment across narrow, medium, wide, and ultrawide viewports.
+  - Word boundary preservation across font sizes (12, 16, 19, 24 pt) and line spacings (1.2, 1.5, 1.8).
+  - Orphan heading prevention and caption in-stream budgeting.
+  - Real-world document stress on *The Devotion of Suspect X* and *48 Laws of Power*.
+  - 179/179 automated tests passing with 0 `flutter analyze` issues.
+
+---
+
 ## [1.1.0-alpha.4] - Reading Quality Validation & Refinement (Phase 2.8)
 
 ### Fixed

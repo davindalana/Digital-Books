@@ -65,9 +65,9 @@ class PaginationEngine {
     required double viewportWidth,
     required double viewportHeight,
     required TypographySettings typography,
-    double headerHeight = 32.0,
-    double footerHeight = 28.0,
-    double verticalPadding = 32.0,
+    double headerHeight = 28.0,
+    double footerHeight = 24.0,
+    double verticalPadding = 8.0,
   }) {
     final List<PaginatedPage> allPages = [];
     int runningBookPageIndex = 0;
@@ -134,9 +134,10 @@ class PaginationEngine {
     final double effectiveMargin = (rawPageWidth < 400)
         ? 16.0
         : (rawPageWidth < 650 ? 22.0 : typography.horizontalMargin);
+    final double maxClampWidth = isTwoPageSpread ? 800.0 : 900.0;
     final double contentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(
       160.0,
-      1400.0,
+      maxClampWidth,
     );
 
     final double availableHeight =
@@ -241,7 +242,7 @@ class PaginationEngine {
           ),
         );
         currentUsedHeight +=
-            headingHeight + (typography.paragraphSpacing * 1.5);
+            headingHeight + 8.0 + (typography.paragraphSpacing * 1.2);
         continue;
       }
 
@@ -265,6 +266,12 @@ class PaginationEngine {
           contentWidth,
         );
 
+        final nodePadding = node.type == ContentNodeType.footnote
+            ? (4.0 + (typography.paragraphSpacing * 0.6))
+            : (node.type == ContentNodeType.quote
+                ? (8.0 + typography.paragraphSpacing)
+                : typography.paragraphSpacing);
+
         if (fullHeight <= remainingHeightBudget) {
           // Entire remaining paragraph fits
           currentPageSlices.add(
@@ -277,7 +284,7 @@ class PaginationEngine {
               hasMore: false,
             ),
           );
-          currentUsedHeight += fullHeight + typography.paragraphSpacing;
+          currentUsedHeight += fullHeight + nodePadding;
           charStart = text.length;
         } else {
           // Paragraph must be split at clean word boundary within availableHeight
@@ -294,15 +301,24 @@ class PaginationEngine {
               pushCurrentPage();
               continue;
             } else {
-              // Even a fresh page cannot fit: force split by line count
-              final forcedIndex = math.max(
+              // Even a fresh page cannot fit: force split at clean word boundary
+              int forcedIndex = math.max(
                 1,
                 (remainingText.length * 0.5).floor(),
               );
+              // Walk backward to nearest space so words are NEVER cut in half
+              while (forcedIndex > 0 && remainingText[forcedIndex] != ' ') {
+                forcedIndex--;
+              }
+              if (forcedIndex <= 0) {
+                final nextSpace = remainingText.indexOf(' ');
+                forcedIndex = nextSpace > 0 ? nextSpace : remainingText.length;
+              }
+
               currentPageSlices.add(
                 PaginatedNodeSlice(
                   node: node,
-                  textSlice: remainingText.substring(0, forcedIndex),
+                  textSlice: remainingText.substring(0, forcedIndex).trimRight(),
                   startCharOffset: charStart,
                   endCharOffset: charStart + forcedIndex,
                   isContinuation: charStart > 0,
@@ -310,6 +326,9 @@ class PaginationEngine {
                 ),
               );
               charStart += forcedIndex;
+              while (charStart < text.length && text[charStart] == ' ') {
+                charStart++;
+              }
               pushCurrentPage();
             }
           } else {
@@ -332,9 +351,12 @@ class PaginationEngine {
                 hasMore: true,
               ),
             );
-            currentUsedHeight +=
-                actualSliceHeight + typography.paragraphSpacing;
+            currentUsedHeight += actualSliceHeight + nodePadding;
             charStart += splitIndex;
+            // Advance past inter-word whitespace so continuation slice does not start with leading whitespace
+            while (charStart < text.length && text[charStart] == ' ') {
+              charStart++;
+            }
 
             // Page is now full, push it
             pushCurrentPage();
@@ -412,7 +434,11 @@ class PaginationEngine {
       int candidateOffset = textPosition.offset.clamp(0, text.length);
 
       if (candidateOffset >= text.length) {
-        return text.length;
+        if (textPainter.height > maxHeight) {
+          candidateOffset = text.length - 1;
+        } else {
+          return text.length;
+        }
       }
 
       // Walk backward to find the nearest whitespace boundary
@@ -422,17 +448,15 @@ class PaginationEngine {
         candidateOffset--;
       }
 
-      // If no space was found (e.g. single long token), find first whitespace forward or fallback
-      if (candidateOffset == 0) {
-        final firstSpace = text.indexOf(' ');
-        if (firstSpace > 0 && firstSpace < text.length) {
-          candidateOffset = firstSpace;
-        } else {
-          candidateOffset = (text.length / 2).floor().clamp(1, text.length);
-        }
+      // If candidateOffset is at a space, return that boundary
+      if (candidateOffset > 0) {
+        return candidateOffset;
       }
 
-      return candidateOffset;
+      // If candidateOffset walked all the way back to 0:
+      // That means even the very first word in remainingText exceeds the height budget!
+      // DO NOT split the first word in half! Return 0 so caller pushes to fresh page!
+      return 0;
     } finally {
       textPainter.dispose();
     }

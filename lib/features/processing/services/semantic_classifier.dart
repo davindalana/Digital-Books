@@ -167,9 +167,11 @@ class SemanticClassifier {
         caseSensitive: false,
       ).hasMatch(text);
 
-      final isRomanChapter = RegExp(
-        r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
-      ).hasMatch(text);
+      final isRomanChapter = lineCount == 1 &&
+          top < pageHeight * 0.70 &&
+          RegExp(
+            r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
+          ).hasMatch(text);
 
       final isProminentTitle = fontRatio >= 1.25 &&
           isBold &&
