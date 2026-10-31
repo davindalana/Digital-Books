@@ -59,7 +59,8 @@ class AppearanceSheet extends ConsumerWidget {
                     final isSelected = theme == activeTheme;
                     return GestureDetector(
                       onTap: () {
-                        ref.read(readingThemeStateProvider.notifier).state = theme;
+                        ref.read(readingThemeStateProvider.notifier).state =
+                            theme;
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -105,7 +106,10 @@ class AppearanceSheet extends ConsumerWidget {
                   builder: (context, ref, _) {
                     final dimmer = ref.watch(readerBrightnessDimmerProvider);
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: activeTheme.isDark
                             ? Colors.white.withAlpha(18)
@@ -138,8 +142,12 @@ class AppearanceSheet extends ConsumerWidget {
                                 max: 1.0,
                                 onChanged: (val) {
                                   ref
-                                      .read(readerBrightnessDimmerProvider.notifier)
-                                      .state = 1.0 - val;
+                                          .read(
+                                            readerBrightnessDimmerProvider
+                                                .notifier,
+                                          )
+                                          .state =
+                                      1.0 - val;
                                 },
                               ),
                             ),
@@ -158,7 +166,10 @@ class AppearanceSheet extends ConsumerWidget {
 
                 // Font Size Controls (A- / A+)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: activeTheme.isDark
                         ? Colors.white.withAlpha(18)
@@ -179,7 +190,9 @@ class AppearanceSheet extends ConsumerWidget {
                         onPressed: typoSettings.fontSize > 13
                             ? () {
                                 ref
-                                    .read(typographySettingsStateProvider.notifier)
+                                    .read(
+                                      typographySettingsStateProvider.notifier,
+                                    )
                                     .state = typoSettings.copyWith(
                                   fontSize: typoSettings.fontSize - 1.5,
                                 );
@@ -203,8 +216,12 @@ class AppearanceSheet extends ConsumerWidget {
                             divisions: 10,
                             onChanged: (val) {
                               ref
-                                  .read(typographySettingsStateProvider.notifier)
-                                  .state = typoSettings.copyWith(fontSize: val);
+                                  .read(
+                                    typographySettingsStateProvider.notifier,
+                                  )
+                                  .state = typoSettings.copyWith(
+                                fontSize: val,
+                              );
                             },
                           ),
                         ),
@@ -221,7 +238,9 @@ class AppearanceSheet extends ConsumerWidget {
                         onPressed: typoSettings.fontSize < 30
                             ? () {
                                 ref
-                                    .read(typographySettingsStateProvider.notifier)
+                                    .read(
+                                      typographySettingsStateProvider.notifier,
+                                    )
                                     .state = typoSettings.copyWith(
                                   fontSize: typoSettings.fontSize + 1.5,
                                 );
@@ -258,11 +277,15 @@ class AppearanceSheet extends ConsumerWidget {
                         onTap: () {
                           ref
                               .read(typographySettingsStateProvider.notifier)
-                              .state = typoSettings.copyWith(fontFamily: font);
+                              .state = typoSettings.copyWith(
+                            fontFamily: font,
+                          );
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           child: Row(
                             children: [
                               Text(
@@ -312,14 +335,18 @@ class AppearanceSheet extends ConsumerWidget {
                             IconButton(
                               icon: Icon(
                                 Icons.format_align_left,
-                                color: (typoSettings.textAlign == TextAlign.left ||
-                                        typoSettings.textAlign == TextAlign.start)
+                                color:
+                                    (typoSettings.textAlign == TextAlign.left ||
+                                        typoSettings.textAlign ==
+                                            TextAlign.start)
                                     ? const Color(0xFF007AFF)
                                     : activeTheme.secondaryTextColor,
                               ),
                               onPressed: () {
                                 ref
-                                    .read(typographySettingsStateProvider.notifier)
+                                    .read(
+                                      typographySettingsStateProvider.notifier,
+                                    )
                                     .state = typoSettings.copyWith(
                                   textAlign: TextAlign.left,
                                 );
@@ -328,13 +355,16 @@ class AppearanceSheet extends ConsumerWidget {
                             IconButton(
                               icon: Icon(
                                 Icons.format_align_justify,
-                                color: typoSettings.textAlign == TextAlign.justify
+                                color:
+                                    typoSettings.textAlign == TextAlign.justify
                                     ? const Color(0xFF007AFF)
                                     : activeTheme.secondaryTextColor,
                               ),
                               onPressed: () {
                                 ref
-                                    .read(typographySettingsStateProvider.notifier)
+                                    .read(
+                                      typographySettingsStateProvider.notifier,
+                                    )
                                     .state = typoSettings.copyWith(
                                   textAlign: TextAlign.justify,
                                 );
@@ -373,7 +403,10 @@ class AppearanceSheet extends ConsumerWidget {
                                   isSelected: typoSettings.lineSpacing < 1.5,
                                   onTap: () {
                                     ref
-                                        .read(typographySettingsStateProvider.notifier)
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
                                         .state = typoSettings.copyWith(
                                       lineSpacing: 1.4,
                                     );
@@ -383,11 +416,15 @@ class AppearanceSheet extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 _SpacingButton(
                                   label: '1.7',
-                                  isSelected: typoSettings.lineSpacing >= 1.5 &&
+                                  isSelected:
+                                      typoSettings.lineSpacing >= 1.5 &&
                                       typoSettings.lineSpacing < 1.9,
                                   onTap: () {
                                     ref
-                                        .read(typographySettingsStateProvider.notifier)
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
                                         .state = typoSettings.copyWith(
                                       lineSpacing: 1.7,
                                     );
@@ -400,7 +437,10 @@ class AppearanceSheet extends ConsumerWidget {
                                   isSelected: typoSettings.lineSpacing >= 1.9,
                                   onTap: () {
                                     ref
-                                        .read(typographySettingsStateProvider.notifier)
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
                                         .state = typoSettings.copyWith(
                                       lineSpacing: 2.0,
                                     );
@@ -447,8 +487,8 @@ class _SpacingButton extends StatelessWidget {
           color: isSelected
               ? const Color(0xFF007AFF)
               : (activeTheme.isDark
-                  ? Colors.white.withAlpha(25)
-                  : Colors.black.withAlpha(15)),
+                    ? Colors.white.withAlpha(25)
+                    : Colors.black.withAlpha(15)),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -463,4 +503,3 @@ class _SpacingButton extends StatelessWidget {
     );
   }
 }
-

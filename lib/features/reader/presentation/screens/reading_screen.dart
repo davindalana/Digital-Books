@@ -64,8 +64,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   }
 
   void _setReadingMode(ReadingMode mode) {
+    if (_readingMode == mode) return;
     setState(() {
       _readingMode = mode;
+      if (mode == ReadingMode.originalPdf) {
+        _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
+      } else {
+        final reflowableTotal = _reflowableKey.currentState?.totalPages;
+        if (reflowableTotal != null && reflowableTotal > 0) {
+          _totalPages = reflowableTotal;
+        }
+      }
     });
     ref.read(activeReadingModeProvider(widget.book.id).notifier).state = mode;
   }
@@ -358,6 +367,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           onTapContent: _toggleControls,
                           onSwitchToPdfMode: () => _setReadingMode(ReadingMode.originalPdf),
                           onHighlightCreated: _handleHighlightCreated,
+                          onTotalPagesCalculated: (total) {
+                            if (_readingMode == ReadingMode.reflowable && mounted) {
+                              setState(() {
+                                _totalPages = total > 0 ? total : 1;
+                              });
+                            }
+                          },
                           onProgressChanged: (ch, page, pct) {
                             _updateChapterInfo(ch);
                             _saveProgress(

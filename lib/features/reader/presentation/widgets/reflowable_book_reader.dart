@@ -30,6 +30,7 @@ class ReflowableBookReader extends StatefulWidget {
   final int initialPosition;
   final Function(int chapterIndex, int pageNumber, double percentage)
   onProgressChanged;
+  final void Function(int totalPages)? onTotalPagesCalculated;
   final VoidCallback onTapContent;
   final VoidCallback? onSwitchToPdfMode;
   final Function(String text, String color, int pageNumber)? onHighlightCreated;
@@ -42,6 +43,7 @@ class ReflowableBookReader extends StatefulWidget {
     this.initialChapterIndex = 0,
     this.initialPosition = 0,
     required this.onProgressChanged,
+    this.onTotalPagesCalculated,
     required this.onTapContent,
     this.onSwitchToPdfMode,
     this.onHighlightCreated,
@@ -56,6 +58,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       GlobalKey<BookPageTurnViewState>();
   List<ReflowablePageContent> _pages = [];
   int _currentPageIndex = 0;
+
+  int get totalPages => _pages.length;
 
   double _lastWidth = 0;
   double _lastHeight = 0;
@@ -150,57 +154,13 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         .clamp(180.0, 1200.0);
 
     // Height budget:
-    // Vertical container padding (40px) + Running header (30px) + Running footer (28px) + Safety buffer (26px)
-    final double availableHeight = (height - 124.0).clamp(160.0, 3000.0);
-    final textStyle = widget.typography.fontFamily.getTextStyle(
-      fontSize: widget.typography.fontSize,
-      fontWeight: widget.typography.fontWeight,
-      color: widget.theme.textColor,
-      height: widget.typography.lineSpacing,
-      letterSpacing: widget.typography.letterSpacing,
-    );
-    final double paragraphBottomMargin = widget.typography.fontSize * 0.7;
+    // Vertical container padding (40px) + Running header (30px) + Running footer (28px) + Safety buffer (30px)
+    final double availableHeight = (height - 128.0).clamp(160.0, 3000.0);
+    final double lineHeight = widget.typography.fontSize * widget.typography.lineSpacing;
 
-    double measureBlock(BookBlock block, {bool isFirstPara = false}) {
-      if (block.type == BlockType.image) {
-        return 290.0;
-      }
-      if (block.type == BlockType.heading) {
-        final headingStyle = TextStyle(
-          fontSize: block.headingLevel == 1 ? 26.0 : 20.0,
-          fontWeight: FontWeight.bold,
-          height: 1.3,
-        );
-        final tp = TextPainter(
-          text: TextSpan(text: block.text, style: headingStyle),
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: contentWidth);
-        return tp.height + 26.0;
-      }
-      if (block.type == BlockType.quote) {
-        final tp = TextPainter(
-          text: TextSpan(
-            text: block.text,
-            style: textStyle.copyWith(fontStyle: FontStyle.italic),
-          ),
-          textDirection: TextDirection.ltr,
-          textAlign: widget.typography.textAlign,
-        )..layout(maxWidth: math.max(100.0, contentWidth - 32.0));
-        return tp.height + 24.0;
-      }
-
-      final tp = TextPainter(
-        text: TextSpan(text: block.text, style: textStyle),
-        textDirection: TextDirection.ltr,
-        textAlign: widget.typography.textAlign,
-      )..layout(maxWidth: contentWidth);
-
-      double h = tp.height + paragraphBottomMargin;
-      if (isFirstPara && block.text.length > 20) {
-        h = math.max(h, widget.typography.fontSize * 3.4);
-      }
-      return h;
-    }
+    // Conservative line budget: subtract 3 lines so text NEVER touches or clips at the bottom
+    final int maxLinesPerPage = math.max(4, (availableHeight / lineHeight).floor() - 3);
+    final int charsPerLine = math.max(20, (contentWidth / (widget.typography.fontSize * 0.60)).floor());
 
     int runningPageIndex = 0;
 
@@ -209,7 +169,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       _chapterFirstPageMap[chIdx] = runningPageIndex;
 
       List<BookBlock> pageBlocks = [];
-      double currentHeightUsed = 0.0;
+      int currentLinesUsed = 0;
 
       void pushPage() {
         if (pageBlocks.isNotEmpty) {
@@ -223,7 +183,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             ),
           );
           pageBlocks.clear();
-          currentHeightUsed = 0.0;
+          currentLinesUsed = 0;
         }
       }
 
@@ -232,37 +192,41 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         final text = block.text.trim();
         if (block.type == BlockType.paragraph && text.isEmpty) continue;
 
-        final bool isFirstPara = pageBlocks.isEmpty &&
-            currentHeightUsed == 0.0 &&
-            block.type == BlockType.paragraph &&
-            blkIdx == 0;
-        final double blockHeight = measureBlock(block, isFirstPara: isFirstPara);
+        int lines = 1;
+        if (block.type == BlockType.image) {
+          lines = 13;
+        } else if (block.type == BlockType.heading) {
+          lines = 4;
+        } else if (block.type == BlockType.quote) {
+          lines = math.max(1, (text.length / (charsPerLine * 0.85)).ceil()) + 2;
+        } else {
+          // Paragraph: calculate lines with word wrap buffer + paragraph margin
+          lines = math.max(1, (text.length / charsPerLine).ceil()) + 1;
+        }
 
-        if (currentHeightUsed + blockHeight <= availableHeight) {
+        if (currentLinesUsed + lines <= maxLinesPerPage) {
           pageBlocks.add(block);
-          currentHeightUsed += blockHeight;
+          currentLinesUsed += lines;
         } else {
           if (pageBlocks.isNotEmpty) {
             pushPage();
           }
 
-          if (blockHeight <= availableHeight) {
+          if (lines <= maxLinesPerPage) {
             pageBlocks.add(block);
-            currentHeightUsed += blockHeight;
+            currentLinesUsed += lines;
           } else {
-            // Block is taller than entire page height: split cleanly by sentences/words
+            // Block is longer than an entire slide: split cleanly
             _splitAndDistributeParagraph(
               block: block,
-              contentWidth: contentWidth,
-              availableHeight: availableHeight,
-              textStyle: textStyle,
-              bottomMargin: paragraphBottomMargin,
-              onAddChunk: (chunkBlock, chunkHeight) {
-                if (currentHeightUsed + chunkHeight > availableHeight && pageBlocks.isNotEmpty) {
+              charsPerLine: charsPerLine,
+              maxLinesPerPage: maxLinesPerPage,
+              onAddChunk: (chunkBlock, chunkLines) {
+                if (currentLinesUsed + chunkLines > maxLinesPerPage && pageBlocks.isNotEmpty) {
                   pushPage();
                 }
                 pageBlocks.add(chunkBlock);
-                currentHeightUsed += chunkHeight;
+                currentLinesUsed += chunkLines;
               },
             );
           }
@@ -291,71 +255,59 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     }
 
     _pages = generated;
+    if (widget.onTotalPagesCalculated != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onTotalPagesCalculated!(_pages.length);
+        }
+      });
+    }
   }
 
   void _splitAndDistributeParagraph({
     required BookBlock block,
-    required double contentWidth,
-    required double availableHeight,
-    required TextStyle textStyle,
-    required double bottomMargin,
-    required void Function(BookBlock chunkBlock, double chunkHeight) onAddChunk,
+    required int charsPerLine,
+    required int maxLinesPerPage,
+    required void Function(BookBlock chunkBlock, int chunkLines) onAddChunk,
   }) {
     final text = block.text;
-    final sentenceMatches = RegExp(r'[^.!?]+[.!?]*(\s+|$)').allMatches(text);
-    List<String> pieces = sentenceMatches.map((m) => m.group(0)!).toList();
-    if (pieces.isEmpty) {
-      pieces = text.split(' ').map((w) => '$w ').toList();
-    }
+    final int maxCharsPerSlide = (maxLinesPerPage - 1) * charsPerLine;
 
-    String currentChunk = '';
-    double currentChunkHeight = 0.0;
+    int startIndex = 0;
+    while (startIndex < text.length) {
+      int endIndex = math.min(startIndex + maxCharsPerSlide, text.length);
 
-    for (final piece in pieces) {
-      final candidate = currentChunk.isEmpty ? piece : '$currentChunk$piece';
-      final tp = TextPainter(
-        text: TextSpan(text: candidate, style: textStyle),
-        textDirection: TextDirection.ltr,
-        textAlign: widget.typography.textAlign,
-      )..layout(maxWidth: contentWidth);
-
-      final candidateHeight = tp.height + bottomMargin;
-
-      if (candidateHeight <= availableHeight || currentChunk.isEmpty) {
-        currentChunk = candidate;
-        currentChunkHeight = candidateHeight;
-      } else {
-        // Emit accumulated chunk
-        onAddChunk(
-          BookBlock(
-            id: '${block.id}_${currentChunk.hashCode}',
-            type: BlockType.paragraph,
-            text: currentChunk.trim(),
-            originalPageNumber: block.originalPageNumber,
-          ),
-          currentChunkHeight,
-        );
-
-        currentChunk = piece;
-        final tpPiece = TextPainter(
-          text: TextSpan(text: piece, style: textStyle),
-          textDirection: TextDirection.ltr,
-          textAlign: widget.typography.textAlign,
-        )..layout(maxWidth: contentWidth);
-        currentChunkHeight = tpPiece.height + bottomMargin;
+      if (endIndex < text.length) {
+        // Try breaking at a sentence end (. ! ? ")
+        int sentenceBreak = text.lastIndexOf(RegExp(r'[.!?"]\s'), endIndex);
+        if (sentenceBreak > startIndex + (maxCharsPerSlide ~/ 2)) {
+          endIndex = sentenceBreak + 1;
+        } else {
+          // Break at word space
+          int spaceBreak = text.lastIndexOf(' ', endIndex);
+          if (spaceBreak > startIndex) {
+            endIndex = spaceBreak;
+          }
+        }
       }
-    }
 
-    if (currentChunk.trim().isNotEmpty) {
+      final chunkText = text.substring(startIndex, endIndex).trim();
+      final chunkLines = math.max(1, (chunkText.length / charsPerLine).ceil()) + 1;
+
       onAddChunk(
         BookBlock(
-          id: '${block.id}_${currentChunk.hashCode}',
+          id: '${block.id}_$startIndex',
           type: BlockType.paragraph,
-          text: currentChunk.trim(),
+          text: chunkText,
           originalPageNumber: block.originalPageNumber,
         ),
-        currentChunkHeight,
+        chunkLines,
       );
+
+      startIndex = endIndex;
+      while (startIndex < text.length && text[startIndex] == ' ') {
+        startIndex++;
+      }
     }
   }
 

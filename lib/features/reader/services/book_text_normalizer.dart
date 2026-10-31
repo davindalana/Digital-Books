@@ -169,7 +169,15 @@ class BookTextNormalizer {
 
     for (int i = 0; i < cleaned.length; i++) {
       final item = cleaned[i];
-      final line = item.text;
+      var line = item.text.trim();
+
+      // Clean leading isolated capital letters noise like "K H Sanksi..."
+      final leadingNoiseRegex = RegExp(r'^[A-Z](\s+[A-Z]){1,3}\s+([A-Za-z].*)$');
+      final leadingNoiseMatch = leadingNoiseRegex.firstMatch(line);
+      if (leadingNoiseMatch != null) {
+        line = leadingNoiseMatch.group(2) ?? line;
+      }
+
       final lower = line.toLowerCase();
 
       // Check if this line is a Chapter Heading
