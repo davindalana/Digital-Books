@@ -27,12 +27,16 @@ class ReadingScreen extends ConsumerStatefulWidget {
   final Book book;
   final ReadingMode? initialMode;
   final int? initialPage;
+  final String? initialAnchorNodeId;
+  final int initialCharOffset;
 
   const ReadingScreen({
     super.key,
     required this.book,
     this.initialMode,
     this.initialPage,
+    this.initialAnchorNodeId,
+    this.initialCharOffset = 0,
   });
 
   @override
@@ -75,6 +79,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     _readingMode =
         widget.initialMode ??
         (widget.book.isScanned ? ReadingMode.originalPdf : currentProviderMode);
+
+    if (widget.initialAnchorNodeId != null) {
+      _activeAnchorNodeId = widget.initialAnchorNodeId;
+      _activeCharOffset = widget.initialCharOffset;
+    }
 
     _loadBookDocumentAndProgress();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -467,7 +476,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   Future<void> _toggleBookmark() async {
     final dbService = ref.read(databaseServiceProvider);
     final bookmarks = await dbService.watchBookmarks(widget.book.id).first;
-    final existing = bookmarks.where((b) => b.position == _currentPage);
+    final isReflowable = _readingMode == ReadingMode.reflowable;
+
+    final existing = bookmarks.where((b) {
+      if (isReflowable && _activeAnchorNodeId != null && b.anchorNodeId != null) {
+        return b.anchorNodeId == _activeAnchorNodeId;
+      }
+      return b.position == _currentPage;
+    }).toList();
 
     if (existing.isNotEmpty) {
       for (final b in existing) {
@@ -476,25 +492,37 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Bookmark removed'),
+            content: Text('Penanda buku dihapus'),
             duration: Duration(seconds: 1),
           ),
         );
       }
     } else {
+      final label = isReflowable && _currentChapterTitle.isNotEmpty
+          ? '$_currentChapterTitle • Hal. $_currentPage'
+          : 'Halaman $_currentPage';
+
       await dbService.addBookmark(
         BookmarksCompanion(
           id: drift.Value(const Uuid().v4()),
           bookId: drift.Value(widget.book.id),
+          chapterId: drift.Value(
+            _readerDocument != null && _readerDocument!.chapters.isNotEmpty
+                ? _readerDocument!.chapters[_currentChapter.clamp(0, _readerDocument!.chapters.length - 1)].id
+                : null,
+          ),
           position: drift.Value(_currentPage),
-          label: drift.Value('Page $_currentPage'),
+          label: drift.Value(label),
+          anchorNodeId: drift.Value(_activeAnchorNodeId),
+          characterOffset: drift.Value(_activeCharOffset),
+          progressPercentage: drift.Value(_progressPercentage),
           createdAt: drift.Value(DateTime.now()),
         ),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Bookmarked page $_currentPage'),
+            content: Text('Ditandai: $label'),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -509,8 +537,15 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     final bookmarksAsync = ref.watch(
       bookBookmarksStreamProvider(widget.book.id),
     );
-    final isBookmarked =
-        bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
+    final isBookmarked = bookmarksAsync.value?.any((b) {
+          if (_readingMode == ReadingMode.reflowable &&
+              _activeAnchorNodeId != null &&
+              b.anchorNodeId != null) {
+            return b.anchorNodeId == _activeAnchorNodeId;
+          }
+          return b.position == _currentPage;
+        }) ??
+        false;
 
     return Focus(
       autofocus: true,

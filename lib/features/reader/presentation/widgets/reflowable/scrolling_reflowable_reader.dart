@@ -2,10 +2,14 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
+import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
+import 'highlight_interaction_sheet.dart';
+import 'reflowable_page_renderer.dart';
 
 enum _ScrollItemType { chapterHeader, node, chapterDivider }
 
@@ -35,7 +39,9 @@ class ScrollingReflowableReader extends StatefulWidget {
   final int initialChapterIndex;
   final VoidCallback onTapContent;
   final Function(int chapterIndex, int position, double percentage, String? anchorNodeId, int charOffset) onProgressChanged;
-  final Function(String text, String color, int pageNumber)? onHighlightCreated;
+  final List<Highlight> highlights;
+  final HighlightCreationCallback? onHighlightCreated;
+  final void Function(Highlight highlight)? onHighlightTap;
 
   const ScrollingReflowableReader({
     super.key,
@@ -46,7 +52,9 @@ class ScrollingReflowableReader extends StatefulWidget {
     this.initialChapterIndex = 0,
     required this.onTapContent,
     required this.onProgressChanged,
+    this.highlights = const [],
     this.onHighlightCreated,
+    this.onHighlightTap,
   });
 
   @override
@@ -61,21 +69,20 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
   String? _activeAnchorNodeId;
   int _activeChapterIndex = 0;
-  bool _hasScrolledToInitial = false;
 
-  String? get activeAnchorNodeId => _activeAnchorNodeId;
-  int get activeChapterIndex => _activeChapterIndex;
+  String? get currentAnchorNodeId => _activeAnchorNodeId;
+  int get currentChapterIndex => _activeChapterIndex;
 
   @override
   void initState() {
     super.initState();
     _activeAnchorNodeId = widget.initialAnchorNodeId;
     _activeChapterIndex = widget.initialChapterIndex;
-    _buildFlatItems();
+    _buildFlatItemList();
     _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToInitialAnchor();
+      _jumpToInitialPosition();
     });
   }
 
@@ -83,8 +90,8 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
   void didUpdateWidget(covariant ScrollingReflowableReader oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.document != widget.document ||
-        oldWidget.typography.cacheKey != widget.typography.cacheKey) {
-      _buildFlatItems();
+        oldWidget.typography != widget.typography) {
+      _buildFlatItemList();
     }
   }
 
@@ -96,141 +103,147 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     super.dispose();
   }
 
-  void _buildFlatItems() {
-    final List<_ScrollItem> items = [];
-    final List<double> offsets = [];
+  void _buildFlatItemList() {
+    final items = <_ScrollItem>[];
+    final offsets = <double>[];
     double runningOffset = 0.0;
 
-    final baseLineHeight = widget.typography.fontSize * widget.typography.lineSpacing;
-
     for (int chIdx = 0; chIdx < widget.document.chapters.length; chIdx++) {
-      final ch = widget.document.chapters[chIdx];
+      final chapter = widget.document.chapters[chIdx];
 
       // Chapter Header
       offsets.add(runningOffset);
-      const headerHeight = 110.0;
       items.add(_ScrollItem(
         type: _ScrollItemType.chapterHeader,
         chapterIndex: chIdx,
-        chapterTitle: ch.title,
-        anchorId: 'ch_${chIdx}_header',
-        estimatedHeight: headerHeight,
+        chapterTitle: chapter.title,
+        anchorId: 'header_$chIdx',
+        estimatedHeight: 120.0,
       ));
-      runningOffset += headerHeight;
+      runningOffset += 120.0;
 
       // Chapter Nodes
-      for (int nIdx = 0; nIdx < ch.nodes.length; nIdx++) {
-        final node = ch.nodes[nIdx];
-        double nodeHeight = 40.0;
-
-        if (node.type == ContentNodeType.image) {
-          nodeHeight = 220.0 + widget.typography.paragraphSpacing;
-        } else if (node.type == ContentNodeType.heading) {
-          nodeHeight = 55.0 + widget.typography.paragraphSpacing;
-        } else if (node.type == ContentNodeType.quote) {
-          final lines = math.max(1, (node.text.length / 55).ceil());
-          nodeHeight = (lines * baseLineHeight) + widget.typography.paragraphSpacing + 12;
-        } else {
-          final lines = math.max(1, (node.text.length / 65).ceil());
-          nodeHeight = (lines * baseLineHeight) + widget.typography.paragraphSpacing;
-        }
-
+      for (final node in chapter.nodes) {
+        final estHeight = _estimateNodeHeight(node);
         offsets.add(runningOffset);
         items.add(_ScrollItem(
           type: _ScrollItemType.node,
           chapterIndex: chIdx,
-          chapterTitle: ch.title,
+          chapterTitle: chapter.title,
           node: node,
           anchorId: node.id,
-          estimatedHeight: nodeHeight,
+          estimatedHeight: estHeight,
         ));
-        runningOffset += nodeHeight;
+        runningOffset += estHeight;
       }
 
       // Chapter Divider
-      offsets.add(runningOffset);
-      const dividerHeight = 50.0;
-      items.add(_ScrollItem(
-        type: _ScrollItemType.chapterDivider,
-        chapterIndex: chIdx,
-        chapterTitle: ch.title,
-        anchorId: 'ch_${chIdx}_divider',
-        estimatedHeight: dividerHeight,
-      ));
-      runningOffset += dividerHeight;
+      if (chIdx < widget.document.chapters.length - 1) {
+        offsets.add(runningOffset);
+        items.add(_ScrollItem(
+          type: _ScrollItemType.chapterDivider,
+          chapterIndex: chIdx,
+          chapterTitle: chapter.title,
+          anchorId: 'divider_$chIdx',
+          estimatedHeight: 70.0,
+        ));
+        runningOffset += 70.0;
+      }
     }
 
     _flatItems = items;
     _cumulativeOffsets = offsets;
   }
 
-  void _scrollToInitialAnchor() {
-    if (_hasScrolledToInitial || !_scrollController.hasClients) return;
-    _hasScrolledToInitial = true;
+  double _estimateNodeHeight(ContentNode node) {
+    if (node.type == ContentNodeType.image) return 220.0;
+    if (node.type == ContentNodeType.heading) return 70.0;
+    if (node.type == ContentNodeType.quote) {
+      final lineCount = (node.text.length / 45.0).ceil();
+      return (lineCount * 24.0) + 24.0;
+    }
+    final lineCount = (node.text.length / 50.0).ceil();
+    return (lineCount * 22.0) + widget.typography.paragraphSpacing;
+  }
 
-    double targetOffset = 0.0;
+  void _jumpToInitialPosition() {
+    if (!_scrollController.hasClients || _flatItems.isEmpty) return;
 
-    if (_activeAnchorNodeId != null && _flatItems.isNotEmpty) {
-      final matchIndex = _flatItems.indexWhere((it) => it.anchorId == _activeAnchorNodeId);
-      if (matchIndex >= 0 && matchIndex < _cumulativeOffsets.length) {
-        targetOffset = _cumulativeOffsets[matchIndex];
-      }
-    } else if (widget.initialChapterIndex > 0) {
-      final matchIndex = _flatItems.indexWhere(
-        (it) => it.type == _ScrollItemType.chapterHeader && it.chapterIndex == widget.initialChapterIndex,
-      );
-      if (matchIndex >= 0 && matchIndex < _cumulativeOffsets.length) {
-        targetOffset = _cumulativeOffsets[matchIndex];
+    if (_activeAnchorNodeId != null) {
+      for (int i = 0; i < _flatItems.length; i++) {
+        if (_flatItems[i].anchorId == _activeAnchorNodeId) {
+          final targetOffset = _cumulativeOffsets[i];
+          _scrollController.jumpTo(
+            targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          );
+          return;
+        }
       }
     }
 
-    if (targetOffset > 0 && _scrollController.position.maxScrollExtent > 0) {
-      final clamped = targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
-      _scrollController.jumpTo(clamped);
+    if (_activeChapterIndex > 0) {
+      for (int i = 0; i < _flatItems.length; i++) {
+        if (_flatItems[i].chapterIndex == _activeChapterIndex &&
+            _flatItems[i].type == _ScrollItemType.chapterHeader) {
+          final targetOffset = _cumulativeOffsets[i];
+          _scrollController.jumpTo(
+            targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          );
+          return;
+        }
+      }
+    }
+  }
+
+  void scrollToAnchor(String anchorNodeId) {
+    if (!_scrollController.hasClients || _flatItems.isEmpty) return;
+
+    for (int i = 0; i < _flatItems.length; i++) {
+      if (_flatItems[i].anchorId == anchorNodeId) {
+        final targetOffset = _cumulativeOffsets[i];
+        _scrollController.animateTo(
+          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+        );
+        return;
+      }
     }
   }
 
   void jumpToChapter(int chapterIndex) {
     if (!_scrollController.hasClients || _flatItems.isEmpty) return;
-    final matchIndex = _flatItems.indexWhere(
-      (it) => it.type == _ScrollItemType.chapterHeader && it.chapterIndex == chapterIndex,
-    );
-    if (matchIndex >= 0 && matchIndex < _cumulativeOffsets.length) {
-      final target = _cumulativeOffsets[matchIndex].clamp(0.0, _scrollController.position.maxScrollExtent);
-      _scrollController.animateTo(
-        target,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  void jumpToAnchor(String anchorId) {
-    if (!_scrollController.hasClients || _flatItems.isEmpty) return;
-    final matchIndex = _flatItems.indexWhere((it) => it.anchorId == anchorId);
-    if (matchIndex >= 0 && matchIndex < _cumulativeOffsets.length) {
-      final target = _cumulativeOffsets[matchIndex].clamp(0.0, _scrollController.position.maxScrollExtent);
-      _scrollController.animateTo(
-        target,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
+    for (int i = 0; i < _flatItems.length; i++) {
+      if (_flatItems[i].chapterIndex == chapterIndex &&
+          _flatItems[i].type == _ScrollItemType.chapterHeader) {
+        final targetOffset = _cumulativeOffsets[i];
+        _scrollController.animateTo(
+          targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+        );
+        return;
+      }
     }
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients || _flatItems.isEmpty) return;
+
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 250), _updateReadingPosition);
+    _debounceTimer = Timer(const Duration(milliseconds: 200), () {
+      if (!mounted) return;
+      _updateActiveLocationFromScroll();
+    });
   }
 
-  void _updateReadingPosition() {
+  void _updateActiveLocationFromScroll() {
     if (!_scrollController.hasClients || _flatItems.isEmpty) return;
 
     final currentOffset = _scrollController.offset;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final double pct = maxScroll > 0 ? (currentOffset / maxScroll).clamp(0.0, 1.0) : 0.0;
+    final maxOffset = _scrollController.position.maxScrollExtent;
+    final pct = (maxOffset > 0) ? (currentOffset / maxOffset).clamp(0.0, 1.0) : 0.0;
 
-    // Binary search in _cumulativeOffsets for currentOffset
     int low = 0;
     int high = _cumulativeOffsets.length - 1;
     int visibleIndex = 0;
@@ -388,21 +401,34 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       );
     }
 
+    final highlightsForNode = widget.highlights
+        .where((h) => h.anchorNodeId == node.id || (h.anchorNodeId == null && h.chapterId == node.id))
+        .toList();
+
     if (node.type == ContentNodeType.heading) {
       final style = widget.typography.headingStyle(
         level: node.level,
         color: widget.theme.textColor,
       );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: node.text,
+        sliceStartOffset: 0,
+        sliceEndOffset: node.text.length,
+        highlightsForNode: highlightsForNode,
+        baseStyle: style,
+        theme: widget.theme,
+        onHighlightTap: widget.onHighlightTap,
+      );
+
       return Padding(
         padding: EdgeInsets.only(
           top: 14,
           bottom: widget.typography.paragraphSpacing * 1.2,
         ),
-        child: SelectableText(
-          node.text,
-          style: style,
+        child: SelectableText.rich(
+          richSpan,
           textAlign: widget.typography.textAlign,
-          contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state),
+          contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state, node),
         ),
       );
     }
@@ -411,6 +437,16 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       final style = widget.typography.quoteStyle(
         color: widget.theme.textColor.withAlpha(210),
       );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: node.text,
+        sliceStartOffset: 0,
+        sliceEndOffset: node.text.length,
+        highlightsForNode: highlightsForNode,
+        baseStyle: style,
+        theme: widget.theme,
+        onHighlightTap: widget.onHighlightTap,
+      );
+
       return Padding(
         padding: EdgeInsets.only(bottom: widget.typography.paragraphSpacing),
         child: Container(
@@ -425,11 +461,10 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
             ),
           ),
           padding: const EdgeInsets.only(left: 14, top: 4, bottom: 4),
-          child: SelectableText(
-            node.text,
-            style: style,
+          child: SelectableText.rich(
+            richSpan,
             textAlign: widget.typography.textAlign,
-            contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state),
+            contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state, node),
           ),
         ),
       );
@@ -437,13 +472,22 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
     // Default Paragraph
     final style = widget.typography.bodyStyle(color: widget.theme.textColor);
+    final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+      text: node.text,
+      sliceStartOffset: 0,
+      sliceEndOffset: node.text.length,
+      highlightsForNode: highlightsForNode,
+      baseStyle: style,
+      theme: widget.theme,
+      onHighlightTap: widget.onHighlightTap,
+    );
+
     return Padding(
       padding: EdgeInsets.only(bottom: widget.typography.paragraphSpacing),
-      child: SelectableText(
-        node.text,
-        style: style,
+      child: SelectableText.rich(
+        richSpan,
         textAlign: widget.typography.textAlign,
-        contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state),
+        contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state, node),
       ),
     );
   }
@@ -503,31 +547,138 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     );
   }
 
-  Widget _buildContextMenu(BuildContext context, EditableTextState state) {
-    final text = state.textEditingValue.selection.textInside(
-      state.textEditingValue.text,
-    );
+  Widget _buildContextMenu(
+    BuildContext context,
+    EditableTextState state,
+    ContentNode node,
+  ) {
+    final selection = state.textEditingValue.selection;
+    final text = selection.textInside(state.textEditingValue.text);
+
+    if (text.trim().isEmpty) {
+      return AdaptiveTextSelectionToolbar.buttonItems(
+        anchors: state.contextMenuAnchors,
+        buttonItems: state.contextMenuButtonItems,
+      );
+    }
+
+    final absStart = selection.start.clamp(0, node.text.length);
+    final absEnd = selection.end.clamp(absStart, node.text.length);
+
+    final pStart = math.max(0, absStart - 32);
+    final prefixContext = node.text.substring(pStart, absStart);
+
+    final sEnd = math.min(node.text.length, absEnd + 32);
+    final suffixContext = node.text.substring(absEnd, sEnd);
 
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: state.contextMenuAnchors,
       buttonItems: [
         ...state.contextMenuButtonItems,
-        if (text.trim().isNotEmpty && widget.onHighlightCreated != null)
-          ContextMenuButtonItem(
-            label: 'Sorot Emas',
-            onPressed: () {
-              widget.onHighlightCreated!(text.trim(), 'gold', 1);
-              state.hideToolbar();
-            },
-          ),
-        if (text.trim().isNotEmpty && widget.onHighlightCreated != null)
-          ContextMenuButtonItem(
-            label: 'Sorot Kuning',
-            onPressed: () {
-              widget.onHighlightCreated!(text.trim(), 'yellow', 1);
-              state.hideToolbar();
-            },
-          ),
+        ContextMenuButtonItem(
+          label: '🟡 Kuning',
+          onPressed: () {
+            widget.onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'yellow',
+              anchorNodeId: node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: node.sourcePdfPage,
+            );
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🟢 Hijau',
+          onPressed: () {
+            widget.onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'green',
+              anchorNodeId: node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: node.sourcePdfPage,
+            );
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🔵 Biru',
+          onPressed: () {
+            widget.onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'blue',
+              anchorNodeId: node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: node.sourcePdfPage,
+            );
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🔴 Merah Muda',
+          onPressed: () {
+            widget.onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'pink',
+              anchorNodeId: node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: node.sourcePdfPage,
+            );
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🟣 Ungu',
+          onPressed: () {
+            widget.onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'purple',
+              anchorNodeId: node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: node.sourcePdfPage,
+            );
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '📝 Catatan',
+          onPressed: () {
+            state.hideToolbar();
+            HighlightInteractionSheet.show(
+              context: context,
+              selectedText: text.trim(),
+              theme: widget.theme,
+              onSave: (color, note) {
+                widget.onHighlightCreated?.call(
+                  text: text.trim(),
+                  color: color,
+                  note: note,
+                  anchorNodeId: node.id,
+                  startOffset: absStart,
+                  endOffset: absEnd,
+                  prefixContext: prefixContext,
+                  suffixContext: suffixContext,
+                  pageNumber: node.sourcePdfPage,
+                );
+              },
+            );
+          },
+        ),
       ],
     );
   }

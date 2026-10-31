@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
@@ -17,7 +19,9 @@ class PaginatedReflowableReader extends StatefulWidget {
   final VoidCallback onTapContent;
   final Function(int chapterIndex, int pageNumber, double percentage, String? anchorNodeId, int charOffset) onProgressChanged;
   final void Function(int totalPages)? onTotalPagesCalculated;
-  final Function(String text, String color, int pageNumber)? onHighlightCreated;
+  final List<Highlight> highlights;
+  final HighlightCreationCallback? onHighlightCreated;
+  final void Function(Highlight highlight)? onHighlightTap;
 
   const PaginatedReflowableReader({
     super.key,
@@ -30,7 +34,9 @@ class PaginatedReflowableReader extends StatefulWidget {
     required this.onTapContent,
     required this.onProgressChanged,
     this.onTotalPagesCalculated,
+    this.highlights = const [],
     this.onHighlightCreated,
+    this.onHighlightTap,
   });
 
   @override
@@ -46,6 +52,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
   String? _activeAnchorNodeId;
   int _activeCharOffset = 0;
+  Timer? _navTimer;
 
   int get totalPages => _pages.length;
   int get currentPageIndex => _currentPageIndex;
@@ -60,150 +67,205 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
   }
 
   @override
+  void dispose() {
+    _navTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   void didUpdateWidget(covariant PaginatedReflowableReader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.typography.cacheKey != widget.typography.cacheKey ||
+    if (oldWidget.typography != widget.typography ||
         oldWidget.document != widget.document) {
-      _pages = [];
+      _recalculateLayoutPreservingAnchor();
     }
   }
 
-  void _ensureLayout(double width, double height) {
-    if ((width - _lastWidth).abs() > 4 ||
-        (height - _lastHeight).abs() > 4 ||
-        _pages.isEmpty) {
-      final oldTotal = _pages.length;
-      final oldPage = _currentPageIndex;
-      final oldAnchor = _activeAnchorNodeId;
+  void _recalculateLayoutPreservingAnchor() {
+    if (_lastWidth <= 0 || _lastHeight <= 0) return;
 
-      _lastWidth = width;
-      _lastHeight = height;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    final availableWidth = isTwoPage ? ((_lastWidth - 32) / 2) : _lastWidth;
+    final effectiveMargin = (availableWidth < 400)
+        ? 16.0
+        : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
+    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(160.0, 900.0);
+    final contentHeight = (_lastHeight - 56.0).clamp(200.0, 3000.0);
 
-      final newPages = PaginationEngine.paginateDocument(
-        document: widget.document,
-        viewportWidth: width,
-        viewportHeight: height,
-        typography: widget.typography,
+    final newPages = PaginationEngine.paginateDocument(
+      document: widget.document,
+      typography: widget.typography,
+      viewportWidth: contentWidth,
+      viewportHeight: contentHeight,
+    );
+
+    int targetIndex = _currentPageIndex;
+    if (_activeAnchorNodeId != null) {
+      targetIndex = PaginationEngine.findPageIndexForAnchor(
+        pages: newPages,
+        anchorNodeId: _activeAnchorNodeId!,
+        characterOffset: _activeCharOffset,
       );
-
-      int targetPage = _currentPageIndex;
-      if (_activeAnchorNodeId != null && newPages.isNotEmpty) {
-        targetPage = PaginationEngine.findPageIndexForAnchor(
-          pages: newPages,
-          anchorNodeId: _activeAnchorNodeId!,
-          characterOffset: _activeCharOffset,
-        );
+      if (isTwoPage && targetIndex % 2 != 0) {
+        targetIndex -= 1;
       }
+    }
 
+    setState(() {
       _pages = newPages;
-      _currentPageIndex = targetPage.clamp(0, math.max(0, newPages.length - 1));
+      _currentPageIndex = targetIndex.clamp(0, math.max(0, newPages.length - 1));
+    });
 
-      if (_pages.isNotEmpty && _pages[_currentPageIndex].slices.isNotEmpty) {
-        _activeAnchorNodeId = _pages[_currentPageIndex].slices.first.node.id;
-        _activeCharOffset = _pages[_currentPageIndex].slices.first.startCharOffset;
-      }
+    widget.onTotalPagesCalculated?.call(_pages.length);
+  }
 
-      final pageChanged = _currentPageIndex != oldPage || _activeAnchorNodeId != oldAnchor;
-      final totalChanged = _pages.length != oldTotal;
+  void nextPage() {
+    if (_isNavigating || _pages.isEmpty) return;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    final step = isTwoPage ? 2 : 1;
+    final nextIndex = _currentPageIndex + step;
 
-      if (totalChanged || pageChanged) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            if (totalChanged) widget.onTotalPagesCalculated?.call(_pages.length);
-            if (pageChanged) _notifyProgress();
-          }
-        });
+    if (nextIndex < _pages.length) {
+      _isNavigating = true;
+      setState(() {
+        _currentPageIndex = nextIndex;
+      });
+      _onPageSelected(nextIndex);
+      _navTimer?.cancel();
+      _navTimer = Timer(const Duration(milliseconds: 150), () {
+        if (mounted) _isNavigating = false;
+      });
+    }
+  }
+
+  void previousPage() {
+    if (_isNavigating || _pages.isEmpty) return;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    final step = isTwoPage ? 2 : 1;
+    final prevIndex = _currentPageIndex - step;
+
+    if (prevIndex >= 0) {
+      _isNavigating = true;
+      setState(() {
+        _currentPageIndex = prevIndex;
+      });
+      _onPageSelected(prevIndex);
+      _navTimer?.cancel();
+      _navTimer = Timer(const Duration(milliseconds: 150), () {
+        if (mounted) _isNavigating = false;
+      });
+    }
+  }
+
+  void jumpToPage(int pageIndex) {
+    if (_pages.isEmpty) return;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    int target = pageIndex.clamp(0, _pages.length - 1);
+    if (isTwoPage && target % 2 != 0) {
+      target -= 1;
+    }
+    setState(() {
+      _currentPageIndex = target;
+    });
+    _onPageSelected(target);
+  }
+
+  void jumpToAnchor(String nodeId, [int charOffset = 0]) {
+    if (_pages.isEmpty) return;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    int target = PaginationEngine.findPageIndexForAnchor(
+      pages: _pages,
+      anchorNodeId: nodeId,
+      characterOffset: charOffset,
+    );
+    if (isTwoPage && target % 2 != 0) {
+      target -= 1;
+    }
+    setState(() {
+      _currentPageIndex = target;
+      _activeAnchorNodeId = nodeId;
+      _activeCharOffset = charOffset;
+    });
+    _onPageSelected(target);
+  }
+
+  void jumpToChapter(int chapterIndex) {
+    if (_pages.isEmpty) return;
+    for (int i = 0; i < _pages.length; i++) {
+      if (_pages[i].chapterIndex == chapterIndex) {
+        jumpToPage(i);
+        return;
       }
     }
   }
 
-  void _notifyProgress() {
-    if (_pages.isEmpty) return;
-    final page = _pages[_currentPageIndex];
+  void _onPageSelected(int pageIndex) {
+    if (pageIndex < 0 || pageIndex >= _pages.length) return;
+    final page = _pages[pageIndex];
 
     if (page.slices.isNotEmpty) {
       _activeAnchorNodeId = page.slices.first.node.id;
       _activeCharOffset = page.slices.first.startCharOffset;
     }
 
-    final double pct = _pages.isNotEmpty
-        ? ((_currentPageIndex + 1) / _pages.length).clamp(0.0, 1.0)
-        : 0.0;
+    final total = _pages.length;
+    final pct = total > 0 ? ((pageIndex + 1) / total).clamp(0.0, 1.0) : 0.0;
 
     widget.onProgressChanged(
       page.chapterIndex,
-      _currentPageIndex + 1,
+      pageIndex + 1,
       pct,
       _activeAnchorNodeId,
       _activeCharOffset,
     );
   }
 
-  void nextPage() {
-    if (_isNavigating || _pages.isEmpty) return;
-    final isSpread = _isTwoPageSpreadActive;
-    final step = isSpread ? 2 : 1;
-    final nextTarget = _currentPageIndex + step;
+  void _ensureLayout(double width, double height) {
+    final isTwoPage = widget.typography.twoPageSpread && width >= 850.0;
+    final availableWidth = isTwoPage ? ((width - 32) / 2) : width;
+    final effectiveMargin = (availableWidth < 400)
+        ? 16.0
+        : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
+    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(160.0, 900.0);
+    final contentHeight = (height - 56.0).clamp(200.0, 3000.0);
 
-    if (nextTarget < _pages.length) {
-      _animateToPage(nextTarget);
-    }
-  }
+    final pages = PaginationEngine.paginateDocument(
+      document: widget.document,
+      typography: widget.typography,
+      viewportWidth: contentWidth,
+      viewportHeight: contentHeight,
+    );
 
-  void previousPage() {
-    if (_isNavigating || _pages.isEmpty) return;
-    final isSpread = _isTwoPageSpreadActive;
-    final step = isSpread ? 2 : 1;
-    final prevTarget = _currentPageIndex - step;
-
-    if (prevTarget >= 0) {
-      _animateToPage(prevTarget);
-    } else if (_currentPageIndex > 0) {
-      _animateToPage(0);
-    }
-  }
-
-  void jumpToPage(int pageNumber) {
-    if (_pages.isEmpty) return;
-    final target = (pageNumber - 1).clamp(0, _pages.length - 1);
-    final isSpread = _isTwoPageSpreadActive;
-    final normalized = isSpread && target % 2 != 0 ? target - 1 : target;
-
-    setState(() {
-      _currentPageIndex = normalized;
-    });
-    _notifyProgress();
-  }
-
-  void jumpToChapter(int chapterIndex) {
-    for (int i = 0; i < _pages.length; i++) {
-      if (_pages[i].chapterIndex == chapterIndex) {
-        jumpToPage(i + 1);
-        return;
+    int targetIndex = _currentPageIndex;
+    if (_activeAnchorNodeId != null) {
+      targetIndex = PaginationEngine.findPageIndexForAnchor(
+        pages: pages,
+        anchorNodeId: _activeAnchorNodeId!,
+        characterOffset: _activeCharOffset,
+      );
+      if (isTwoPage && targetIndex % 2 != 0) {
+        targetIndex -= 1;
       }
     }
+
+    _lastWidth = width;
+    _lastHeight = height;
+    final totalChanged = _pages.length != pages.length;
+    final pageChanged = _currentPageIndex != targetIndex;
+
+    _pages = pages;
+    _currentPageIndex = targetIndex.clamp(0, math.max(0, pages.length - 1));
+
+    if (totalChanged || pageChanged) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onTotalPagesCalculated?.call(_pages.length);
+        if (_pages.isNotEmpty) {
+          _onPageSelected(_currentPageIndex);
+        }
+      });
+    }
   }
-
-  void _animateToPage(int targetIndex) {
-    if (_isNavigating) return;
-    _isNavigating = true;
-
-    setState(() {
-      _currentPageIndex = targetIndex;
-    });
-    _notifyProgress();
-
-    Future.delayed(const Duration(milliseconds: 220), () {
-      if (mounted) {
-        setState(() {
-          _isNavigating = false;
-        });
-      }
-    });
-  }
-
-  bool get _isTwoPageSpreadActive =>
-      _lastWidth >= 850 && widget.typography.twoPageSpread;
 
   @override
   Widget build(BuildContext context) {
@@ -216,78 +278,35 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
           return const SizedBox.shrink();
         }
 
-        _ensureLayout(width, height);
-
-        if (_pages.isEmpty) {
-          return Center(
-            child: CircularProgressIndicator(
-              color: widget.theme.textColor,
-              strokeWidth: 2.5,
-            ),
-          );
+        if (_pages.isEmpty ||
+            (width - _lastWidth).abs() > 2.0 ||
+            (height - _lastHeight).abs() > 2.0) {
+          _ensureLayout(width, height);
         }
 
-        final isSpread = width >= 850 && widget.typography.twoPageSpread;
-        // Ensure even index on two-page spread
-        final safeIndex = isSpread && _currentPageIndex % 2 != 0
-            ? math.max(0, _currentPageIndex - 1)
-            : _currentPageIndex.clamp(0, _pages.length - 1);
+        if (_pages.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        return Focus(
-          autofocus: true,
-          onKeyEvent: (node, event) {
-            if (event is KeyDownEvent) {
-              // Ignore if a text field or input has focus
-              final primaryFocus = FocusManager.instance.primaryFocus;
-              if (primaryFocus != null &&
-                  primaryFocus.context != null &&
-                  primaryFocus != node) {
-                return KeyEventResult.ignored;
-              }
+        final isTwoPage = widget.typography.twoPageSpread && width >= 850.0;
 
-              if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
-                  event.logicalKey == LogicalKeyboardKey.pageUp) {
-                previousPage();
-                return KeyEventResult.handled;
-              } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
-                  event.logicalKey == LogicalKeyboardKey.pageDown ||
-                  event.logicalKey == LogicalKeyboardKey.space) {
-                nextPage();
-                return KeyEventResult.handled;
-              }
-            }
-            return KeyEventResult.ignored;
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.arrowRight): nextPage,
+            const SingleActivator(LogicalKeyboardKey.arrowLeft): previousPage,
+            const SingleActivator(LogicalKeyboardKey.space): nextPage,
           },
-          child: GestureDetector(
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity != null) {
-                if (details.primaryVelocity! < -200) {
-                  nextPage();
-                } else if (details.primaryVelocity! > 200) {
-                  previousPage();
-                }
-              }
-            },
+          child: Focus(
+            autofocus: true,
             child: Stack(
-              fit: StackFit.expand,
               children: [
-                // Reading Content Layer
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-                  child: KeyedSubtree(
-                    key: ValueKey('page_${safeIndex}_spread_$isSpread'),
-                    child: isSpread
-                        ? _buildTwoPageSpread(width, height, safeIndex)
-                        : _buildSinglePage(width, height, safeIndex),
-                  ),
+                // Page Content
+                Positioned.fill(
+                  child: isTwoPage
+                      ? _buildTwoPageSpread(width, height, _currentPageIndex)
+                      : _buildSinglePage(width, height, _currentPageIndex),
                 ),
 
-                // Touch/Click Margins for Apple Books Style Navigation
                 // Left 15% tap -> Previous Page
                 Positioned(
                   left: 0,
@@ -345,6 +364,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final contentWidth = (width - (effectiveMargin * 2)).clamp(160.0, 900.0);
 
     return Center(
+      key: ValueKey('page_${index}_spread_false'),
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: effectiveMargin),
         child: ReflowablePageRenderer(
@@ -356,7 +376,9 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
           showHeader: true,
           showFooter: true,
           isLeftPage: false,
+          highlights: widget.highlights,
           onHighlightCreated: widget.onHighlightCreated,
+          onHighlightTap: widget.onHighlightTap,
         ),
       ),
     );
@@ -374,6 +396,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final contentWidth = (halfWidth - (effectiveMargin * 2)).clamp(160.0, 800.0);
 
     return Row(
+      key: ValueKey('page_${leftIndex}_spread_true'),
       children: [
         // Left Page
         Expanded(
@@ -391,7 +414,9 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
               showHeader: true,
               showFooter: true,
               isLeftPage: true,
+              highlights: widget.highlights,
               onHighlightCreated: widget.onHighlightCreated,
+              onHighlightTap: widget.onHighlightTap,
             ),
           ),
         ),
@@ -427,7 +452,9 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                     showHeader: true,
                     showFooter: true,
                     isLeftPage: false,
+                    highlights: widget.highlights,
                     onHighlightCreated: widget.onHighlightCreated,
+                    onHighlightTap: widget.onHighlightTap,
                   ),
                 )
               : const SizedBox.shrink(),

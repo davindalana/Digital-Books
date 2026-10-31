@@ -51,6 +51,9 @@ class Bookmarks extends Table {
   TextColumn get chapterId => text().nullable()();
   IntColumn get position => integer()();
   TextColumn get label => text()();
+  TextColumn get anchorNodeId => text().nullable()();
+  IntColumn get characterOffset => integer().withDefault(const Constant(0))();
+  RealColumn get progressPercentage => real().withDefault(const Constant(0.0))();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -66,6 +69,12 @@ class Highlights extends Table {
   IntColumn get endPosition => integer()();
   TextColumn get color => text().withDefault(const Constant('yellow'))();
   TextColumn get note => text().nullable()();
+  TextColumn get anchorNodeId => text().nullable()();
+  IntColumn get startOffset => integer().withDefault(const Constant(0))();
+  IntColumn get endOffset => integer().withDefault(const Constant(0))();
+  TextColumn get prefixContext => text().nullable()();
+  TextColumn get suffixContext => text().nullable()();
+  IntColumn get anchorVersion => integer().withDefault(const Constant(1))();
   DateTimeColumn get createdAt => dateTime()();
 
   @override

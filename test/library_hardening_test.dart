@@ -343,7 +343,7 @@ void main() {
     });
 
     test('Schema version 2 supports fileHash and lastReadingMode', () async {
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, greaterThanOrEqualTo(2));
 
       final now = DateTime.now();
       await dbService.insertBook(

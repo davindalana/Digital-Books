@@ -1,9 +1,25 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
+import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
+import 'highlight_interaction_sheet.dart';
+
+typedef HighlightCreationCallback = void Function({
+  required String text,
+  required String color,
+  String? note,
+  required String anchorNodeId,
+  required int startOffset,
+  required int endOffset,
+  String? prefixContext,
+  String? suffixContext,
+  required int pageNumber,
+});
 
 class ReflowablePageRenderer extends StatelessWidget {
   final PaginatedPage page;
@@ -14,7 +30,9 @@ class ReflowablePageRenderer extends StatelessWidget {
   final bool showHeader;
   final bool showFooter;
   final bool isLeftPage;
-  final Function(String text, String color, int pageNumber)? onHighlightCreated;
+  final List<Highlight> highlights;
+  final HighlightCreationCallback? onHighlightCreated;
+  final void Function(Highlight highlight)? onHighlightTap;
 
   const ReflowablePageRenderer({
     super.key,
@@ -26,7 +44,9 @@ class ReflowablePageRenderer extends StatelessWidget {
     this.showHeader = true,
     this.showFooter = true,
     this.isLeftPage = false,
+    this.highlights = const [],
     this.onHighlightCreated,
+    this.onHighlightTap,
   });
 
   @override
@@ -113,23 +133,36 @@ class ReflowablePageRenderer extends StatelessWidget {
       );
     }
 
+    final highlightsForNode = highlights
+        .where((h) => h.anchorNodeId == node.id || (h.anchorNodeId == null && h.chapterId == node.id))
+        .toList();
+
     // Heading Node
     if (node.type == ContentNodeType.heading) {
       final style = typography.headingStyle(
         level: node.level,
         color: theme.textColor,
       );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
       return Padding(
         padding: EdgeInsets.only(
           top: slice.isContinuation ? 0 : 8,
           bottom: typography.paragraphSpacing * 1.2,
         ),
-        child: SelectableText(
-          slice.textSlice,
-          style: style,
+        child: SelectableText.rich(
+          richSpan,
           textAlign: typography.textAlign,
           contextMenuBuilder: (ctx, editableTextState) =>
-              _buildContextMenu(ctx, editableTextState),
+              _buildContextMenu(ctx, editableTextState, slice),
         ),
       );
     }
@@ -139,6 +172,16 @@ class ReflowablePageRenderer extends StatelessWidget {
       final style = typography.quoteStyle(
         color: theme.textColor.withAlpha(210),
       );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
       return Padding(
         padding: EdgeInsets.only(bottom: typography.paragraphSpacing),
         child: Container(
@@ -153,12 +196,11 @@ class ReflowablePageRenderer extends StatelessWidget {
             ),
           ),
           padding: const EdgeInsets.only(left: 14, top: 4, bottom: 4),
-          child: SelectableText(
-            slice.textSlice,
-            style: style,
+          child: SelectableText.rich(
+            richSpan,
             textAlign: typography.textAlign,
             contextMenuBuilder: (ctx, editableTextState) =>
-                _buildContextMenu(ctx, editableTextState),
+                _buildContextMenu(ctx, editableTextState, slice),
           ),
         ),
       );
@@ -166,14 +208,23 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Default Paragraph Node
     final style = typography.bodyStyle(color: theme.textColor);
+    final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+      text: slice.textSlice,
+      sliceStartOffset: slice.startCharOffset,
+      sliceEndOffset: slice.endCharOffset,
+      highlightsForNode: highlightsForNode,
+      baseStyle: style,
+      theme: theme,
+      onHighlightTap: onHighlightTap,
+    );
+
     return Padding(
       padding: EdgeInsets.only(bottom: typography.paragraphSpacing),
-      child: SelectableText(
-        slice.textSlice,
-        style: style,
+      child: SelectableText.rich(
+        richSpan,
         textAlign: typography.textAlign,
         contextMenuBuilder: (ctx, editableTextState) =>
-            _buildContextMenu(ctx, editableTextState),
+            _buildContextMenu(ctx, editableTextState, slice),
       ),
     );
   }
@@ -236,31 +287,137 @@ class ReflowablePageRenderer extends StatelessWidget {
   Widget _buildContextMenu(
     BuildContext context,
     EditableTextState editableTextState,
+    PaginatedNodeSlice slice,
   ) {
-    final text = editableTextState.textEditingValue.selection.textInside(
-      editableTextState.textEditingValue.text,
-    );
+    final selection = editableTextState.textEditingValue.selection;
+    final text = selection.textInside(editableTextState.textEditingValue.text);
+
+    if (text.trim().isEmpty) {
+      return AdaptiveTextSelectionToolbar.buttonItems(
+        anchors: editableTextState.contextMenuAnchors,
+        buttonItems: editableTextState.contextMenuButtonItems,
+      );
+    }
+
+    final localStart = selection.start;
+    final localEnd = selection.end;
+    final absStart = (slice.startCharOffset + localStart).clamp(0, slice.node.text.length);
+    final absEnd = (slice.startCharOffset + localEnd).clamp(absStart, slice.node.text.length);
+
+    final pStart = math.max(0, absStart - 32);
+    final prefixContext = slice.node.text.substring(pStart, absStart);
+
+    final sEnd = math.min(slice.node.text.length, absEnd + 32);
+    final suffixContext = slice.node.text.substring(absEnd, sEnd);
 
     return AdaptiveTextSelectionToolbar.buttonItems(
       anchors: editableTextState.contextMenuAnchors,
       buttonItems: [
         ...editableTextState.contextMenuButtonItems,
-        if (text.trim().isNotEmpty && onHighlightCreated != null)
-          ContextMenuButtonItem(
-            label: 'Sorot Emas',
-            onPressed: () {
-              onHighlightCreated!(text.trim(), 'gold', page.pageIndexInBook + 1);
-              editableTextState.hideToolbar();
-            },
-          ),
-        if (text.trim().isNotEmpty && onHighlightCreated != null)
-          ContextMenuButtonItem(
-            label: 'Sorot Kuning',
-            onPressed: () {
-              onHighlightCreated!(text.trim(), 'yellow', page.pageIndexInBook + 1);
-              editableTextState.hideToolbar();
-            },
-          ),
+        ContextMenuButtonItem(
+          label: '🟡 Kuning',
+          onPressed: () {
+            onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'yellow',
+              anchorNodeId: slice.node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: page.pageIndexInBook + 1,
+            );
+            editableTextState.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🟢 Hijau',
+          onPressed: () {
+            onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'green',
+              anchorNodeId: slice.node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: page.pageIndexInBook + 1,
+            );
+            editableTextState.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🔵 Biru',
+          onPressed: () {
+            onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'blue',
+              anchorNodeId: slice.node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: page.pageIndexInBook + 1,
+            );
+            editableTextState.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🔴 Merah Muda',
+          onPressed: () {
+            onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'pink',
+              anchorNodeId: slice.node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: page.pageIndexInBook + 1,
+            );
+            editableTextState.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '🟣 Ungu',
+          onPressed: () {
+            onHighlightCreated?.call(
+              text: text.trim(),
+              color: 'purple',
+              anchorNodeId: slice.node.id,
+              startOffset: absStart,
+              endOffset: absEnd,
+              prefixContext: prefixContext,
+              suffixContext: suffixContext,
+              pageNumber: page.pageIndexInBook + 1,
+            );
+            editableTextState.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: '📝 Catatan',
+          onPressed: () {
+            editableTextState.hideToolbar();
+            HighlightInteractionSheet.show(
+              context: context,
+              selectedText: text.trim(),
+              theme: theme,
+              onSave: (color, note) {
+                onHighlightCreated?.call(
+                  text: text.trim(),
+                  color: color,
+                  note: note,
+                  anchorNodeId: slice.node.id,
+                  startOffset: absStart,
+                  endOffset: absEnd,
+                  prefixContext: prefixContext,
+                  suffixContext: suffixContext,
+                  pageNumber: page.pageIndexInBook + 1,
+                );
+              },
+            );
+          },
+        ),
       ],
     );
   }

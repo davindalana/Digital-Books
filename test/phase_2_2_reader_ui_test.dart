@@ -389,6 +389,7 @@ void main() {
             appDatabaseProvider.overrideWithValue(db),
             databaseServiceProvider.overrideWithValue(dbService),
             bookBookmarksStreamProvider(book.id).overrideWith((ref) => Stream.value(<Bookmark>[])),
+            bookHighlightsStreamProvider(book.id).overrideWith((ref) => Stream.value(<Highlight>[])),
             activeReadingModeProvider(book.id).overrideWith((ref) => ReadingMode.reflowable),
           ],
           child: MaterialApp(

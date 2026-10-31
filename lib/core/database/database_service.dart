@@ -266,12 +266,52 @@ class DatabaseService {
     });
   }
 
+  Future<Bookmark?> getBookmarkAtLocation(
+    String bookId, {
+    int? page,
+    String? anchorNodeId,
+  }) async {
+    if (anchorNodeId != null && anchorNodeId.isNotEmpty) {
+      final match = await (db.select(db.bookmarks)
+            ..where((t) =>
+                t.bookId.equals(bookId) & t.anchorNodeId.equals(anchorNodeId)))
+          .get();
+      if (match.isNotEmpty) return match.first;
+    }
+    if (page != null) {
+      final match = await (db.select(db.bookmarks)
+            ..where((t) => t.bookId.equals(bookId) & t.position.equals(page)))
+          .get();
+      if (match.isNotEmpty) return match.first;
+    }
+    return null;
+  }
+
   Future<int> addBookmark(BookmarksCompanion bookmark) {
     return db.into(db.bookmarks).insert(bookmark);
   }
 
   Future<int> deleteBookmark(String id) {
     return (db.delete(db.bookmarks)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<int> deleteBookmarkByLocation(
+    String bookId, {
+    int? page,
+    String? anchorNodeId,
+  }) async {
+    if (anchorNodeId != null && anchorNodeId.isNotEmpty) {
+      return (db.delete(db.bookmarks)
+            ..where((t) =>
+                t.bookId.equals(bookId) & t.anchorNodeId.equals(anchorNodeId)))
+          .go();
+    }
+    if (page != null) {
+      return (db.delete(db.bookmarks)
+            ..where((t) => t.bookId.equals(bookId) & t.position.equals(page)))
+          .go();
+    }
+    return 0;
   }
 
   // --- Highlights ---
@@ -300,8 +340,48 @@ class DatabaseService {
     });
   }
 
+  Stream<List<HighlightWithBook>> watchAllNotes() {
+    final query = db.select(db.highlights).join([
+      innerJoin(
+        db.books,
+        db.books.id.equalsExp(db.highlights.bookId),
+      ),
+    ])
+      ..where(db.highlights.note.isNotNull() & db.highlights.note.equals('').not())
+      ..orderBy([
+        OrderingTerm(expression: db.highlights.createdAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map((rows) {
+      return rows.map((r) => HighlightWithBook(
+        highlight: r.readTable(db.highlights),
+        book: r.readTable(db.books),
+      )).toList();
+    });
+  }
+
+  Future<Highlight?> getHighlightById(String id) {
+    return (db.select(db.highlights)..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   Future<int> addHighlight(HighlightsCompanion highlight) {
     return db.into(db.highlights).insert(highlight);
+  }
+
+  Future<int> updateHighlightColor(String id, String color) {
+    return (db.update(db.highlights)..where((t) => t.id.equals(id))).write(
+      HighlightsCompanion(
+        color: Value(color),
+      ),
+    );
+  }
+
+  Future<int> updateHighlightNote(String id, String? note) {
+    return (db.update(db.highlights)..where((t) => t.id.equals(id))).write(
+      HighlightsCompanion(
+        note: Value(note),
+      ),
+    );
   }
 
   Future<int> deleteHighlight(String id) {

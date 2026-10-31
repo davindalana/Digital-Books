@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:digital_books/core/database/app_database.dart';
+import 'package:digital_books/core/providers/database_providers.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'highlight_interaction_sheet.dart';
 import 'paginated_reflowable_reader.dart';
 import 'scrolling_reflowable_reader.dart';
 
@@ -20,6 +25,7 @@ class ReflowableReaderContainer extends ConsumerStatefulWidget {
   final Function(int chapterIndex, int position, double percentage, String? anchorNodeId, int charOffset) onProgressChanged;
   final void Function(int totalPages)? onTotalPagesCalculated;
   final Function(String text, String color, int pageNumber)? onHighlightCreated;
+  final List<Highlight>? customHighlights;
 
   const ReflowableReaderContainer({
     super.key,
@@ -35,6 +41,7 @@ class ReflowableReaderContainer extends ConsumerStatefulWidget {
     required this.onProgressChanged,
     this.onTotalPagesCalculated,
     this.onHighlightCreated,
+    this.customHighlights,
   });
 
   @override
@@ -64,6 +71,13 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
     _activeCharOffset = widget.initialCharOffset;
     _currentChapter = widget.initialChapterIndex;
     _currentPage = widget.initialPosition > 0 ? widget.initialPosition : 1;
+
+    if (widget.initialAnchorNodeId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        jumpToAnchor(widget.initialAnchorNodeId!, widget.initialCharOffset);
+      });
+    }
   }
 
   void nextPage() {
@@ -87,6 +101,17 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
     }
   }
 
+  void jumpToAnchor(String nodeId, [int charOffset = 0]) {
+    _activeAnchorNodeId = nodeId;
+    _activeCharOffset = charOffset;
+    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
+    if (mode == ReflowableLayoutMode.paginated) {
+      _paginatedKey.currentState?.jumpToAnchor(nodeId, charOffset);
+    } else {
+      _scrollingKey.currentState?.scrollToAnchor(nodeId);
+    }
+  }
+
   void jumpToChapter(int chapterIndex) {
     final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
     if (mode == ReflowableLayoutMode.paginated) {
@@ -94,6 +119,77 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
     } else {
       _scrollingKey.currentState?.jumpToChapter(chapterIndex);
     }
+  }
+
+  Future<void> _handleHighlightCreated({
+    required String text,
+    required String color,
+    String? note,
+    required String anchorNodeId,
+    required int startOffset,
+    required int endOffset,
+    String? prefixContext,
+    String? suffixContext,
+    required int pageNumber,
+  }) async {
+    final dbService = ref.read(databaseServiceProvider);
+    final id = const Uuid().v4();
+    final chapter = widget.document.chapters.isNotEmpty
+        ? widget.document.chapters[_currentChapter.clamp(0, widget.document.chapters.length - 1)]
+        : null;
+
+    await dbService.addHighlight(
+      HighlightsCompanion(
+        id: drift.Value(id),
+        bookId: drift.Value(widget.bookId),
+        chapterId: drift.Value(chapter?.id),
+        selectedText: drift.Value(text),
+        startPosition: drift.Value(pageNumber),
+        endPosition: drift.Value(pageNumber),
+        color: drift.Value(color),
+        note: drift.Value(note),
+        anchorNodeId: drift.Value(anchorNodeId),
+        startOffset: drift.Value(startOffset),
+        endOffset: drift.Value(endOffset),
+        prefixContext: drift.Value(prefixContext),
+        suffixContext: drift.Value(suffixContext),
+        anchorVersion: const drift.Value(1),
+        createdAt: drift.Value(DateTime.now()),
+      ),
+    );
+
+    widget.onHighlightCreated?.call(text, color, pageNumber);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(note != null ? 'Sorotan & catatan disimpan' : 'Teks berhasil disorot'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }
+  }
+
+  void _handleHighlightTap(Highlight hl) {
+    HighlightInteractionSheet.show(
+      context: context,
+      existingHighlight: hl,
+      selectedText: hl.selectedText,
+      theme: widget.theme,
+      onSave: (color, note) async {
+        final dbService = ref.read(databaseServiceProvider);
+        if (color != hl.color) {
+          await dbService.updateHighlightColor(hl.id, color);
+        }
+        if (note != hl.note) {
+          await dbService.updateHighlightNote(hl.id, note);
+        }
+      },
+      onDelete: () async {
+        final dbService = ref.read(databaseServiceProvider);
+        await dbService.deleteHighlight(hl.id);
+      },
+    );
   }
 
   void _handleProgressChanged(
@@ -122,6 +218,8 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
   @override
   Widget build(BuildContext context) {
     final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.bookId));
+    final highlightsStream = ref.watch(bookHighlightsStreamProvider(widget.bookId));
+    final effectiveHighlights = widget.customHighlights ?? highlightsStream.value ?? const [];
 
     final Widget content;
     if (layoutMode == ReflowableLayoutMode.scrolling) {
@@ -132,9 +230,11 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
         typography: widget.typography,
         initialAnchorNodeId: _activeAnchorNodeId,
         initialChapterIndex: _currentChapter,
+        highlights: effectiveHighlights,
         onTapContent: widget.onTapContent,
         onProgressChanged: _handleProgressChanged,
-        onHighlightCreated: widget.onHighlightCreated,
+        onHighlightCreated: _handleHighlightCreated,
+        onHighlightTap: _handleHighlightTap,
       );
     } else {
       content = PaginatedReflowableReader(
@@ -145,6 +245,7 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
         initialPageIndex: _currentPage > 0 ? _currentPage - 1 : 0,
         initialAnchorNodeId: _activeAnchorNodeId,
         initialCharOffset: _activeCharOffset,
+        highlights: effectiveHighlights,
         onTapContent: widget.onTapContent,
         onProgressChanged: (ch, page, pct, anchor, offset) {
           _handleProgressChanged(ch, page, pct, anchor, offset);
@@ -153,7 +254,8 @@ class ReflowableReaderContainerState extends ConsumerState<ReflowableReaderConta
           _totalPages = total;
           widget.onTotalPagesCalculated?.call(total);
         },
-        onHighlightCreated: widget.onHighlightCreated,
+        onHighlightCreated: _handleHighlightCreated,
+        onHighlightTap: _handleHighlightTap,
       );
     }
 

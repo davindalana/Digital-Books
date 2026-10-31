@@ -1742,6 +1742,41 @@ class $BookmarksTable extends Bookmarks
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _anchorNodeIdMeta = const VerificationMeta(
+    'anchorNodeId',
+  );
+  @override
+  late final GeneratedColumn<String> anchorNodeId = GeneratedColumn<String>(
+    'anchor_node_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _characterOffsetMeta = const VerificationMeta(
+    'characterOffset',
+  );
+  @override
+  late final GeneratedColumn<int> characterOffset = GeneratedColumn<int>(
+    'character_offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _progressPercentageMeta =
+      const VerificationMeta('progressPercentage');
+  @override
+  late final GeneratedColumn<double> progressPercentage =
+      GeneratedColumn<double>(
+        'progress_percentage',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1760,6 +1795,9 @@ class $BookmarksTable extends Bookmarks
     chapterId,
     position,
     label,
+    anchorNodeId,
+    characterOffset,
+    progressPercentage,
     createdAt,
   ];
   @override
@@ -1809,6 +1847,33 @@ class $BookmarksTable extends Bookmarks
     } else if (isInserting) {
       context.missing(_labelMeta);
     }
+    if (data.containsKey('anchor_node_id')) {
+      context.handle(
+        _anchorNodeIdMeta,
+        anchorNodeId.isAcceptableOrUnknown(
+          data['anchor_node_id']!,
+          _anchorNodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('character_offset')) {
+      context.handle(
+        _characterOffsetMeta,
+        characterOffset.isAcceptableOrUnknown(
+          data['character_offset']!,
+          _characterOffsetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('progress_percentage')) {
+      context.handle(
+        _progressPercentageMeta,
+        progressPercentage.isAcceptableOrUnknown(
+          data['progress_percentage']!,
+          _progressPercentageMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1846,6 +1911,18 @@ class $BookmarksTable extends Bookmarks
         DriftSqlType.string,
         data['${effectivePrefix}label'],
       )!,
+      anchorNodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchor_node_id'],
+      ),
+      characterOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}character_offset'],
+      )!,
+      progressPercentage: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}progress_percentage'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1865,6 +1942,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
   final String? chapterId;
   final int position;
   final String label;
+  final String? anchorNodeId;
+  final int characterOffset;
+  final double progressPercentage;
   final DateTime createdAt;
   const Bookmark({
     required this.id,
@@ -1872,6 +1952,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     this.chapterId,
     required this.position,
     required this.label,
+    this.anchorNodeId,
+    required this.characterOffset,
+    required this.progressPercentage,
     required this.createdAt,
   });
   @override
@@ -1884,6 +1967,11 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     }
     map['position'] = Variable<int>(position);
     map['label'] = Variable<String>(label);
+    if (!nullToAbsent || anchorNodeId != null) {
+      map['anchor_node_id'] = Variable<String>(anchorNodeId);
+    }
+    map['character_offset'] = Variable<int>(characterOffset);
+    map['progress_percentage'] = Variable<double>(progressPercentage);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1897,6 +1985,11 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           : Value(chapterId),
       position: Value(position),
       label: Value(label),
+      anchorNodeId: anchorNodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorNodeId),
+      characterOffset: Value(characterOffset),
+      progressPercentage: Value(progressPercentage),
       createdAt: Value(createdAt),
     );
   }
@@ -1912,6 +2005,11 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       chapterId: serializer.fromJson<String?>(json['chapterId']),
       position: serializer.fromJson<int>(json['position']),
       label: serializer.fromJson<String>(json['label']),
+      anchorNodeId: serializer.fromJson<String?>(json['anchorNodeId']),
+      characterOffset: serializer.fromJson<int>(json['characterOffset']),
+      progressPercentage: serializer.fromJson<double>(
+        json['progressPercentage'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1924,6 +2022,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       'chapterId': serializer.toJson<String?>(chapterId),
       'position': serializer.toJson<int>(position),
       'label': serializer.toJson<String>(label),
+      'anchorNodeId': serializer.toJson<String?>(anchorNodeId),
+      'characterOffset': serializer.toJson<int>(characterOffset),
+      'progressPercentage': serializer.toJson<double>(progressPercentage),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -1934,6 +2035,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     Value<String?> chapterId = const Value.absent(),
     int? position,
     String? label,
+    Value<String?> anchorNodeId = const Value.absent(),
+    int? characterOffset,
+    double? progressPercentage,
     DateTime? createdAt,
   }) => Bookmark(
     id: id ?? this.id,
@@ -1941,6 +2045,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     chapterId: chapterId.present ? chapterId.value : this.chapterId,
     position: position ?? this.position,
     label: label ?? this.label,
+    anchorNodeId: anchorNodeId.present ? anchorNodeId.value : this.anchorNodeId,
+    characterOffset: characterOffset ?? this.characterOffset,
+    progressPercentage: progressPercentage ?? this.progressPercentage,
     createdAt: createdAt ?? this.createdAt,
   );
   Bookmark copyWithCompanion(BookmarksCompanion data) {
@@ -1950,6 +2057,15 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       chapterId: data.chapterId.present ? data.chapterId.value : this.chapterId,
       position: data.position.present ? data.position.value : this.position,
       label: data.label.present ? data.label.value : this.label,
+      anchorNodeId: data.anchorNodeId.present
+          ? data.anchorNodeId.value
+          : this.anchorNodeId,
+      characterOffset: data.characterOffset.present
+          ? data.characterOffset.value
+          : this.characterOffset,
+      progressPercentage: data.progressPercentage.present
+          ? data.progressPercentage.value
+          : this.progressPercentage,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -1962,14 +2078,26 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           ..write('chapterId: $chapterId, ')
           ..write('position: $position, ')
           ..write('label: $label, ')
+          ..write('anchorNodeId: $anchorNodeId, ')
+          ..write('characterOffset: $characterOffset, ')
+          ..write('progressPercentage: $progressPercentage, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, bookId, chapterId, position, label, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    bookId,
+    chapterId,
+    position,
+    label,
+    anchorNodeId,
+    characterOffset,
+    progressPercentage,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1979,6 +2107,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           other.chapterId == this.chapterId &&
           other.position == this.position &&
           other.label == this.label &&
+          other.anchorNodeId == this.anchorNodeId &&
+          other.characterOffset == this.characterOffset &&
+          other.progressPercentage == this.progressPercentage &&
           other.createdAt == this.createdAt);
 }
 
@@ -1988,6 +2119,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
   final Value<String?> chapterId;
   final Value<int> position;
   final Value<String> label;
+  final Value<String?> anchorNodeId;
+  final Value<int> characterOffset;
+  final Value<double> progressPercentage;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const BookmarksCompanion({
@@ -1996,6 +2130,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.chapterId = const Value.absent(),
     this.position = const Value.absent(),
     this.label = const Value.absent(),
+    this.anchorNodeId = const Value.absent(),
+    this.characterOffset = const Value.absent(),
+    this.progressPercentage = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2005,6 +2142,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.chapterId = const Value.absent(),
     required int position,
     required String label,
+    this.anchorNodeId = const Value.absent(),
+    this.characterOffset = const Value.absent(),
+    this.progressPercentage = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -2018,6 +2158,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Expression<String>? chapterId,
     Expression<int>? position,
     Expression<String>? label,
+    Expression<String>? anchorNodeId,
+    Expression<int>? characterOffset,
+    Expression<double>? progressPercentage,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -2027,6 +2170,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       if (chapterId != null) 'chapter_id': chapterId,
       if (position != null) 'position': position,
       if (label != null) 'label': label,
+      if (anchorNodeId != null) 'anchor_node_id': anchorNodeId,
+      if (characterOffset != null) 'character_offset': characterOffset,
+      if (progressPercentage != null) 'progress_percentage': progressPercentage,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2038,6 +2184,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Value<String?>? chapterId,
     Value<int>? position,
     Value<String>? label,
+    Value<String?>? anchorNodeId,
+    Value<int>? characterOffset,
+    Value<double>? progressPercentage,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -2047,6 +2196,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       chapterId: chapterId ?? this.chapterId,
       position: position ?? this.position,
       label: label ?? this.label,
+      anchorNodeId: anchorNodeId ?? this.anchorNodeId,
+      characterOffset: characterOffset ?? this.characterOffset,
+      progressPercentage: progressPercentage ?? this.progressPercentage,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2070,6 +2222,15 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     if (label.present) {
       map['label'] = Variable<String>(label.value);
     }
+    if (anchorNodeId.present) {
+      map['anchor_node_id'] = Variable<String>(anchorNodeId.value);
+    }
+    if (characterOffset.present) {
+      map['character_offset'] = Variable<int>(characterOffset.value);
+    }
+    if (progressPercentage.present) {
+      map['progress_percentage'] = Variable<double>(progressPercentage.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2087,6 +2248,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
           ..write('chapterId: $chapterId, ')
           ..write('position: $position, ')
           ..write('label: $label, ')
+          ..write('anchorNodeId: $anchorNodeId, ')
+          ..write('characterOffset: $characterOffset, ')
+          ..write('progressPercentage: $progressPercentage, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2184,6 +2348,75 @@ class $HighlightsTable extends Highlights
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _anchorNodeIdMeta = const VerificationMeta(
+    'anchorNodeId',
+  );
+  @override
+  late final GeneratedColumn<String> anchorNodeId = GeneratedColumn<String>(
+    'anchor_node_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startOffsetMeta = const VerificationMeta(
+    'startOffset',
+  );
+  @override
+  late final GeneratedColumn<int> startOffset = GeneratedColumn<int>(
+    'start_offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _endOffsetMeta = const VerificationMeta(
+    'endOffset',
+  );
+  @override
+  late final GeneratedColumn<int> endOffset = GeneratedColumn<int>(
+    'end_offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _prefixContextMeta = const VerificationMeta(
+    'prefixContext',
+  );
+  @override
+  late final GeneratedColumn<String> prefixContext = GeneratedColumn<String>(
+    'prefix_context',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _suffixContextMeta = const VerificationMeta(
+    'suffixContext',
+  );
+  @override
+  late final GeneratedColumn<String> suffixContext = GeneratedColumn<String>(
+    'suffix_context',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _anchorVersionMeta = const VerificationMeta(
+    'anchorVersion',
+  );
+  @override
+  late final GeneratedColumn<int> anchorVersion = GeneratedColumn<int>(
+    'anchor_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2205,6 +2438,12 @@ class $HighlightsTable extends Highlights
     endPosition,
     color,
     note,
+    anchorNodeId,
+    startOffset,
+    endOffset,
+    prefixContext,
+    suffixContext,
+    anchorVersion,
     createdAt,
   ];
   @override
@@ -2283,6 +2522,57 @@ class $HighlightsTable extends Highlights
         note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
+    if (data.containsKey('anchor_node_id')) {
+      context.handle(
+        _anchorNodeIdMeta,
+        anchorNodeId.isAcceptableOrUnknown(
+          data['anchor_node_id']!,
+          _anchorNodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_offset')) {
+      context.handle(
+        _startOffsetMeta,
+        startOffset.isAcceptableOrUnknown(
+          data['start_offset']!,
+          _startOffsetMeta,
+        ),
+      );
+    }
+    if (data.containsKey('end_offset')) {
+      context.handle(
+        _endOffsetMeta,
+        endOffset.isAcceptableOrUnknown(data['end_offset']!, _endOffsetMeta),
+      );
+    }
+    if (data.containsKey('prefix_context')) {
+      context.handle(
+        _prefixContextMeta,
+        prefixContext.isAcceptableOrUnknown(
+          data['prefix_context']!,
+          _prefixContextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('suffix_context')) {
+      context.handle(
+        _suffixContextMeta,
+        suffixContext.isAcceptableOrUnknown(
+          data['suffix_context']!,
+          _suffixContextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchor_version')) {
+      context.handle(
+        _anchorVersionMeta,
+        anchorVersion.isAcceptableOrUnknown(
+          data['anchor_version']!,
+          _anchorVersionMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2332,6 +2622,30 @@ class $HighlightsTable extends Highlights
         DriftSqlType.string,
         data['${effectivePrefix}note'],
       ),
+      anchorNodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchor_node_id'],
+      ),
+      startOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_offset'],
+      )!,
+      endOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_offset'],
+      )!,
+      prefixContext: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prefix_context'],
+      ),
+      suffixContext: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}suffix_context'],
+      ),
+      anchorVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}anchor_version'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2354,6 +2668,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
   final int endPosition;
   final String color;
   final String? note;
+  final String? anchorNodeId;
+  final int startOffset;
+  final int endOffset;
+  final String? prefixContext;
+  final String? suffixContext;
+  final int anchorVersion;
   final DateTime createdAt;
   const Highlight({
     required this.id,
@@ -2364,6 +2684,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     required this.endPosition,
     required this.color,
     this.note,
+    this.anchorNodeId,
+    required this.startOffset,
+    required this.endOffset,
+    this.prefixContext,
+    this.suffixContext,
+    required this.anchorVersion,
     required this.createdAt,
   });
   @override
@@ -2381,6 +2707,18 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
+    if (!nullToAbsent || anchorNodeId != null) {
+      map['anchor_node_id'] = Variable<String>(anchorNodeId);
+    }
+    map['start_offset'] = Variable<int>(startOffset);
+    map['end_offset'] = Variable<int>(endOffset);
+    if (!nullToAbsent || prefixContext != null) {
+      map['prefix_context'] = Variable<String>(prefixContext);
+    }
+    if (!nullToAbsent || suffixContext != null) {
+      map['suffix_context'] = Variable<String>(suffixContext);
+    }
+    map['anchor_version'] = Variable<int>(anchorVersion);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -2397,6 +2735,18 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       endPosition: Value(endPosition),
       color: Value(color),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      anchorNodeId: anchorNodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorNodeId),
+      startOffset: Value(startOffset),
+      endOffset: Value(endOffset),
+      prefixContext: prefixContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(prefixContext),
+      suffixContext: suffixContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(suffixContext),
+      anchorVersion: Value(anchorVersion),
       createdAt: Value(createdAt),
     );
   }
@@ -2415,6 +2765,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       endPosition: serializer.fromJson<int>(json['endPosition']),
       color: serializer.fromJson<String>(json['color']),
       note: serializer.fromJson<String?>(json['note']),
+      anchorNodeId: serializer.fromJson<String?>(json['anchorNodeId']),
+      startOffset: serializer.fromJson<int>(json['startOffset']),
+      endOffset: serializer.fromJson<int>(json['endOffset']),
+      prefixContext: serializer.fromJson<String?>(json['prefixContext']),
+      suffixContext: serializer.fromJson<String?>(json['suffixContext']),
+      anchorVersion: serializer.fromJson<int>(json['anchorVersion']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -2430,6 +2786,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       'endPosition': serializer.toJson<int>(endPosition),
       'color': serializer.toJson<String>(color),
       'note': serializer.toJson<String?>(note),
+      'anchorNodeId': serializer.toJson<String?>(anchorNodeId),
+      'startOffset': serializer.toJson<int>(startOffset),
+      'endOffset': serializer.toJson<int>(endOffset),
+      'prefixContext': serializer.toJson<String?>(prefixContext),
+      'suffixContext': serializer.toJson<String?>(suffixContext),
+      'anchorVersion': serializer.toJson<int>(anchorVersion),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -2443,6 +2805,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     int? endPosition,
     String? color,
     Value<String?> note = const Value.absent(),
+    Value<String?> anchorNodeId = const Value.absent(),
+    int? startOffset,
+    int? endOffset,
+    Value<String?> prefixContext = const Value.absent(),
+    Value<String?> suffixContext = const Value.absent(),
+    int? anchorVersion,
     DateTime? createdAt,
   }) => Highlight(
     id: id ?? this.id,
@@ -2453,6 +2821,16 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     endPosition: endPosition ?? this.endPosition,
     color: color ?? this.color,
     note: note.present ? note.value : this.note,
+    anchorNodeId: anchorNodeId.present ? anchorNodeId.value : this.anchorNodeId,
+    startOffset: startOffset ?? this.startOffset,
+    endOffset: endOffset ?? this.endOffset,
+    prefixContext: prefixContext.present
+        ? prefixContext.value
+        : this.prefixContext,
+    suffixContext: suffixContext.present
+        ? suffixContext.value
+        : this.suffixContext,
+    anchorVersion: anchorVersion ?? this.anchorVersion,
     createdAt: createdAt ?? this.createdAt,
   );
   Highlight copyWithCompanion(HighlightsCompanion data) {
@@ -2471,6 +2849,22 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           : this.endPosition,
       color: data.color.present ? data.color.value : this.color,
       note: data.note.present ? data.note.value : this.note,
+      anchorNodeId: data.anchorNodeId.present
+          ? data.anchorNodeId.value
+          : this.anchorNodeId,
+      startOffset: data.startOffset.present
+          ? data.startOffset.value
+          : this.startOffset,
+      endOffset: data.endOffset.present ? data.endOffset.value : this.endOffset,
+      prefixContext: data.prefixContext.present
+          ? data.prefixContext.value
+          : this.prefixContext,
+      suffixContext: data.suffixContext.present
+          ? data.suffixContext.value
+          : this.suffixContext,
+      anchorVersion: data.anchorVersion.present
+          ? data.anchorVersion.value
+          : this.anchorVersion,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -2486,6 +2880,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           ..write('endPosition: $endPosition, ')
           ..write('color: $color, ')
           ..write('note: $note, ')
+          ..write('anchorNodeId: $anchorNodeId, ')
+          ..write('startOffset: $startOffset, ')
+          ..write('endOffset: $endOffset, ')
+          ..write('prefixContext: $prefixContext, ')
+          ..write('suffixContext: $suffixContext, ')
+          ..write('anchorVersion: $anchorVersion, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -2501,6 +2901,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     endPosition,
     color,
     note,
+    anchorNodeId,
+    startOffset,
+    endOffset,
+    prefixContext,
+    suffixContext,
+    anchorVersion,
     createdAt,
   );
   @override
@@ -2515,6 +2921,12 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           other.endPosition == this.endPosition &&
           other.color == this.color &&
           other.note == this.note &&
+          other.anchorNodeId == this.anchorNodeId &&
+          other.startOffset == this.startOffset &&
+          other.endOffset == this.endOffset &&
+          other.prefixContext == this.prefixContext &&
+          other.suffixContext == this.suffixContext &&
+          other.anchorVersion == this.anchorVersion &&
           other.createdAt == this.createdAt);
 }
 
@@ -2527,6 +2939,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
   final Value<int> endPosition;
   final Value<String> color;
   final Value<String?> note;
+  final Value<String?> anchorNodeId;
+  final Value<int> startOffset;
+  final Value<int> endOffset;
+  final Value<String?> prefixContext;
+  final Value<String?> suffixContext;
+  final Value<int> anchorVersion;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const HighlightsCompanion({
@@ -2538,6 +2956,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     this.endPosition = const Value.absent(),
     this.color = const Value.absent(),
     this.note = const Value.absent(),
+    this.anchorNodeId = const Value.absent(),
+    this.startOffset = const Value.absent(),
+    this.endOffset = const Value.absent(),
+    this.prefixContext = const Value.absent(),
+    this.suffixContext = const Value.absent(),
+    this.anchorVersion = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -2550,6 +2974,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     required int endPosition,
     this.color = const Value.absent(),
     this.note = const Value.absent(),
+    this.anchorNodeId = const Value.absent(),
+    this.startOffset = const Value.absent(),
+    this.endOffset = const Value.absent(),
+    this.prefixContext = const Value.absent(),
+    this.suffixContext = const Value.absent(),
+    this.anchorVersion = const Value.absent(),
     required DateTime createdAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -2567,6 +2997,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     Expression<int>? endPosition,
     Expression<String>? color,
     Expression<String>? note,
+    Expression<String>? anchorNodeId,
+    Expression<int>? startOffset,
+    Expression<int>? endOffset,
+    Expression<String>? prefixContext,
+    Expression<String>? suffixContext,
+    Expression<int>? anchorVersion,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -2579,6 +3015,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
       if (endPosition != null) 'end_position': endPosition,
       if (color != null) 'color': color,
       if (note != null) 'note': note,
+      if (anchorNodeId != null) 'anchor_node_id': anchorNodeId,
+      if (startOffset != null) 'start_offset': startOffset,
+      if (endOffset != null) 'end_offset': endOffset,
+      if (prefixContext != null) 'prefix_context': prefixContext,
+      if (suffixContext != null) 'suffix_context': suffixContext,
+      if (anchorVersion != null) 'anchor_version': anchorVersion,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2593,6 +3035,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     Value<int>? endPosition,
     Value<String>? color,
     Value<String?>? note,
+    Value<String?>? anchorNodeId,
+    Value<int>? startOffset,
+    Value<int>? endOffset,
+    Value<String?>? prefixContext,
+    Value<String?>? suffixContext,
+    Value<int>? anchorVersion,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -2605,6 +3053,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
       endPosition: endPosition ?? this.endPosition,
       color: color ?? this.color,
       note: note ?? this.note,
+      anchorNodeId: anchorNodeId ?? this.anchorNodeId,
+      startOffset: startOffset ?? this.startOffset,
+      endOffset: endOffset ?? this.endOffset,
+      prefixContext: prefixContext ?? this.prefixContext,
+      suffixContext: suffixContext ?? this.suffixContext,
+      anchorVersion: anchorVersion ?? this.anchorVersion,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2637,6 +3091,24 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
+    if (anchorNodeId.present) {
+      map['anchor_node_id'] = Variable<String>(anchorNodeId.value);
+    }
+    if (startOffset.present) {
+      map['start_offset'] = Variable<int>(startOffset.value);
+    }
+    if (endOffset.present) {
+      map['end_offset'] = Variable<int>(endOffset.value);
+    }
+    if (prefixContext.present) {
+      map['prefix_context'] = Variable<String>(prefixContext.value);
+    }
+    if (suffixContext.present) {
+      map['suffix_context'] = Variable<String>(suffixContext.value);
+    }
+    if (anchorVersion.present) {
+      map['anchor_version'] = Variable<int>(anchorVersion.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2657,6 +3129,12 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
           ..write('endPosition: $endPosition, ')
           ..write('color: $color, ')
           ..write('note: $note, ')
+          ..write('anchorNodeId: $anchorNodeId, ')
+          ..write('startOffset: $startOffset, ')
+          ..write('endOffset: $endOffset, ')
+          ..write('prefixContext: $prefixContext, ')
+          ..write('suffixContext: $suffixContext, ')
+          ..write('anchorVersion: $anchorVersion, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4844,6 +5322,9 @@ typedef $$BookmarksTableCreateCompanionBuilder =
       Value<String?> chapterId,
       required int position,
       required String label,
+      Value<String?> anchorNodeId,
+      Value<int> characterOffset,
+      Value<double> progressPercentage,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -4854,6 +5335,9 @@ typedef $$BookmarksTableUpdateCompanionBuilder =
       Value<String?> chapterId,
       Value<int> position,
       Value<String> label,
+      Value<String?> anchorNodeId,
+      Value<int> characterOffset,
+      Value<double> progressPercentage,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4906,6 +5390,21 @@ class $$BookmarksTableFilterComposer
 
   ColumnFilters<String> get label => $composableBuilder(
     column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get characterOffset => $composableBuilder(
+    column: $table.characterOffset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get progressPercentage => $composableBuilder(
+    column: $table.progressPercentage,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4967,6 +5466,21 @@ class $$BookmarksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get characterOffset => $composableBuilder(
+    column: $table.characterOffset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get progressPercentage => $composableBuilder(
+    column: $table.progressPercentage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5016,6 +5530,21 @@ class $$BookmarksTableAnnotationComposer
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get characterOffset => $composableBuilder(
+    column: $table.characterOffset,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get progressPercentage => $composableBuilder(
+    column: $table.progressPercentage,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5077,6 +5606,9 @@ class $$BookmarksTableTableManager
                 Value<String?> chapterId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<String> label = const Value.absent(),
+                Value<String?> anchorNodeId = const Value.absent(),
+                Value<int> characterOffset = const Value.absent(),
+                Value<double> progressPercentage = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BookmarksCompanion(
@@ -5085,6 +5617,9 @@ class $$BookmarksTableTableManager
                 chapterId: chapterId,
                 position: position,
                 label: label,
+                anchorNodeId: anchorNodeId,
+                characterOffset: characterOffset,
+                progressPercentage: progressPercentage,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5095,6 +5630,9 @@ class $$BookmarksTableTableManager
                 Value<String?> chapterId = const Value.absent(),
                 required int position,
                 required String label,
+                Value<String?> anchorNodeId = const Value.absent(),
+                Value<int> characterOffset = const Value.absent(),
+                Value<double> progressPercentage = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => BookmarksCompanion.insert(
@@ -5103,6 +5641,9 @@ class $$BookmarksTableTableManager
                 chapterId: chapterId,
                 position: position,
                 label: label,
+                anchorNodeId: anchorNodeId,
+                characterOffset: characterOffset,
+                progressPercentage: progressPercentage,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5183,6 +5724,12 @@ typedef $$HighlightsTableCreateCompanionBuilder =
       required int endPosition,
       Value<String> color,
       Value<String?> note,
+      Value<String?> anchorNodeId,
+      Value<int> startOffset,
+      Value<int> endOffset,
+      Value<String?> prefixContext,
+      Value<String?> suffixContext,
+      Value<int> anchorVersion,
       required DateTime createdAt,
       Value<int> rowid,
     });
@@ -5196,6 +5743,12 @@ typedef $$HighlightsTableUpdateCompanionBuilder =
       Value<int> endPosition,
       Value<String> color,
       Value<String?> note,
+      Value<String?> anchorNodeId,
+      Value<int> startOffset,
+      Value<int> endOffset,
+      Value<String?> prefixContext,
+      Value<String?> suffixContext,
+      Value<int> anchorVersion,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -5263,6 +5816,36 @@ class $$HighlightsTableFilterComposer
 
   ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startOffset => $composableBuilder(
+    column: $table.startOffset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get endOffset => $composableBuilder(
+    column: $table.endOffset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get prefixContext => $composableBuilder(
+    column: $table.prefixContext,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get suffixContext => $composableBuilder(
+    column: $table.suffixContext,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anchorVersion => $composableBuilder(
+    column: $table.anchorVersion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5339,6 +5922,36 @@ class $$HighlightsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startOffset => $composableBuilder(
+    column: $table.startOffset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get endOffset => $composableBuilder(
+    column: $table.endOffset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get prefixContext => $composableBuilder(
+    column: $table.prefixContext,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get suffixContext => $composableBuilder(
+    column: $table.suffixContext,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get anchorVersion => $composableBuilder(
+    column: $table.anchorVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5404,6 +6017,34 @@ class $$HighlightsTableAnnotationComposer
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
+  GeneratedColumn<String> get anchorNodeId => $composableBuilder(
+    column: $table.anchorNodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get startOffset => $composableBuilder(
+    column: $table.startOffset,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get endOffset =>
+      $composableBuilder(column: $table.endOffset, builder: (column) => column);
+
+  GeneratedColumn<String> get prefixContext => $composableBuilder(
+    column: $table.prefixContext,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get suffixContext => $composableBuilder(
+    column: $table.suffixContext,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get anchorVersion => $composableBuilder(
+    column: $table.anchorVersion,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -5467,6 +6108,12 @@ class $$HighlightsTableTableManager
                 Value<int> endPosition = const Value.absent(),
                 Value<String> color = const Value.absent(),
                 Value<String?> note = const Value.absent(),
+                Value<String?> anchorNodeId = const Value.absent(),
+                Value<int> startOffset = const Value.absent(),
+                Value<int> endOffset = const Value.absent(),
+                Value<String?> prefixContext = const Value.absent(),
+                Value<String?> suffixContext = const Value.absent(),
+                Value<int> anchorVersion = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HighlightsCompanion(
@@ -5478,6 +6125,12 @@ class $$HighlightsTableTableManager
                 endPosition: endPosition,
                 color: color,
                 note: note,
+                anchorNodeId: anchorNodeId,
+                startOffset: startOffset,
+                endOffset: endOffset,
+                prefixContext: prefixContext,
+                suffixContext: suffixContext,
+                anchorVersion: anchorVersion,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -5491,6 +6144,12 @@ class $$HighlightsTableTableManager
                 required int endPosition,
                 Value<String> color = const Value.absent(),
                 Value<String?> note = const Value.absent(),
+                Value<String?> anchorNodeId = const Value.absent(),
+                Value<int> startOffset = const Value.absent(),
+                Value<int> endOffset = const Value.absent(),
+                Value<String?> prefixContext = const Value.absent(),
+                Value<String?> suffixContext = const Value.absent(),
+                Value<int> anchorVersion = const Value.absent(),
                 required DateTime createdAt,
                 Value<int> rowid = const Value.absent(),
               }) => HighlightsCompanion.insert(
@@ -5502,6 +6161,12 @@ class $$HighlightsTableTableManager
                 endPosition: endPosition,
                 color: color,
                 note: note,
+                anchorNodeId: anchorNodeId,
+                startOffset: startOffset,
+                endOffset: endOffset,
+                prefixContext: prefixContext,
+                suffixContext: suffixContext,
+                anchorVersion: anchorVersion,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

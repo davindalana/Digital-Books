@@ -18,7 +18,7 @@ class AppDatabase extends _$AppDatabase {
       : super(e ?? driftDatabase(name: 'digital_books_db'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -32,6 +32,17 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.addColumn(books, books.fileHash);
             await m.addColumn(readingProgresses, readingProgresses.lastReadingMode);
+          }
+          if (from < 3) {
+            await m.addColumn(bookmarks, bookmarks.anchorNodeId);
+            await m.addColumn(bookmarks, bookmarks.characterOffset);
+            await m.addColumn(bookmarks, bookmarks.progressPercentage);
+            await m.addColumn(highlights, highlights.anchorNodeId);
+            await m.addColumn(highlights, highlights.startOffset);
+            await m.addColumn(highlights, highlights.endOffset);
+            await m.addColumn(highlights, highlights.prefixContext);
+            await m.addColumn(highlights, highlights.suffixContext);
+            await m.addColumn(highlights, highlights.anchorVersion);
           }
         },
       );

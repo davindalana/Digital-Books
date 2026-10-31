@@ -108,6 +108,12 @@ final allHighlightsStreamProvider =
   return dbService.watchAllHighlights();
 });
 
+final allNotesStreamProvider =
+    StreamProvider<List<HighlightWithBook>>((ref) {
+  final dbService = ref.watch(databaseServiceProvider);
+  return dbService.watchAllNotes();
+});
+
 final collectionBookCountsStreamProvider =
     StreamProvider<Map<String, int>>((ref) {
   final dbService = ref.watch(databaseServiceProvider);

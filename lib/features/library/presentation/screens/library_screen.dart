@@ -14,6 +14,7 @@ import '../../../../core/utils/book_sort_helper.dart';
 import '../../../../core/utils/sample_book_generator.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
+import '../../../reader/presentation/widgets/reflowable/highlight_interaction_sheet.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_details_dialog.dart';
@@ -1325,6 +1326,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ? ReadingMode.originalPdf
                               : ReadingMode.reflowable,
                           initialPage: bookmark.position,
+                          initialAnchorNodeId: bookmark.anchorNodeId,
+                          initialCharOffset: bookmark.characterOffset,
                         ),
                       ),
                     );
@@ -1489,6 +1492,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ? ReadingMode.originalPdf
                               : ReadingMode.reflowable,
                           initialPage: highlight.startPosition,
+                          initialAnchorNodeId: highlight.anchorNodeId,
+                          initialCharOffset: highlight.startOffset,
                         ),
                       ),
                     );
@@ -1544,6 +1549,33 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_note_rounded, size: 20),
+                              color: Colors.grey.shade400,
+                              tooltip: 'Edit Note / Color',
+                              onPressed: () {
+                                HighlightInteractionSheet.show(
+                                  context: context,
+                                  existingHighlight: highlight,
+                                  selectedText: highlight.selectedText,
+                                  initialColor: highlight.color,
+                                  initialNote: highlight.note,
+                                  theme: isDark ? ReadingThemeType.black : ReadingThemeType.white,
+                                  onSave: (color, note) async {
+                                    final dbService = ref.read(databaseServiceProvider);
+                                    if (color != highlight.color) {
+                                      await dbService.updateHighlightColor(highlight.id, color);
+                                    }
+                                    if (note != highlight.note) {
+                                      await dbService.updateHighlightNote(highlight.id, note);
+                                    }
+                                  },
+                                  onDelete: () async {
+                                    await ref.read(databaseServiceProvider).deleteHighlight(highlight.id);
+                                  },
+                                );
+                              },
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete_outline, size: 18),
