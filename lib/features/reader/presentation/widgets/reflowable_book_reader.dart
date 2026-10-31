@@ -212,7 +212,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.document.isScanned) {
+    final hasContent = widget.document.chapters.any((c) => c.blocks.isNotEmpty);
+    if (!hasContent) {
       return Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 460),
