@@ -55,6 +55,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     final currentProviderMode = ref.read(activeReadingModeProvider(widget.book.id));
     _readingMode = widget.initialMode ??
         (widget.book.isScanned ? ReadingMode.originalPdf : currentProviderMode);
+
+    debugPrint('[PDF_DIAGNOSTIC] === ReadingScreen.initState ===');
+    debugPrint('[PDF_DIAGNOSTIC] Book ID: ${widget.book.id}');
+    debugPrint('[PDF_DIAGNOSTIC] Book Title: "${widget.book.title}"');
+    debugPrint('[PDF_DIAGNOSTIC] Book isScanned: ${widget.book.isScanned}');
+    debugPrint('[PDF_DIAGNOSTIC] widget.initialMode: ${widget.initialMode}');
+    debugPrint('[PDF_DIAGNOSTIC] activeReadingModeProvider: $currentProviderMode');
+    debugPrint('[PDF_DIAGNOSTIC] Selected ReadingMode: $_readingMode');
+    debugPrint('[PDF_DIAGNOSTIC] Original PDF Path: ${widget.book.originalPdfPath}');
+    debugPrint('[PDF_DIAGNOSTIC] Processed Book Path: ${widget.book.processedBookPath}');
+
     _loadBookDocumentAndProgress();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -224,15 +235,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       _progressPercentage = percentage;
     });
 
-    final dbService = ref.read(databaseServiceProvider);
-    dbService.upsertProgress(ReadingProgressesCompanion(
-      id: drift.Value(const Uuid().v4()),
-      bookId: drift.Value(widget.book.id),
-      currentChapter: drift.Value(chapter),
-      currentPosition: drift.Value(position),
-      progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
-      lastReadAt: drift.Value(DateTime.now()),
-    ));
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      dbService.upsertProgress(ReadingProgressesCompanion(
+        id: drift.Value(const Uuid().v4()),
+        bookId: drift.Value(widget.book.id),
+        currentChapter: drift.Value(chapter),
+        currentPosition: drift.Value(position),
+        progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
+        lastReadAt: drift.Value(DateTime.now()),
+      ));
+    } catch (_) {}
   }
 
   void _toggleControls() {
@@ -350,14 +363,31 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       },
       child: Scaffold(
         backgroundColor: activeTheme.backgroundColor,
-        body: Stack(
-          children: [
+        body: SizedBox.expand(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
             // 1. Reading Body Engine
             Positioned.fill(
               child: _isLoadingDoc
                   ? Center(
-                      child: CircularProgressIndicator(
-                        color: activeTheme.textColor,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            color: activeTheme.textColor,
+                            strokeWidth: 3,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Menyiapkan buku...',
+                            style: TextStyle(
+                              color: activeTheme.textColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : (_readingMode == ReadingMode.reflowable && _document != null)
@@ -393,6 +423,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           initialPage: _currentPage,
                           theme: activeTheme,
                           onTapContent: _toggleControls,
+                          onSwitchToReflowable: _document != null
+                              ? () => _setReadingMode(ReadingMode.reflowable)
+                              : null,
+                          onBack: () => Navigator.of(context).pop(),
                           onPageChanged: (page, total) {
                             setState(() {
                               _currentPage = page;
@@ -445,7 +479,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFloatingTopBar(
@@ -485,6 +520,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                 children: [
                   // Back button
                   IconButton(
+                    key: const ValueKey('reader_top_back_button'),
+                    tooltip: 'Back',
                     icon: Icon(
                       Icons.chevron_left,
                       color: activeTheme.textColor,
@@ -552,6 +589,31 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
+
+                  // 1-Page vs 2-Page Slide Toggle in Reflowable Mode
+                  if (readingMode == ReadingMode.reflowable)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final typo = ref.watch(typographySettingsStateProvider);
+                        return IconButton(
+                          tooltip: typo.twoPageSpread
+                              ? 'Tampilan 2 Halaman (Klik untuk 1 Halaman)'
+                              : 'Tampilan 1 Halaman (Klik untuk 2 Halaman)',
+                          icon: Icon(
+                            typo.twoPageSpread
+                                ? Icons.auto_stories_rounded
+                                : Icons.article_rounded,
+                            color: activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            final current = ref.read(typographySettingsStateProvider);
+                            ref.read(typographySettingsStateProvider.notifier).state =
+                                current.copyWith(twoPageSpread: !current.twoPageSpread);
+                          },
+                        );
+                      },
+                    ),
 
                   // Zoom controls in Original PDF Mode
                   if (readingMode == ReadingMode.originalPdf) ...[

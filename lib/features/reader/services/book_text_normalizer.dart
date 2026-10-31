@@ -299,7 +299,12 @@ class BookTextNormalizer {
     }
 
     // Single or double isolated letters from publisher logos or vertical OCR spine (e.g. "G", "S", "H", "K H")
-    if (RegExp(r'^[a-zA-Z](\s+[a-zA-Z]){0,2}$').hasMatch(trimmed)) {
+    if (RegExp(r'^[a-zA-Z](\s+[a-zA-Z]){0,3}$').hasMatch(trimmed)) {
+      return true;
+    }
+
+    // Short lines without vowels (likely OCR gibberish e.g. "KH", "MK", "HTA", "LH")
+    if (trimmed.length <= 4 && !RegExp(r'[aeiouyAEIOUY0-9]').hasMatch(trimmed)) {
       return true;
     }
 
@@ -311,7 +316,7 @@ class BookTextNormalizer {
     const garbageHeaders = {
       'ith lh', 'hta la', 'kesetaan mk x', 'to ko', 'kompas gramedia',
       'penerbit gramedia', 'gramedia pustaka utama', 'sfile.mobi', 'epub',
-      'kesetiaan mr. x', 'kesetiaan mr x', 'keigo higashino',
+      'kesetiaan mr. x', 'kesetiaan mr x', 'keigo higashino', 'mk x',
     };
     if (garbageHeaders.contains(lower)) {
       return true;

@@ -840,13 +840,19 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     // 4. Regular Paragraph / Standalone Line Block
     final text = block.text;
 
-    // Check if line is a standalone title / metadata line that should be centered
-    final isShortCentered = text.length <= 45 &&
-        !text.endsWith('.') &&
-        !text.endsWith(',') &&
-        !text.startsWith('(') &&
-        !text.startsWith('"') &&
-        !text.startsWith('“');
+    // Check if line is a standalone title / subtitle / disclaimer header that should be centered
+    final isShortCentered = (text.length <= 50 &&
+            !text.endsWith('.') &&
+            !text.endsWith(',') &&
+            !text.startsWith('(') &&
+            !text.startsWith('"') &&
+            !text.startsWith('“') &&
+            !text.startsWith('-')) ||
+        (text.length <= 60 &&
+            (text == text.toUpperCase() ||
+                text.startsWith('Sanksi') ||
+                text.startsWith('Undang-undang') ||
+                text.startsWith('tentang ')));
 
     if (isShortCentered) {
       return Padding(
@@ -865,9 +871,17 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       );
     }
 
-    // Drop Cap: ONLY for genuine opening paragraphs (> 80 chars, begins with valid letter)
+    // Drop Cap: ONLY for genuine opening paragraphs (> 100 chars, begins with valid word of >= 3 letters containing vowels)
+    final words = text.split(RegExp(r'\s+'));
+    final firstWord = words.isNotEmpty
+        ? words.first.replaceAll(RegExp(r'[^a-zA-Z]'), '')
+        : '';
+    final hasRealWord =
+        firstWord.length >= 3 && RegExp(r'[aeiouyAEIOUY]').hasMatch(firstWord);
+
     final canHaveDropCap = isFirstParagraphOfChapter &&
-        text.length > 80 &&
+        text.length > 100 &&
+        hasRealWord &&
         RegExp(r'^[A-Za-z]').hasMatch(text) &&
         !text.startsWith('"') &&
         !text.startsWith('“') &&

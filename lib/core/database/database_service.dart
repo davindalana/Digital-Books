@@ -126,8 +126,23 @@ class DatabaseService {
         .getSingleOrNull();
   }
 
-  Future<int> upsertProgress(ReadingProgressesCompanion progress) {
-    return db.into(db.readingProgresses).insertOnConflictUpdate(progress);
+  Future<int> upsertProgress(ReadingProgressesCompanion progress) async {
+    final bookIdVal = progress.bookId.value;
+    final existing = await getProgress(bookIdVal);
+    if (existing != null) {
+      return (db.update(db.readingProgresses)
+            ..where((t) => t.bookId.equals(bookIdVal)))
+          .write(
+        ReadingProgressesCompanion(
+          currentChapter: progress.currentChapter,
+          currentPosition: progress.currentPosition,
+          progressPercentage: progress.progressPercentage,
+          lastReadAt: progress.lastReadAt,
+        ),
+      );
+    } else {
+      return db.into(db.readingProgresses).insert(progress);
+    }
   }
 
   // --- Bookmarks ---

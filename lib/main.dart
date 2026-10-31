@@ -1,9 +1,32 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/library/presentation/screens/library_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    try {
+      File('/tmp/flutter_crash.log').writeAsStringSync(
+        '=== FLUTTER ERROR ===\n${details.exceptionAsString()}\nSTACK:\n${details.stack}\n\n',
+        mode: FileMode.append,
+      );
+    } catch (_) {}
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    try {
+      File('/tmp/flutter_crash.log').writeAsStringSync(
+        '=== ASYNC ERROR ===\n$error\nSTACK:\n$stack\n\n',
+        mode: FileMode.append,
+      );
+    } catch (_) {}
+    return true;
+  };
+
   runApp(
     const ProviderScope(
       child: DigitalBooksApp(),
