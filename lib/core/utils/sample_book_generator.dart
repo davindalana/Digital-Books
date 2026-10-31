@@ -7,7 +7,10 @@ import '../../features/processing/services/pdf_processing_pipeline.dart';
 import '../database/app_database.dart';
 
 class SampleBookGenerator {
-  static Future<File> createSamplePdfFile(Directory dir, [String filename = 'sherlock_holmes_sample.pdf']) async {
+  static Future<File> createSamplePdfFile(
+    Directory dir, [
+    String filename = 'sherlock_holmes_sample.pdf',
+  ]) async {
     final samplePdfFile = File(p.join(dir.path, filename));
 
     final document = PdfDocument();
@@ -15,7 +18,11 @@ class SampleBookGenerator {
     document.documentInformation.author = 'Arthur Conan Doyle';
     document.documentInformation.subject = 'Classic Detective Mystery';
 
-    final fontHeader = PdfStandardFont(PdfFontFamily.helvetica, 18, style: PdfFontStyle.bold);
+    final fontHeader = PdfStandardFont(
+      PdfFontFamily.helvetica,
+      18,
+      style: PdfFontStyle.bold,
+    );
     final fontBody = PdfStandardFont(PdfFontFamily.timesRoman, 12);
     final brush = PdfSolidBrush(PdfColor(20, 20, 20));
 
@@ -41,7 +48,8 @@ class SampleBookGenerator {
   }
 
   static Future<Book> generateAndImportSampleBook(
-      PdfProcessingPipeline pipeline) async {
+    PdfProcessingPipeline pipeline,
+  ) async {
     final tempDir = await getTemporaryDirectory();
     final samplePdfFile = await createSamplePdfFile(tempDir);
 
@@ -52,4 +60,3 @@ class SampleBookGenerator {
     );
   }
 }
-

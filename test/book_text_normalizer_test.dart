@@ -19,7 +19,8 @@ void main() {
               const BookBlock(
                 id: 'b1',
                 type: BlockType.paragraph,
-                text: 'KEIGO HIGASHINO\nSATU\nPukul 07.35. Ishigami pergi bekerja.',
+                text:
+                    'KEIGO HIGASHINO\nSATU\nPukul 07.35. Ishigami pergi bekerja.',
               ),
               const BookBlock(
                 id: 'b2',
@@ -33,12 +34,14 @@ void main() {
 
       final normalized = BookTextNormalizer.normalizeDocument(doc);
       expect(normalized.chapters.length, greaterThanOrEqualTo(1));
-      
+
       // Find chapter with SATU
-      final satuChapter = normalized.chapters.firstWhere((c) => c.title == 'SATU');
+      final satuChapter = normalized.chapters.firstWhere(
+        (c) => c.title == 'SATU',
+      );
       expect(satuChapter.blocks.first.type, equals(BlockType.heading));
       expect(satuChapter.blocks.first.text, equals('SATU'));
-      
+
       // Confirm KEIGO HIGASHINO and KESETIAAN MR. X headers were stripped from narrative
       for (final ch in normalized.chapters) {
         for (final b in ch.blocks) {
@@ -65,7 +68,8 @@ void main() {
               const BookBlock(
                 id: 'b1',
                 type: BlockType.paragraph,
-                text: 'la terus berjalan sambil agak mem-\nbungkuk karena angin.',
+                text:
+                    'la terus berjalan sambil agak mem-\nbungkuk karena angin.',
               ),
               const BookBlock(
                 id: 'b2',
@@ -89,4 +93,3 @@ void main() {
     });
   });
 }
-

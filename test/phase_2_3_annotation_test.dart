@@ -52,19 +52,22 @@ void main() {
           const ContentNode(
             id: 'ch0_p1',
             type: ContentNodeType.paragraph,
-            text: 'Ada hal-hal yang berada di bawah kendali kita, dan ada hal-hal yang tidak berada di bawah kendali kita. Pikiran dan tindakan kita adalah kuasa kita.',
+            text:
+                'Ada hal-hal yang berada di bawah kendali kita, dan ada hal-hal yang tidak berada di bawah kendali kita. Pikiran dan tindakan kita adalah kuasa kita.',
             sourcePdfPage: 1,
           ),
           const ContentNode(
             id: 'ch0_q1',
             type: ContentNodeType.quote,
-            text: 'Ketenangan batin sejati bermula dari penerimaan tulus terhadap hal yang di luar kendali.',
+            text:
+                'Ketenangan batin sejati bermula dari penerimaan tulus terhadap hal yang di luar kendali.',
             sourcePdfPage: 2,
           ),
           const ContentNode(
             id: 'ch0_p2',
             type: ContentNodeType.paragraph,
-            text: 'Ketika kita memahami dikotomi kendali, kecemasan tidak lagi menguasai kehidupan sehari-hari.',
+            text:
+                'Ketika kita memahami dikotomi kendali, kecemasan tidak lagi menguasai kehidupan sehari-hari.',
             sourcePdfPage: 2,
           ),
         ],
@@ -84,7 +87,8 @@ void main() {
           const ContentNode(
             id: 'ch1_p1',
             type: ContentNodeType.paragraph,
-            text: 'Bukan peristiwa yang membuat kita sedih atau marah, melainkan pertimbangan kita sendiri tentang peristiwa itu.',
+            text:
+                'Bukan peristiwa yang membuat kita sedih atau marah, melainkan pertimbangan kita sendiri tentang peristiwa itu.',
             sourcePdfPage: 3,
           ),
         ],
@@ -126,8 +130,13 @@ void main() {
       expect(res.status, AnchorResolutionStatus.offsetShifted);
       expect(res.confidence, greaterThanOrEqualTo(0.85));
       expect(res.resolvedNodeId, equals('ch0_p1'));
-      expect(testReaderDocument.chapters[0].nodes[1].text.substring(res.resolvedStartOffset, res.resolvedEndOffset),
-          equals('Pikiran dan tindakan kita'));
+      expect(
+        testReaderDocument.chapters[0].nodes[1].text.substring(
+          res.resolvedStartOffset,
+          res.resolvedEndOffset,
+        ),
+        equals('Pikiran dan tindakan kita'),
+      );
     });
 
     test('Context match recovers position using prefix and suffix context', () {
@@ -148,20 +157,23 @@ void main() {
       expect(res.resolvedNodeId, equals('ch0_q1'));
     });
 
-    test('Missing or completely unrelated text marks anchor as unresolved without attaching to unrelated text', () {
-      final res = AnchorResolutionEngine.resolveAnchor(
-        document: testReaderDocument,
-        chapterId: 'ch_0',
-        anchorNodeId: 'ch0_p1',
-        selectedText: 'Teks ini tidak pernah ada di dalam buku sama sekali!',
-        startOffset: 10,
-        endOffset: 50,
-      );
+    test(
+      'Missing or completely unrelated text marks anchor as unresolved without attaching to unrelated text',
+      () {
+        final res = AnchorResolutionEngine.resolveAnchor(
+          document: testReaderDocument,
+          chapterId: 'ch_0',
+          anchorNodeId: 'ch0_p1',
+          selectedText: 'Teks ini tidak pernah ada di dalam buku sama sekali!',
+          startOffset: 10,
+          endOffset: 50,
+        );
 
-      expect(res.isResolved, isFalse);
-      expect(res.status, AnchorResolutionStatus.unresolved);
-      expect(res.confidence, equals(0.0));
-    });
+        expect(res.isResolved, isFalse);
+        expect(res.status, AnchorResolutionStatus.unresolved);
+        expect(res.confidence, equals(0.0));
+      },
+    );
   });
 
   group('Phase 2.3 — ReflowableHighlightSpanBuilder Tests', () {
@@ -182,7 +194,8 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      final text = 'Ketika kita memahami dikotomi kendali, kecemasan tidak lagi menguasai kehidupan sehari-hari.';
+      final text =
+          'Ketika kita memahami dikotomi kendali, kecemasan tidak lagi menguasai kehidupan sehari-hari.';
       final span = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: text,
         sliceStartOffset: 0,
@@ -261,13 +274,22 @@ void main() {
       expect(updatedColorHl!.color, equals('purple'));
 
       // 3. Update Note
-      await dbService.updateHighlightNote('hl-test-101', 'Catatan diperbarui dengan referensi Epictetus');
+      await dbService.updateHighlightNote(
+        'hl-test-101',
+        'Catatan diperbarui dengan referensi Epictetus',
+      );
       final updatedNoteHl = await dbService.getHighlightById('hl-test-101');
-      expect(updatedNoteHl!.note, equals('Catatan diperbarui dengan referensi Epictetus'));
+      expect(
+        updatedNoteHl!.note,
+        equals('Catatan diperbarui dengan referensi Epictetus'),
+      );
 
       // 4. Watch all notes stream includes this item
       final allNotes = await dbService.watchAllNotes().first;
-      expect(allNotes.any((item) => item.highlight.id == 'hl-test-101'), isTrue);
+      expect(
+        allNotes.any((item) => item.highlight.id == 'hl-test-101'),
+        isTrue,
+      );
 
       // 5. Delete Highlight
       await dbService.deleteHighlight('hl-test-101');
@@ -326,18 +348,29 @@ void main() {
       expect(nonExistent, isNull);
 
       // Delete by location
-      await dbService.deleteBookmarkByLocation('book-bm-1', anchorNodeId: 'ch0_p2');
-      final afterDelete = await dbService.getBookmarkAtLocation('book-bm-1', anchorNodeId: 'ch0_p2');
+      await dbService.deleteBookmarkByLocation(
+        'book-bm-1',
+        anchorNodeId: 'ch0_p2',
+      );
+      final afterDelete = await dbService.getBookmarkAtLocation(
+        'book-bm-1',
+        anchorNodeId: 'ch0_p2',
+      );
       expect(afterDelete, isNull);
     });
 
-    test('Schema version is 3 and supports all new annotation anchor fields', () {
-      expect(db.schemaVersion, equals(3));
-    });
+    test(
+      'Schema version is 3 and supports all new annotation anchor fields',
+      () {
+        expect(db.schemaVersion, equals(3));
+      },
+    );
   });
 
   group('Phase 2.3 — Reader UI & Interactive Text Selection Tests', () {
-    testWidgets('ReflowableReaderContainer renders with custom highlights', (tester) async {
+    testWidgets('ReflowableReaderContainer renders with custom highlights', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(900, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -361,7 +394,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            reflowableLayoutModeProvider(testReaderDocument.bookId).overrideWith((ref) => ReflowableLayoutMode.paginated),
+            reflowableLayoutModeProvider(
+              testReaderDocument.bookId,
+            ).overrideWith((ref) => ReflowableLayoutMode.paginated),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -386,43 +421,52 @@ void main() {
       expect(find.byType(PaginatedReflowableReader), findsOneWidget);
     });
 
-    testWidgets('HighlightInteractionSheet allows changing color and writing note', (tester) async {
-      String savedColor = '';
-      String? savedNote;
+    testWidgets(
+      'HighlightInteractionSheet allows changing color and writing note',
+      (tester) async {
+        String savedColor = '';
+        String? savedNote;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HighlightInteractionSheet(
-              selectedText: 'Pikiran dan tindakan kita adalah kuasa kita.',
-              initialColor: 'yellow',
-              theme: ReadingThemeType.white,
-              onSave: (color, note) {
-                savedColor = color;
-                savedNote = note;
-              },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HighlightInteractionSheet(
+                selectedText: 'Pikiran dan tindakan kita adalah kuasa kita.',
+                initialColor: 'yellow',
+                theme: ReadingThemeType.white,
+                onSave: (color, note) {
+                  savedColor = color;
+                  savedNote = note;
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Quote is displayed
-      expect(find.text('"Pikiran dan tindakan kita adalah kuasa kita."'), findsOneWidget);
+        // Quote is displayed
+        expect(
+          find.text('"Pikiran dan tindakan kita adalah kuasa kita."'),
+          findsOneWidget,
+        );
 
-      // Tap Blue color circle
-      await tester.tap(find.byIcon(Icons.border_color));
-      // Enter note text
-      await tester.enterText(find.byType(TextField), 'Kutipan penting dari Epictetus');
-      await tester.pump();
+        // Tap Blue color circle
+        await tester.tap(find.byIcon(Icons.border_color));
+        // Enter note text
+        await tester.enterText(
+          find.byType(TextField),
+          'Kutipan penting dari Epictetus',
+        );
+        await tester.pump();
 
-      // Tap Simpan button
-      await tester.tap(find.widgetWithText(FilledButton, 'Simpan'));
-      await tester.pump();
+        // Tap Simpan button
+        await tester.tap(find.widgetWithText(FilledButton, 'Simpan'));
+        await tester.pump();
 
-      expect(savedColor, isNotEmpty);
-      expect(savedNote, equals('Kutipan penting dari Epictetus'));
-    });
+        expect(savedColor, isNotEmpty);
+        expect(savedNote, equals('Kutipan penting dari Epictetus'));
+      },
+    );
   });
 }

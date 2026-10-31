@@ -11,14 +11,20 @@ class BookSortHelper {
     final list = List<Book>.from(books);
     switch (sortOption) {
       case BookSortOption.titleAsc:
-        list.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        list.sort(
+          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+        );
         break;
       case BookSortOption.titleDesc:
-        list.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+        list.sort(
+          (a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()),
+        );
         break;
       case BookSortOption.authorAsc:
         list.sort((a, b) {
-          final authorComp = a.author.toLowerCase().compareTo(b.author.toLowerCase());
+          final authorComp = a.author.toLowerCase().compareTo(
+            b.author.toLowerCase(),
+          );
           if (authorComp != 0) return authorComp;
           return a.title.toLowerCase().compareTo(b.title.toLowerCase());
         });
@@ -58,16 +64,26 @@ class BookSortHelper {
     final list = List<BookWithProgress>.from(items);
     switch (sortOption) {
       case BookSortOption.titleAsc:
-        list.sort((a, b) => a.book.title.toLowerCase().compareTo(b.book.title.toLowerCase()));
+        list.sort(
+          (a, b) =>
+              a.book.title.toLowerCase().compareTo(b.book.title.toLowerCase()),
+        );
         break;
       case BookSortOption.titleDesc:
-        list.sort((a, b) => b.book.title.toLowerCase().compareTo(a.book.title.toLowerCase()));
+        list.sort(
+          (a, b) =>
+              b.book.title.toLowerCase().compareTo(a.book.title.toLowerCase()),
+        );
         break;
       case BookSortOption.authorAsc:
         list.sort((a, b) {
-          final comp = a.book.author.toLowerCase().compareTo(b.book.author.toLowerCase());
+          final comp = a.book.author.toLowerCase().compareTo(
+            b.book.author.toLowerCase(),
+          );
           if (comp != 0) return comp;
-          return a.book.title.toLowerCase().compareTo(b.book.title.toLowerCase());
+          return a.book.title.toLowerCase().compareTo(
+            b.book.title.toLowerCase(),
+          );
         });
         break;
       case BookSortOption.dateAddedDesc:
@@ -82,7 +98,9 @@ class BookSortHelper {
           final pB = b.progress?.progressPercentage ?? 0.0;
           final comp = pB.compareTo(pA);
           if (comp != 0) return comp;
-          return a.book.title.toLowerCase().compareTo(b.book.title.toLowerCase());
+          return a.book.title.toLowerCase().compareTo(
+            b.book.title.toLowerCase(),
+          );
         });
         break;
       case BookSortOption.progressAsc:
@@ -91,11 +109,12 @@ class BookSortHelper {
           final pB = b.progress?.progressPercentage ?? 0.0;
           final comp = pA.compareTo(pB);
           if (comp != 0) return comp;
-          return a.book.title.toLowerCase().compareTo(b.book.title.toLowerCase());
+          return a.book.title.toLowerCase().compareTo(
+            b.book.title.toLowerCase(),
+          );
         });
         break;
     }
     return list;
   }
 }
-

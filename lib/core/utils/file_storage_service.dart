@@ -26,6 +26,7 @@ class FileStorageService {
   static void unlockPath(String path) {
     _lockedPaths.remove(p.canonicalize(path));
   }
+
   static Future<Directory> getAppBaseDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final appDir = Directory(p.join(docsDir.path, 'DigitalBooks'));
@@ -73,12 +74,17 @@ class FileStorageService {
 
   static Future<File> copyPdfToStorage(File sourcePdf, String bookId) async {
     final originalsDir = await getOriginalsDirectory();
-    final ext = p.extension(sourcePdf.path).isEmpty ? '.pdf' : p.extension(sourcePdf.path);
+    final ext = p.extension(sourcePdf.path).isEmpty
+        ? '.pdf'
+        : p.extension(sourcePdf.path);
     final targetPath = p.join(originalsDir.path, '$bookId$ext');
     return sourcePdf.copy(targetPath);
   }
 
-  static Future<File> saveProcessedBook(String bookId, String jsonContent) async {
+  static Future<File> saveProcessedBook(
+    String bookId,
+    String jsonContent,
+  ) async {
     final booksDir = await getBooksDirectory();
     final targetPath = p.join(booksDir.path, '$bookId.json');
     final file = File(targetPath);
@@ -144,8 +150,9 @@ class FileStorageService {
 
   static Future<List<File>> detectOrphanFiles(DatabaseService dbService) async {
     final allBooks = await dbService.getAllBooks();
-    final activeOriginals =
-        allBooks.map((b) => p.canonicalize(b.originalPdfPath)).toSet();
+    final activeOriginals = allBooks
+        .map((b) => p.canonicalize(b.originalPdfPath))
+        .toSet();
     final activeCovers = allBooks
         .where((b) => b.coverPath != null)
         .map((b) => p.canonicalize(b.coverPath!))
@@ -211,7 +218,9 @@ class FileStorageService {
     return orphans;
   }
 
-  static Future<OrphanScanResult> scanOrphanFiles(DatabaseService dbService) async {
+  static Future<OrphanScanResult> scanOrphanFiles(
+    DatabaseService dbService,
+  ) async {
     final orphans = await detectOrphanFiles(dbService);
     int totalBytes = 0;
     for (final file in orphans) {
@@ -221,10 +230,7 @@ class FileStorageService {
         }
       } catch (_) {}
     }
-    return OrphanScanResult(
-      orphanedFiles: orphans,
-      totalBytes: totalBytes,
-    );
+    return OrphanScanResult(orphanedFiles: orphans, totalBytes: totalBytes);
   }
 
   static Future<int> detectAndCleanOrphanFiles(
@@ -273,4 +279,3 @@ class FileStorageService {
     } catch (_) {}
   }
 }
-

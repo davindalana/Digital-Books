@@ -53,12 +53,18 @@ void main() {
       expect(allBooks.length, 100);
 
       sw.reset();
-      final sortedByTitle = BookSortHelper.sortBooks(allBooks, BookSortOption.titleAsc);
+      final sortedByTitle = BookSortHelper.sortBooks(
+        allBooks,
+        BookSortOption.titleAsc,
+      );
       final sortTitleMs = sw.elapsedMilliseconds;
       expect(sortedByTitle.first.title, 'Book Title 000');
 
       sw.reset();
-      final sortedByAuthor = BookSortHelper.sortBooks(allBooks, BookSortOption.authorAsc);
+      final sortedByAuthor = BookSortHelper.sortBooks(
+        allBooks,
+        BookSortOption.authorAsc,
+      );
       final sortAuthorMs = sw.elapsedMilliseconds;
       expect(sortedByAuthor.isNotEmpty, isTrue);
 
@@ -69,7 +75,9 @@ void main() {
 
       // Print real metrics for audit report
       // ignore: avoid_print
-      print('[BENCHMARK 100 BOOKS] Insert: ${insertMs}ms | Fetch: ${fetchMs}ms | SortTitle: ${sortTitleMs}ms | SortAuthor: ${sortAuthorMs}ms | Search: ${searchMs}ms');
+      print(
+        '[BENCHMARK 100 BOOKS] Insert: ${insertMs}ms | Fetch: ${fetchMs}ms | SortTitle: ${sortTitleMs}ms | SortAuthor: ${sortAuthorMs}ms | Search: ${searchMs}ms',
+      );
 
       expect(sortTitleMs, lessThan(30));
       expect(searchMs, lessThan(50));
@@ -86,7 +94,9 @@ void main() {
             db.books,
             BooksCompanion(
               id: drift.Value(id),
-              title: drift.Value('Volume ${(i % 50).toString().padLeft(3, '0')} - Book Title $i'),
+              title: drift.Value(
+                'Volume ${(i % 50).toString().padLeft(3, '0')} - Book Title $i',
+              ),
               author: drift.Value('Author ${i % 100}'),
               originalPdfPath: drift.Value('/library/books/$id.pdf'),
               fileHash: drift.Value('hash_1k_$i'),
@@ -106,12 +116,18 @@ void main() {
       expect(allBooks.length, 1000);
 
       sw.reset();
-      final sortedByTitle = BookSortHelper.sortBooks(allBooks, BookSortOption.titleAsc);
+      final sortedByTitle = BookSortHelper.sortBooks(
+        allBooks,
+        BookSortOption.titleAsc,
+      );
       final sort1kTitleMs = sw.elapsedMilliseconds;
       expect(sortedByTitle.length, 1000);
 
       sw.reset();
-      final sortedByDate = BookSortHelper.sortBooks(allBooks, BookSortOption.dateAddedDesc);
+      final sortedByDate = BookSortHelper.sortBooks(
+        allBooks,
+        BookSortOption.dateAddedDesc,
+      );
       final sort1kDateMs = sw.elapsedMilliseconds;
       expect(sortedByDate.first.id, 'book-1k-999');
 
@@ -122,7 +138,9 @@ void main() {
 
       // Print real metrics for audit report
       // ignore: avoid_print
-      print('[BENCHMARK 1,000 BOOKS] Insert: ${insert1kMs}ms | Fetch: ${fetch1kMs}ms | SortTitle: ${sort1kTitleMs}ms | SortDate: ${sort1kDateMs}ms | Search: ${search1kMs}ms');
+      print(
+        '[BENCHMARK 1,000 BOOKS] Insert: ${insert1kMs}ms | Fetch: ${fetch1kMs}ms | SortTitle: ${sort1kTitleMs}ms | SortDate: ${sort1kDateMs}ms | Search: ${search1kMs}ms',
+      );
 
       expect(sort1kTitleMs, lessThan(80));
       expect(search1kMs, lessThan(100));
@@ -139,7 +157,9 @@ void main() {
             db.books,
             BooksCompanion(
               id: drift.Value(id),
-              title: drift.Value('Encyclopedic Entry ${i.toString().padLeft(4, '0')}'),
+              title: drift.Value(
+                'Encyclopedic Entry ${i.toString().padLeft(4, '0')}',
+              ),
               author: drift.Value('Scholar ${(i % 200)}'),
               originalPdfPath: drift.Value('/vault/$id.pdf'),
               fileHash: drift.Value('hash_5k_$i'),
@@ -159,7 +179,10 @@ void main() {
       expect(allBooks.length, 5000);
 
       sw.reset();
-      final sortedByTitle = BookSortHelper.sortBooks(allBooks, BookSortOption.titleAsc);
+      final sortedByTitle = BookSortHelper.sortBooks(
+        allBooks,
+        BookSortOption.titleAsc,
+      );
       final sort5kTitleMs = sw.elapsedMilliseconds;
       expect(sortedByTitle.length, 5000);
 
@@ -170,7 +193,9 @@ void main() {
 
       // Print real metrics for audit report
       // ignore: avoid_print
-      print('[BENCHMARK 5,000 BOOKS] Insert: ${insert5kMs}ms | Fetch: ${fetch5kMs}ms | SortTitle: ${sort5kTitleMs}ms | Search: ${search5kMs}ms');
+      print(
+        '[BENCHMARK 5,000 BOOKS] Insert: ${insert5kMs}ms | Fetch: ${fetch5kMs}ms | SortTitle: ${sort5kTitleMs}ms | Search: ${search5kMs}ms',
+      );
 
       expect(sort5kTitleMs, lessThan(350));
       expect(search5kMs, lessThan(200));
@@ -203,7 +228,9 @@ void main() {
             currentChapter: const drift.Value(0),
             currentPosition: drift.Value(nextPos),
             progressPercentage: drift.Value((nextPos / 200).clamp(0.0, 1.0)),
-            lastReadingMode: drift.Value(i % 2 == 0 ? 'originalPdf' : 'reflowable'),
+            lastReadingMode: drift.Value(
+              i % 2 == 0 ? 'originalPdf' : 'reflowable',
+            ),
             lastReadAt: drift.Value(DateTime.now()),
           ),
         );
@@ -215,9 +242,15 @@ void main() {
 
       // Print real metrics for audit report
       // ignore: avoid_print
-      print('[BENCHMARK 100 OPEN/CLOSE LOOPS] Completed in: ${totalLoopMs}ms (avg ${(totalLoopMs / 100).toStringAsFixed(2)}ms per cycle)');
+      print(
+        '[BENCHMARK 100 OPEN/CLOSE LOOPS] Completed in: ${totalLoopMs}ms (avg ${(totalLoopMs / 100).toStringAsFixed(2)}ms per cycle)',
+      );
 
-      expect(totalLoopMs, lessThan(2000), reason: '100 database open-save cycles must complete under 2 seconds');
+      expect(
+        totalLoopMs,
+        lessThan(2000),
+        reason: '100 database open-save cycles must complete under 2 seconds',
+      );
     });
 
     test('Repeated Search and Sort Stress (50 Iterations)', () async {
@@ -253,7 +286,9 @@ void main() {
 
       final totalStressMs = sw.elapsedMilliseconds;
       // ignore: avoid_print
-      print('[BENCHMARK 50 RAPID SEARCH/SORT OPERATIONS] Completed in: ${totalStressMs}ms (avg ${(totalStressMs / 50).toStringAsFixed(2)}ms per op)');
+      print(
+        '[BENCHMARK 50 RAPID SEARCH/SORT OPERATIONS] Completed in: ${totalStressMs}ms (avg ${(totalStressMs / 50).toStringAsFixed(2)}ms per op)',
+      );
 
       expect(totalStressMs, lessThan(1500));
     });

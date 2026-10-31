@@ -29,8 +29,7 @@ class BookListTile extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat.yMMMd();
 
-    final coverFile =
-        book.coverPath != null ? File(book.coverPath!) : null;
+    final coverFile = book.coverPath != null ? File(book.coverPath!) : null;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
@@ -38,7 +37,9 @@ class BookListTile extends ConsumerWidget {
         color: isDark ? const Color(0xFF1E1E22) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isDark ? Colors.white.withAlpha(15) : Colors.black.withAlpha(12),
+          color: isDark
+              ? Colors.white.withAlpha(15)
+              : Colors.black.withAlpha(12),
         ),
       ),
       child: Material(
@@ -48,10 +49,8 @@ class BookListTile extends ConsumerWidget {
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ReadingScreen(
-                  book: book,
-                  initialMode: defaultMode,
-                ),
+                builder: (_) =>
+                    ReadingScreen(book: book, initialMode: defaultMode),
               ),
             );
           },
@@ -82,8 +81,11 @@ class BookListTile extends ConsumerWidget {
                         ? Image.file(coverFile, fit: BoxFit.cover)
                         : Container(
                             color: const Color(0xFF2C2C2E),
-                            child: const Icon(Icons.book,
-                                size: 22, color: Colors.white70),
+                            child: const Icon(
+                              Icons.book,
+                              size: 22,
+                              color: Colors.white70,
+                            ),
                           ),
                   ),
                 ),
@@ -112,7 +114,9 @@ class BookListTile extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 2),
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: book.isScanned
                                   ? Colors.amber.withAlpha(30)
@@ -125,8 +129,10 @@ class BookListTile extends ConsumerWidget {
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 color: book.isScanned
-                                  ? (isDark ? Colors.amberAccent : Colors.orange.shade800)
-                                  : const Color(0xFF007AFF),
+                                    ? (isDark
+                                          ? Colors.amberAccent
+                                          : Colors.orange.shade800)
+                                    : const Color(0xFF007AFF),
                               ),
                             ),
                           ),
@@ -139,7 +145,9 @@ class BookListTile extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -153,7 +161,8 @@ class BookListTile extends ConsumerWidget {
                   flex: 2,
                   child: progressAsync.when(
                     data: (progress) {
-                      final pct = progressPercentage ??
+                      final pct =
+                          progressPercentage ??
                           progress?.progressPercentage ??
                           0.0;
                       if (pct <= 0.0) {
@@ -161,7 +170,9 @@ class BookListTile extends ConsumerWidget {
                           '${book.totalPages} pages',
                           style: TextStyle(
                             fontSize: 12,
-                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
+                            color: isDark
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade600,
                           ),
                         );
                       }
@@ -187,7 +198,9 @@ class BookListTile extends ConsumerWidget {
                             '${(pct * 100).toInt()}% • Page ${progress?.currentPosition ?? 1} of ${book.totalPages}',
                             style: TextStyle(
                               fontSize: 11,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey.shade600,
                             ),
                           ),
                         ],
@@ -228,11 +241,7 @@ class BookListTile extends ConsumerWidget {
       child: PopupMenuButton<String>(
         tooltip: 'Book options',
         padding: EdgeInsets.zero,
-        icon: Icon(
-          Icons.more_horiz,
-          size: 18,
-          color: Colors.grey.shade400,
-        ),
+        icon: Icon(Icons.more_horiz, size: 18, color: Colors.grey.shade400),
         color: const Color(0xFF222226),
         elevation: 12,
         shape: RoundedRectangleBorder(
@@ -256,8 +265,10 @@ class BookListTile extends ConsumerWidget {
               children: [
                 Icon(Icons.info_outline, size: 17, color: Colors.white70),
                 SizedBox(width: 10),
-                Text('Info About Book',
-                    style: TextStyle(fontSize: 13, color: Colors.white)),
+                Text(
+                  'Info About Book',
+                  style: TextStyle(fontSize: 13, color: Colors.white),
+                ),
               ],
             ),
           ),
@@ -266,11 +277,16 @@ class BookListTile extends ConsumerWidget {
             height: 38,
             child: Row(
               children: [
-                Icon(Icons.folder_special_outlined,
-                    size: 17, color: Colors.white70),
+                Icon(
+                  Icons.folder_special_outlined,
+                  size: 17,
+                  color: Colors.white70,
+                ),
                 SizedBox(width: 10),
-                Text('Manage Collections',
-                    style: TextStyle(fontSize: 13, color: Colors.white)),
+                Text(
+                  'Manage Collections',
+                  style: TextStyle(fontSize: 13, color: Colors.white),
+                ),
               ],
             ),
           ),
@@ -299,7 +315,10 @@ class BookListTile extends ConsumerWidget {
   }
 
   void _showContextMenu(
-      BuildContext context, WidgetRef ref, Offset position) async {
+    BuildContext context,
+    WidgetRef ref,
+    Offset position,
+  ) async {
     final selected = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -322,8 +341,10 @@ class BookListTile extends ConsumerWidget {
             children: [
               Icon(Icons.info_outline, size: 17, color: Colors.white70),
               SizedBox(width: 10),
-              Text('Info About Book',
-                  style: TextStyle(fontSize: 13, color: Colors.white)),
+              Text(
+                'Info About Book',
+                style: TextStyle(fontSize: 13, color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -332,11 +353,16 @@ class BookListTile extends ConsumerWidget {
           height: 38,
           child: Row(
             children: [
-              Icon(Icons.folder_special_outlined,
-                  size: 17, color: Colors.white70),
+              Icon(
+                Icons.folder_special_outlined,
+                size: 17,
+                color: Colors.white70,
+              ),
               SizedBox(width: 10),
-              Text('Manage Collections',
-                  style: TextStyle(fontSize: 13, color: Colors.white)),
+              Text(
+                'Manage Collections',
+                style: TextStyle(fontSize: 13, color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -436,8 +462,7 @@ class BookListTile extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -456,8 +481,10 @@ class BookListTile extends ConsumerWidget {
                 ),
               );
             },
-            child: const Text('Hapus Buku',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Hapus Buku',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

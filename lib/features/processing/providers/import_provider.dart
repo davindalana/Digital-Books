@@ -18,10 +18,8 @@ class ImportState {
     this.errorMessage,
   });
 
-  factory ImportState.idle() => ImportState(
-        isProcessing: false,
-        progress: ProcessingProgress.initial(),
-      );
+  factory ImportState.idle() =>
+      ImportState(isProcessing: false, progress: ProcessingProgress.initial());
 
   ImportState copyWith({
     bool? isProcessing,
@@ -52,7 +50,11 @@ class ImportNotifier extends StateNotifier<ImportState> {
     );
   }
 
-  Future<Book?> importFile(File file, {String? customTitle, String? customAuthor}) async {
+  Future<Book?> importFile(
+    File file, {
+    String? customTitle,
+    String? customAuthor,
+  }) async {
     state = ImportState(
       isProcessing: true,
       progress: const ProcessingProgress(
@@ -100,7 +102,6 @@ final pdfProcessingPipelineProvider = Provider<PdfProcessingPipeline>((ref) {
 
 final importNotifierProvider =
     StateNotifierProvider<ImportNotifier, ImportState>((ref) {
-  final pipeline = ref.watch(pdfProcessingPipelineProvider);
-  return ImportNotifier(pipeline);
-});
-
+      final pipeline = ref.watch(pdfProcessingPipelineProvider);
+      return ImportNotifier(pipeline);
+    });

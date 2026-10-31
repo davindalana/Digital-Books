@@ -61,7 +61,9 @@ class AnchorResolutionEngine {
         }
       }
     }
-    targetChapter ??= document.chapters.isNotEmpty ? document.chapters.first : null;
+    targetChapter ??= document.chapters.isNotEmpty
+        ? document.chapters.first
+        : null;
 
     if (targetChapter == null) {
       return AnchorResolutionResult.unresolvedResult;
@@ -154,7 +156,8 @@ class AnchorResolutionEngine {
           for (final occ in occurrences) {
             final testPrefixStart = math.max(0, occ - prefixContext.length);
             final testPrefix = text.substring(testPrefixStart, occ);
-            if (prefixContext.endsWith(testPrefix) || testPrefix.endsWith(prefixContext)) {
+            if (prefixContext.endsWith(testPrefix) ||
+                testPrefix.endsWith(prefixContext)) {
               chosenStart = occ;
               contextMatched = true;
               break;

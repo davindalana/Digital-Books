@@ -1,9 +1,6 @@
 import '../../providers/reader_settings_provider.dart';
 
-enum ReflowableLayoutMode {
-  paginated,
-  scrolling,
-}
+enum ReflowableLayoutMode { paginated, scrolling }
 
 class ReadingLocation {
   final String bookId;
@@ -71,21 +68,22 @@ class ReadingLocation {
   }
 
   Map<String, dynamic> toJson() => {
-        'bookId': bookId,
-        'sourceMode': sourceMode.name,
-        'layoutMode': layoutMode.name,
-        'pdfPage': pdfPage,
-        'pdfScrollOffset': pdfScrollOffset,
-        'chapterId': chapterId,
-        'chapterIndex': chapterIndex,
-        'anchorNodeId': anchorNodeId,
-        'characterOffset': characterOffset,
-        'chapterProgress': chapterProgress,
-        'totalProgress': totalProgress,
-        'lastReadAt': lastReadAt.toIso8601String(),
-      };
+    'bookId': bookId,
+    'sourceMode': sourceMode.name,
+    'layoutMode': layoutMode.name,
+    'pdfPage': pdfPage,
+    'pdfScrollOffset': pdfScrollOffset,
+    'chapterId': chapterId,
+    'chapterIndex': chapterIndex,
+    'anchorNodeId': anchorNodeId,
+    'characterOffset': characterOffset,
+    'chapterProgress': chapterProgress,
+    'totalProgress': totalProgress,
+    'lastReadAt': lastReadAt.toIso8601String(),
+  };
 
-  factory ReadingLocation.fromJson(Map<String, dynamic> json) => ReadingLocation(
+  factory ReadingLocation.fromJson(Map<String, dynamic> json) =>
+      ReadingLocation(
         bookId: json['bookId'] as String? ?? '',
         sourceMode: ReadingMode.values.firstWhere(
           (m) => m.name == json['sourceMode'],
@@ -108,4 +106,3 @@ class ReadingLocation {
             : DateTime.now(),
       );
 }
-

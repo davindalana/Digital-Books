@@ -9,31 +9,42 @@ class DatabaseService {
 
   // --- Books ---
   Stream<List<Book>> watchAllBooks() {
-    return (db.select(db.books)
-          ..orderBy([(t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)]))
+    return (db.select(db.books)..orderBy([
+          (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+        ]))
         .watch();
   }
 
   Stream<List<Book>> watchRecentlyAdded({int limit = 10}) {
     return (db.select(db.books)
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)])
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+          ])
           ..limit(limit))
         .watch();
   }
 
   Stream<List<BookWithProgress>> watchCurrentlyReading() {
-    final query = db.select(db.books).join([
-      innerJoin(
-        db.readingProgresses,
-        db.readingProgresses.bookId.equalsExp(db.books.id),
-      ),
-    ])
-      ..where(db.readingProgresses.progressPercentage.isBiggerThanValue(0.0) &
-          db.readingProgresses.progressPercentage.isSmallerThanValue(0.999))
-      ..orderBy([
-        OrderingTerm(
-            expression: db.readingProgresses.lastReadAt, mode: OrderingMode.desc)
-      ]);
+    final query =
+        db.select(db.books).join([
+            innerJoin(
+              db.readingProgresses,
+              db.readingProgresses.bookId.equalsExp(db.books.id),
+            ),
+          ])
+          ..where(
+            db.readingProgresses.progressPercentage.isBiggerThanValue(0.0) &
+                db.readingProgresses.progressPercentage.isSmallerThanValue(
+                  0.999,
+                ),
+          )
+          ..orderBy([
+            OrderingTerm(
+              expression: db.readingProgresses.lastReadAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     return query.watch().map((rows) {
       return rows.map((row) {
@@ -46,18 +57,22 @@ class DatabaseService {
   }
 
   Stream<List<BookWithProgress>> watchFinishedBooks() {
-    final query = db.select(db.books).join([
-      innerJoin(
-        db.readingProgresses,
-        db.readingProgresses.bookId.equalsExp(db.books.id),
-      ),
-    ])
-      ..where(
-          db.readingProgresses.progressPercentage.isBiggerOrEqualValue(0.999))
-      ..orderBy([
-        OrderingTerm(
-            expression: db.readingProgresses.lastReadAt, mode: OrderingMode.desc)
-      ]);
+    final query =
+        db.select(db.books).join([
+            innerJoin(
+              db.readingProgresses,
+              db.readingProgresses.bookId.equalsExp(db.books.id),
+            ),
+          ])
+          ..where(
+            db.readingProgresses.progressPercentage.isBiggerOrEqualValue(0.999),
+          )
+          ..orderBy([
+            OrderingTerm(
+              expression: db.readingProgresses.lastReadAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     return query.watch().map((rows) {
       return rows.map((row) {
@@ -70,7 +85,9 @@ class DatabaseService {
   }
 
   Future<Book?> getBookById(String id) {
-    return (db.select(db.books)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (db.select(
+      db.books,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<int> insertBook(BooksCompanion book) {
@@ -105,19 +122,21 @@ class DatabaseService {
     final trimmedAuthor = author.trim().toLowerCase();
 
     // 1. Exact match on title and author
-    final exactMatches = await (db.select(db.books)
-          ..where((t) =>
-              t.title.lower().equals(trimmedTitle) &
-              t.author.lower().equals(trimmedAuthor)))
-        .get();
+    final exactMatches =
+        await (db.select(db.books)..where(
+              (t) =>
+                  t.title.lower().equals(trimmedTitle) &
+                  t.author.lower().equals(trimmedAuthor),
+            ))
+            .get();
     if (exactMatches.isNotEmpty) {
       return exactMatches.first;
     }
 
     // 2. Exact match on title alone (if author was unknown or slightly formatted)
-    final titleMatches = await (db.select(db.books)
-          ..where((t) => t.title.lower().equals(trimmedTitle)))
-        .get();
+    final titleMatches = await (db.select(
+      db.books,
+    )..where((t) => t.title.lower().equals(trimmedTitle))).get();
     if (titleMatches.isNotEmpty) {
       return titleMatches.first;
     }
@@ -130,21 +149,24 @@ class DatabaseService {
   }
 
   Future<Book?> findBookByFileHash(String fileHash) {
-    return (db.select(db.books)..where((t) => t.fileHash.equals(fileHash)))
-        .getSingleOrNull();
+    return (db.select(
+      db.books,
+    )..where((t) => t.fileHash.equals(fileHash))).getSingleOrNull();
   }
 
   Future<bool> isPathReferencedByOtherBook(
     String path, {
     required String excludeBookId,
   }) async {
-    final matches = await (db.select(db.books)
-          ..where((t) =>
-              t.id.equals(excludeBookId).not() &
-              (t.originalPdfPath.equals(path) |
-                  t.coverPath.equals(path) |
-                  t.processedBookPath.equals(path))))
-        .get();
+    final matches =
+        await (db.select(db.books)..where(
+              (t) =>
+                  t.id.equals(excludeBookId).not() &
+                  (t.originalPdfPath.equals(path) |
+                      t.coverPath.equals(path) |
+                      t.processedBookPath.equals(path)),
+            ))
+            .get();
     return matches.isNotEmpty;
   }
 
@@ -180,10 +202,15 @@ class DatabaseService {
     final trimmed = query.trim().toLowerCase();
     if (trimmed.isEmpty) return watchAllBooks();
     return (db.select(db.books)
-          ..where((t) =>
-              t.title.lower().like('%$trimmed%') |
-              t.author.lower().like('%$trimmed%'))
-          ..orderBy([(t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc)]))
+          ..where(
+            (t) =>
+                t.title.lower().like('%$trimmed%') |
+                t.author.lower().like('%$trimmed%'),
+          )
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+          ]))
         .watch();
   }
 
@@ -196,9 +223,13 @@ class DatabaseService {
   }
 
   Future<void> replaceChaptersForBook(
-      String bookId, List<ChaptersCompanion> chapters) async {
+    String bookId,
+    List<ChaptersCompanion> chapters,
+  ) async {
     await db.transaction(() async {
-      await (db.delete(db.chapters)..where((t) => t.bookId.equals(bookId))).go();
+      await (db.delete(
+        db.chapters,
+      )..where((t) => t.bookId.equals(bookId))).go();
       for (final chapter in chapters) {
         await db.into(db.chapters).insert(chapter);
       }
@@ -207,24 +238,24 @@ class DatabaseService {
 
   // --- Reading Progress ---
   Stream<ReadingProgress?> watchProgress(String bookId) {
-    return (db.select(db.readingProgresses)
-          ..where((t) => t.bookId.equals(bookId)))
-        .watchSingleOrNull();
+    return (db.select(
+      db.readingProgresses,
+    )..where((t) => t.bookId.equals(bookId))).watchSingleOrNull();
   }
 
   Future<ReadingProgress?> getProgress(String bookId) {
-    return (db.select(db.readingProgresses)
-          ..where((t) => t.bookId.equals(bookId)))
-        .getSingleOrNull();
+    return (db.select(
+      db.readingProgresses,
+    )..where((t) => t.bookId.equals(bookId))).getSingleOrNull();
   }
 
   Future<int> upsertProgress(ReadingProgressesCompanion progress) async {
     final bookIdVal = progress.bookId.value;
     final existing = await getProgress(bookIdVal);
     if (existing != null) {
-      return (db.update(db.readingProgresses)
-            ..where((t) => t.bookId.equals(bookIdVal)))
-          .write(
+      return (db.update(
+        db.readingProgresses,
+      )..where((t) => t.bookId.equals(bookIdVal))).write(
         ReadingProgressesCompanion(
           currentChapter: progress.currentChapter,
           currentPosition: progress.currentPosition,
@@ -249,20 +280,25 @@ class DatabaseService {
   }
 
   Stream<List<BookmarkWithBook>> watchAllBookmarks() {
-    final query = db.select(db.bookmarks).join([
-      innerJoin(
-        db.books,
-        db.books.id.equalsExp(db.bookmarks.bookId),
-      ),
-    ])..orderBy([
-        OrderingTerm(expression: db.bookmarks.createdAt, mode: OrderingMode.desc),
-      ]);
+    final query =
+        db.select(db.bookmarks).join([
+          innerJoin(db.books, db.books.id.equalsExp(db.bookmarks.bookId)),
+        ])..orderBy([
+          OrderingTerm(
+            expression: db.bookmarks.createdAt,
+            mode: OrderingMode.desc,
+          ),
+        ]);
 
     return query.watch().map((rows) {
-      return rows.map((r) => BookmarkWithBook(
-        bookmark: r.readTable(db.bookmarks),
-        book: r.readTable(db.books),
-      )).toList();
+      return rows
+          .map(
+            (r) => BookmarkWithBook(
+              bookmark: r.readTable(db.bookmarks),
+              book: r.readTable(db.books),
+            ),
+          )
+          .toList();
     });
   }
 
@@ -272,16 +308,19 @@ class DatabaseService {
     String? anchorNodeId,
   }) async {
     if (anchorNodeId != null && anchorNodeId.isNotEmpty) {
-      final match = await (db.select(db.bookmarks)
-            ..where((t) =>
-                t.bookId.equals(bookId) & t.anchorNodeId.equals(anchorNodeId)))
-          .get();
+      final match =
+          await (db.select(db.bookmarks)..where(
+                (t) =>
+                    t.bookId.equals(bookId) &
+                    t.anchorNodeId.equals(anchorNodeId),
+              ))
+              .get();
       if (match.isNotEmpty) return match.first;
     }
     if (page != null) {
-      final match = await (db.select(db.bookmarks)
-            ..where((t) => t.bookId.equals(bookId) & t.position.equals(page)))
-          .get();
+      final match = await (db.select(
+        db.bookmarks,
+      )..where((t) => t.bookId.equals(bookId) & t.position.equals(page))).get();
       if (match.isNotEmpty) return match.first;
     }
     return null;
@@ -301,15 +340,16 @@ class DatabaseService {
     String? anchorNodeId,
   }) async {
     if (anchorNodeId != null && anchorNodeId.isNotEmpty) {
-      return (db.delete(db.bookmarks)
-            ..where((t) =>
-                t.bookId.equals(bookId) & t.anchorNodeId.equals(anchorNodeId)))
+      return (db.delete(db.bookmarks)..where(
+            (t) =>
+                t.bookId.equals(bookId) & t.anchorNodeId.equals(anchorNodeId),
+          ))
           .go();
     }
     if (page != null) {
-      return (db.delete(db.bookmarks)
-            ..where((t) => t.bookId.equals(bookId) & t.position.equals(page)))
-          .go();
+      return (db.delete(
+        db.bookmarks,
+      )..where((t) => t.bookId.equals(bookId) & t.position.equals(page))).go();
     }
     return 0;
   }
@@ -323,45 +363,60 @@ class DatabaseService {
   }
 
   Stream<List<HighlightWithBook>> watchAllHighlights() {
-    final query = db.select(db.highlights).join([
-      innerJoin(
-        db.books,
-        db.books.id.equalsExp(db.highlights.bookId),
-      ),
-    ])..orderBy([
-        OrderingTerm(expression: db.highlights.createdAt, mode: OrderingMode.desc),
-      ]);
+    final query =
+        db.select(db.highlights).join([
+          innerJoin(db.books, db.books.id.equalsExp(db.highlights.bookId)),
+        ])..orderBy([
+          OrderingTerm(
+            expression: db.highlights.createdAt,
+            mode: OrderingMode.desc,
+          ),
+        ]);
 
     return query.watch().map((rows) {
-      return rows.map((r) => HighlightWithBook(
-        highlight: r.readTable(db.highlights),
-        book: r.readTable(db.books),
-      )).toList();
+      return rows
+          .map(
+            (r) => HighlightWithBook(
+              highlight: r.readTable(db.highlights),
+              book: r.readTable(db.books),
+            ),
+          )
+          .toList();
     });
   }
 
   Stream<List<HighlightWithBook>> watchAllNotes() {
-    final query = db.select(db.highlights).join([
-      innerJoin(
-        db.books,
-        db.books.id.equalsExp(db.highlights.bookId),
-      ),
-    ])
-      ..where(db.highlights.note.isNotNull() & db.highlights.note.equals('').not())
-      ..orderBy([
-        OrderingTerm(expression: db.highlights.createdAt, mode: OrderingMode.desc),
-      ]);
+    final query =
+        db.select(db.highlights).join([
+            innerJoin(db.books, db.books.id.equalsExp(db.highlights.bookId)),
+          ])
+          ..where(
+            db.highlights.note.isNotNull() &
+                db.highlights.note.equals('').not(),
+          )
+          ..orderBy([
+            OrderingTerm(
+              expression: db.highlights.createdAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     return query.watch().map((rows) {
-      return rows.map((r) => HighlightWithBook(
-        highlight: r.readTable(db.highlights),
-        book: r.readTable(db.books),
-      )).toList();
+      return rows
+          .map(
+            (r) => HighlightWithBook(
+              highlight: r.readTable(db.highlights),
+              book: r.readTable(db.books),
+            ),
+          )
+          .toList();
     });
   }
 
   Future<Highlight?> getHighlightById(String id) {
-    return (db.select(db.highlights)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (db.select(
+      db.highlights,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   Future<int> addHighlight(HighlightsCompanion highlight) {
@@ -370,17 +425,13 @@ class DatabaseService {
 
   Future<int> updateHighlightColor(String id, String color) {
     return (db.update(db.highlights)..where((t) => t.id.equals(id))).write(
-      HighlightsCompanion(
-        color: Value(color),
-      ),
+      HighlightsCompanion(color: Value(color)),
     );
   }
 
   Future<int> updateHighlightNote(String id, String? note) {
     return (db.update(db.highlights)..where((t) => t.id.equals(id))).write(
-      HighlightsCompanion(
-        note: Value(note),
-      ),
+      HighlightsCompanion(note: Value(note)),
     );
   }
 
@@ -390,21 +441,22 @@ class DatabaseService {
 
   // --- Collections ---
   Stream<List<Collection>> watchCollections() {
-    return (db.select(db.collections)
-          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
-        .watch();
+    return (db.select(
+      db.collections,
+    )..orderBy([(t) => OrderingTerm(expression: t.name)])).watch();
   }
 
   Future<int> createCollection(CollectionsCompanion collection) {
     return db.into(db.collections).insert(collection);
   }
 
-  Future<int> updateCollection(String id, {required String name, String? description}) {
+  Future<int> updateCollection(
+    String id, {
+    required String name,
+    String? description,
+  }) {
     return (db.update(db.collections)..where((t) => t.id.equals(id))).write(
-      CollectionsCompanion(
-        name: Value(name),
-        description: Value(description),
-      ),
+      CollectionsCompanion(name: Value(name), description: Value(description)),
     );
   }
 
@@ -413,16 +465,20 @@ class DatabaseService {
   }
 
   Stream<List<Book>> watchBooksInCollection(String collectionId) {
-    final query = db.select(db.books).join([
-      innerJoin(
-        db.bookCollections,
-        db.bookCollections.bookId.equalsExp(db.books.id),
-      ),
-    ])
-      ..where(db.bookCollections.collectionId.equals(collectionId))
-      ..orderBy([
-        OrderingTerm(expression: db.books.updatedAt, mode: OrderingMode.desc),
-      ]);
+    final query =
+        db.select(db.books).join([
+            innerJoin(
+              db.bookCollections,
+              db.bookCollections.bookId.equalsExp(db.books.id),
+            ),
+          ])
+          ..where(db.bookCollections.collectionId.equals(collectionId))
+          ..orderBy([
+            OrderingTerm(
+              expression: db.books.updatedAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
 
     return query.watch().map((rows) {
       return rows.map((r) => r.readTable(db.books)).toList();
@@ -430,14 +486,15 @@ class DatabaseService {
   }
 
   Future<List<String>> getCollectionIdsForBook(String bookId) async {
-    final rows = await (db.select(db.bookCollections)
-          ..where((t) => t.bookId.equals(bookId)))
-        .get();
+    final rows = await (db.select(
+      db.bookCollections,
+    )..where((t) => t.bookId.equals(bookId))).get();
     return rows.map((r) => r.collectionId).toList();
   }
 
   Stream<List<String>> watchCollectionIdsForBook(String bookId) {
-    return (db.select(db.bookCollections)..where((t) => t.bookId.equals(bookId)))
+    return (db.select(db.bookCollections)
+          ..where((t) => t.bookId.equals(bookId)))
         .watch()
         .map((rows) => rows.map((r) => r.collectionId).toList());
   }
@@ -453,7 +510,9 @@ class DatabaseService {
   }
 
   Future<int> addBookToCollection(String bookId, String collectionId) {
-    return db.into(db.bookCollections).insertOnConflictUpdate(
+    return db
+        .into(db.bookCollections)
+        .insertOnConflictUpdate(
           BookCollectionsCompanion(
             bookId: Value(bookId),
             collectionId: Value(collectionId),
@@ -462,9 +521,9 @@ class DatabaseService {
   }
 
   Future<int> removeBookFromCollection(String bookId, String collectionId) {
-    return (db.delete(db.bookCollections)
-          ..where(
-              (t) => t.bookId.equals(bookId) & t.collectionId.equals(collectionId)))
+    return (db.delete(db.bookCollections)..where(
+          (t) => t.bookId.equals(bookId) & t.collectionId.equals(collectionId),
+        ))
         .go();
   }
 }
@@ -489,4 +548,3 @@ class HighlightWithBook {
 
   const HighlightWithBook({required this.highlight, required this.book});
 }
-

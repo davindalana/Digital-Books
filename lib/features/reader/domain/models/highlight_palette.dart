@@ -54,7 +54,8 @@ enum HighlightColorType {
       }
     }
 
-    if (theme == ReadingThemeType.sepia || theme == ReadingThemeType.warmPaper) {
+    if (theme == ReadingThemeType.sepia ||
+        theme == ReadingThemeType.warmPaper) {
       switch (this) {
         case HighlightColorType.yellow:
           return const Color(0xFFFFE082).withValues(alpha: 0.50);

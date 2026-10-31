@@ -27,11 +27,7 @@ void main() {
     return true;
   };
 
-  runApp(
-    const ProviderScope(
-      child: DigitalBooksApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: DigitalBooksApp()));
 }
 
 class DigitalBooksApp extends StatelessWidget {
@@ -58,7 +54,9 @@ class DigitalBooksApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF000000), // Apple Books OLED black background
+        scaffoldBackgroundColor: const Color(
+          0xFF000000,
+        ), // Apple Books OLED black background
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF007AFF),
           brightness: Brightness.dark,

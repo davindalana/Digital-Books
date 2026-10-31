@@ -6,15 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('DigitalBooksApp renders library home screen',
-      (WidgetTester tester) async {
+  testWidgets('DigitalBooksApp renders library home screen', (
+    WidgetTester tester,
+  ) async {
     final inMemoryDb = AppDatabase(NativeDatabase.memory());
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          appDatabaseProvider.overrideWithValue(inMemoryDb),
-        ],
+        overrides: [appDatabaseProvider.overrideWithValue(inMemoryDb)],
         child: const DigitalBooksApp(),
       ),
     );

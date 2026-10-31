@@ -21,7 +21,8 @@ class Books extends Table {
 
 class Chapters extends Table {
   TextColumn get id => text()();
-  TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade)();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
   TextColumn get title => text()();
   IntColumn get chapterIndex => integer()();
   IntColumn get startPosition => integer().withDefault(const Constant(0))();
@@ -34,10 +35,12 @@ class Chapters extends Table {
 @DataClassName('ReadingProgress')
 class ReadingProgresses extends Table {
   TextColumn get id => text()();
-  TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade).unique()();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade).unique()();
   IntColumn get currentChapter => integer().withDefault(const Constant(0))();
   IntColumn get currentPosition => integer().withDefault(const Constant(0))();
-  RealColumn get progressPercentage => real().withDefault(const Constant(0.0))();
+  RealColumn get progressPercentage =>
+      real().withDefault(const Constant(0.0))();
   TextColumn get lastReadingMode => text().nullable()();
   DateTimeColumn get lastReadAt => dateTime()();
 
@@ -47,13 +50,15 @@ class ReadingProgresses extends Table {
 
 class Bookmarks extends Table {
   TextColumn get id => text()();
-  TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade)();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
   TextColumn get chapterId => text().nullable()();
   IntColumn get position => integer()();
   TextColumn get label => text()();
   TextColumn get anchorNodeId => text().nullable()();
   IntColumn get characterOffset => integer().withDefault(const Constant(0))();
-  RealColumn get progressPercentage => real().withDefault(const Constant(0.0))();
+  RealColumn get progressPercentage =>
+      real().withDefault(const Constant(0.0))();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -62,7 +67,8 @@ class Bookmarks extends Table {
 
 class Highlights extends Table {
   TextColumn get id => text()();
-  TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade)();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
   TextColumn get chapterId => text().nullable()();
   TextColumn get selectedText => text()();
   IntColumn get startPosition => integer()();
@@ -92,8 +98,10 @@ class Collections extends Table {
 }
 
 class BookCollections extends Table {
-  TextColumn get bookId => text().references(Books, #id, onDelete: KeyAction.cascade)();
-  TextColumn get collectionId => text().references(Collections, #id, onDelete: KeyAction.cascade)();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
+  TextColumn get collectionId =>
+      text().references(Collections, #id, onDelete: KeyAction.cascade)();
 
   @override
   Set<Column> get primaryKey => {bookId, collectionId};

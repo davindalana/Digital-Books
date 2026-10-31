@@ -9,17 +9,18 @@ import 'package:digital_books/features/reader/domain/engines/reflowable_highligh
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'highlight_interaction_sheet.dart';
 
-typedef HighlightCreationCallback = void Function({
-  required String text,
-  required String color,
-  String? note,
-  required String anchorNodeId,
-  required int startOffset,
-  required int endOffset,
-  String? prefixContext,
-  String? suffixContext,
-  required int pageNumber,
-});
+typedef HighlightCreationCallback =
+    void Function({
+      required String text,
+      required String color,
+      String? note,
+      required String anchorNodeId,
+      required int startOffset,
+      required int endOffset,
+      String? prefixContext,
+      String? suffixContext,
+      required int pageNumber,
+    });
 
 class ReflowablePageRenderer extends StatelessWidget {
   final PaginatedPage page;
@@ -31,6 +32,7 @@ class ReflowablePageRenderer extends StatelessWidget {
   final bool showFooter;
   final bool isLeftPage;
   final List<Highlight> highlights;
+  final List<ActiveSearchMatch> searchMatches;
   final HighlightCreationCallback? onHighlightCreated;
   final void Function(Highlight highlight)? onHighlightTap;
 
@@ -45,6 +47,7 @@ class ReflowablePageRenderer extends StatelessWidget {
     this.showFooter = true,
     this.isLeftPage = false,
     this.highlights = const [],
+    this.searchMatches = const [],
     this.onHighlightCreated,
     this.onHighlightTap,
   });
@@ -71,7 +74,9 @@ class ReflowablePageRenderer extends StatelessWidget {
             SizedBox(
               height: 28,
               child: Align(
-                alignment: isLeftPage ? Alignment.centerLeft : Alignment.centerRight,
+                alignment: isLeftPage
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
                 child: Text(
                   page.chapterTitle.toUpperCase(),
                   maxLines: 1,
@@ -94,7 +99,9 @@ class ReflowablePageRenderer extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: page.slices.map((slice) => _buildSliceWidget(context, slice)).toList(),
+                children: page.slices
+                    .map((slice) => _buildSliceWidget(context, slice))
+                    .toList(),
               ),
             ),
           ),
@@ -134,7 +141,14 @@ class ReflowablePageRenderer extends StatelessWidget {
     }
 
     final highlightsForNode = highlights
-        .where((h) => h.anchorNodeId == node.id || (h.anchorNodeId == null && h.chapterId == node.id))
+        .where(
+          (h) =>
+              h.anchorNodeId == node.id ||
+              (h.anchorNodeId == null && h.chapterId == node.id),
+        )
+        .toList();
+    final searchMatchesForNode = searchMatches
+        .where((sm) => sm.nodeId == node.id)
         .toList();
 
     // Heading Node
@@ -148,6 +162,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         sliceStartOffset: slice.startCharOffset,
         sliceEndOffset: slice.endCharOffset,
         highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
         baseStyle: style,
         theme: theme,
         onHighlightTap: onHighlightTap,
@@ -177,6 +192,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         sliceStartOffset: slice.startCharOffset,
         sliceEndOffset: slice.endCharOffset,
         highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
         baseStyle: style,
         theme: theme,
         onHighlightTap: onHighlightTap,
@@ -213,6 +229,7 @@ class ReflowablePageRenderer extends StatelessWidget {
       sliceStartOffset: slice.startCharOffset,
       sliceEndOffset: slice.endCharOffset,
       highlightsForNode: highlightsForNode,
+      searchMatchesForNode: searchMatchesForNode,
       baseStyle: style,
       theme: theme,
       onHighlightTap: onHighlightTap,
@@ -240,7 +257,8 @@ class ReflowablePageRenderer extends StatelessWidget {
             child: Image.file(
               file,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+              errorBuilder: (context, error, stackTrace) =>
+                  _buildPlaceholderImage(),
             ),
           ),
         );
@@ -257,9 +275,7 @@ class ReflowablePageRenderer extends StatelessWidget {
             ? Colors.white.withAlpha(15)
             : Colors.black.withAlpha(10),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.secondaryTextColor.withAlpha(40),
-        ),
+        border: Border.all(color: theme.secondaryTextColor.withAlpha(40)),
       ),
       child: Center(
         child: Column(
@@ -273,10 +289,7 @@ class ReflowablePageRenderer extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Ilustrasi Buku',
-              style: TextStyle(
-                fontSize: 12,
-                color: theme.secondaryTextColor,
-              ),
+              style: TextStyle(fontSize: 12, color: theme.secondaryTextColor),
             ),
           ],
         ),
@@ -301,8 +314,14 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     final localStart = selection.start;
     final localEnd = selection.end;
-    final absStart = (slice.startCharOffset + localStart).clamp(0, slice.node.text.length);
-    final absEnd = (slice.startCharOffset + localEnd).clamp(absStart, slice.node.text.length);
+    final absStart = (slice.startCharOffset + localStart).clamp(
+      0,
+      slice.node.text.length,
+    );
+    final absEnd = (slice.startCharOffset + localEnd).clamp(
+      absStart,
+      slice.node.text.length,
+    );
 
     final pStart = math.max(0, absStart - 32);
     final prefixContext = slice.node.text.substring(pStart, absStart);

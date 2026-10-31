@@ -35,7 +35,11 @@ void main() {
     document.documentInformation.title = 'The Adventures of Sherlock Holmes';
     document.documentInformation.author = 'Arthur Conan Doyle';
 
-    final fontHeader = PdfStandardFont(PdfFontFamily.helvetica, 18, style: PdfFontStyle.bold);
+    final fontHeader = PdfStandardFont(
+      PdfFontFamily.helvetica,
+      18,
+      style: PdfFontStyle.bold,
+    );
     final fontBody = PdfStandardFont(PdfFontFamily.timesRoman, 12);
     final brush = PdfSolidBrush(PdfColor(20, 20, 20));
 

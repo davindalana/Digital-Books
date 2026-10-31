@@ -16,7 +16,10 @@ import '../../../reader/providers/reader_settings_provider.dart';
 enum _DuplicatePromptAction { openExisting, importAnyway, cancel }
 
 class ImportPdfHelper {
-  static Future<void> pickAndImportPdf(BuildContext context, WidgetRef ref) async {
+  static Future<void> pickAndImportPdf(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     try {
       final files = await FilePicker.pickFiles(
         type: FileType.custom,
@@ -51,8 +54,9 @@ class ImportPdfHelper {
 
       // Duplicate Check: 1. SHA-256 Exact Check, 2. Title/Author Edition Check
       final fileHash = await FileStorageService.computeFileSha256(selectedFile);
-      final exactMatch =
-          await ref.read(databaseServiceProvider).findBookByFileHash(fileHash);
+      final exactMatch = await ref
+          .read(databaseServiceProvider)
+          .findBookByFileHash(fileHash);
 
       if (exactMatch != null && context.mounted) {
         final action = await showDialog<_DuplicatePromptAction>(
@@ -102,26 +106,32 @@ class ImportPdfHelper {
               TextButton(
                 onPressed: () =>
                     Navigator.of(ctx).pop(_DuplicatePromptAction.cancel),
-                child: const Text('Cancel',
-                    style: TextStyle(color: Colors.white70)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white70),
+                ),
               ),
               OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Colors.white.withAlpha(40)),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: () =>
                     Navigator.of(ctx).pop(_DuplicatePromptAction.importAnyway),
-                child: const Text('Import Duplicate Copy',
-                    style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Import Duplicate Copy',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF007AFF),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: () =>
                     Navigator.of(ctx).pop(_DuplicatePromptAction.openExisting),
@@ -152,11 +162,9 @@ class ImportPdfHelper {
       } else {
         // 2. Different Edition / Title & Author Match Check
         final peek = await PdfProcessingPipeline.peekPdfMetadata(selectedFile);
-        final editionMatch =
-            await ref.read(databaseServiceProvider).findDuplicateBook(
-                  title: peek.title,
-                  author: peek.author,
-                );
+        final editionMatch = await ref
+            .read(databaseServiceProvider)
+            .findDuplicateBook(title: peek.title, author: peek.author);
 
         if (editionMatch != null && context.mounted) {
           final action = await showDialog<_DuplicatePromptAction>(
@@ -206,29 +214,37 @@ class ImportPdfHelper {
                 TextButton(
                   onPressed: () =>
                       Navigator.of(ctx).pop(_DuplicatePromptAction.cancel),
-                  child: const Text('Cancel',
-                      style: TextStyle(color: Colors.white70)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                 ),
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.white.withAlpha(40)),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  onPressed: () =>
-                      Navigator.of(ctx).pop(_DuplicatePromptAction.importAnyway),
-                  child: const Text('Import as New Edition',
-                      style: TextStyle(color: Colors.white)),
+                  onPressed: () => Navigator.of(
+                    ctx,
+                  ).pop(_DuplicatePromptAction.importAnyway),
+                  child: const Text(
+                    'Import as New Edition',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF007AFF),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  onPressed: () =>
-                      Navigator.of(ctx).pop(_DuplicatePromptAction.openExisting),
+                  onPressed: () => Navigator.of(
+                    ctx,
+                  ).pop(_DuplicatePromptAction.openExisting),
                   child: const Text('Open Existing Book'),
                 ),
               ],
@@ -363,10 +379,7 @@ class ImportProgressDialog extends ConsumerWidget {
                 Text(
                   progress.message,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                 ),
                 const SizedBox(height: 24),
 
@@ -428,9 +441,7 @@ class ImportProgressDialog extends ConsumerWidget {
                       },
                       child: Text(
                         importState.isProcessing ? 'Cancel' : 'Close',
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                        ),
+                        style: TextStyle(color: Colors.grey.shade400),
                       ),
                     ),
                   ],

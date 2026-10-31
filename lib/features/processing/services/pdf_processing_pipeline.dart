@@ -37,11 +37,13 @@ class PdfProcessingPipeline {
 
     void notify(ProcessingStage stage, double progress, String message) {
       if (!_isCancelled && onProgress != null) {
-        onProgress(ProcessingProgress(
-          stage: stage,
-          progress: progress,
-          message: message,
-        ));
+        onProgress(
+          ProcessingProgress(
+            stage: stage,
+            progress: progress,
+            message: message,
+          ),
+        );
       }
     }
 
@@ -67,7 +69,11 @@ class PdfProcessingPipeline {
       if (_isCancelled) throw Exception('Operation cancelled by user.');
 
       // 2. Extract Metadata
-      notify(ProcessingStage.extractingMetadata, 0.15, 'Reading document metadata...');
+      notify(
+        ProcessingStage.extractingMetadata,
+        0.15,
+        'Reading document metadata...',
+      );
       final bytes = await pdfFile.readAsBytes();
       final PdfDocument document = PdfDocument(inputBytes: bytes);
       final totalPages = document.pages.count;
@@ -108,7 +114,11 @@ class PdfProcessingPipeline {
       }
 
       // 3. Extract Text & Detect Scan
-      notify(ProcessingStage.extractingText, 0.25, 'Extracting text and structure...');
+      notify(
+        ProcessingStage.extractingText,
+        0.25,
+        'Extracting text and structure...',
+      );
       final extractor = PdfTextExtractor(document);
       final List<String> pageTexts = [];
       int totalChars = 0;
@@ -119,7 +129,8 @@ class PdfProcessingPipeline {
           throw Exception('Operation cancelled by user.');
         }
 
-        final pageProgress = 0.25 + (0.35 * (i / (totalPages > 0 ? totalPages : 1)));
+        final pageProgress =
+            0.25 + (0.35 * (i / (totalPages > 0 ? totalPages : 1)));
         notify(
           ProcessingStage.extractingText,
           pageProgress,
@@ -127,7 +138,10 @@ class PdfProcessingPipeline {
         );
 
         try {
-          final text = extractor.extractText(startPageIndex: i, endPageIndex: i);
+          final text = extractor.extractText(
+            startPageIndex: i,
+            endPageIndex: i,
+          );
           pageTexts.add(text);
           totalChars += text.trim().length;
         } catch (_) {
@@ -140,7 +154,11 @@ class PdfProcessingPipeline {
 
       // Automatic Neural OCR fallback on macOS Vision Framework
       if (isScanned && Platform.isMacOS) {
-        notify(ProcessingStage.extractingText, 0.55, 'Running Apple Vision OCR on scanned pages...');
+        notify(
+          ProcessingStage.extractingText,
+          0.55,
+          'Running Apple Vision OCR on scanned pages...',
+        );
         final ocrTexts = await _runVisionOcrOnMac(pdfFile.path, totalPages);
         if (ocrTexts.isNotEmpty && ocrTexts.any((t) => t.trim().isNotEmpty)) {
           pageTexts.clear();
@@ -156,7 +174,11 @@ class PdfProcessingPipeline {
       }
 
       // 4. Detect Chapters & Structure
-      notify(ProcessingStage.detectingChapters, 0.65, 'Analyzing chapter structure...');
+      notify(
+        ProcessingStage.detectingChapters,
+        0.65,
+        'Analyzing chapter structure...',
+      );
       final List<BookChapter> chapters = _buildChaptersFromPages(
         document: document,
         pageTexts: pageTexts,
@@ -165,7 +187,11 @@ class PdfProcessingPipeline {
       );
 
       // 5. High-Resolution Page 1 Cover Generation (Upscaled with Sharpening)
-      notify(ProcessingStage.generatingCover, 0.80, 'Creating crisp high-resolution cover from Page 1...');
+      notify(
+        ProcessingStage.generatingCover,
+        0.80,
+        'Creating crisp high-resolution cover from Page 1...',
+      );
       final coverFile = await CoverGenerator.generateCover(
         bookId: bookId,
         pdfPath: pdfFile.path,
@@ -181,8 +207,15 @@ class PdfProcessingPipeline {
       }
 
       // 6. Generate Internal Book Document & Save Original PDF
-      notify(ProcessingStage.generatingBook, 0.90, 'Generating digital book format...');
-      final storedPdf = await FileStorageService.copyPdfToStorage(pdfFile, bookId);
+      notify(
+        ProcessingStage.generatingBook,
+        0.90,
+        'Generating digital book format...',
+      );
+      final storedPdf = await FileStorageService.copyPdfToStorage(
+        pdfFile,
+        bookId,
+      );
       createdStoredPdf = storedPdf;
       FileStorageService.lockPath(storedPdf.path);
 
@@ -246,14 +279,16 @@ class PdfProcessingPipeline {
       await _dbService.replaceChaptersForBook(bookId, chapterCompanions);
 
       // Initialize reading progress
-      await _dbService.upsertProgress(ReadingProgressesCompanion(
-        id: Value(const Uuid().v4()),
-        bookId: Value(bookId),
-        currentChapter: const Value(0),
-        currentPosition: const Value(0),
-        progressPercentage: const Value(0.0),
-        lastReadAt: Value(now),
-      ));
+      await _dbService.upsertProgress(
+        ReadingProgressesCompanion(
+          id: Value(const Uuid().v4()),
+          bookId: Value(bookId),
+          currentChapter: const Value(0),
+          currentPosition: const Value(0),
+          progressPercentage: const Value(0.0),
+          lastReadAt: Value(now),
+        ),
+      );
 
       document.dispose();
 
@@ -266,7 +301,8 @@ class PdfProcessingPipeline {
         if (createdStoredPdf != null && await createdStoredPdf.exists()) {
           await createdStoredPdf.delete();
         }
-        if (createdProcessedBook != null && await createdProcessedBook.exists()) {
+        if (createdProcessedBook != null &&
+            await createdProcessedBook.exists()) {
           await createdProcessedBook.delete();
         }
         if (createdCoverFile != null && await createdCoverFile.exists()) {
@@ -301,13 +337,18 @@ class PdfProcessingPipeline {
     clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (clean.isEmpty) return 'Untitled Book';
     // Title Case
-    return clean.split(' ').map((word) {
-      if (word.isEmpty) return '';
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
+    return clean
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
-  static Future<({String title, String author})> peekPdfMetadata(File pdfFile) async {
+  static Future<({String title, String author})> peekPdfMetadata(
+    File pdfFile,
+  ) async {
     try {
       final bytes = await pdfFile.readAsBytes();
       final PdfDocument document = PdfDocument(inputBytes: bytes);
@@ -353,22 +394,27 @@ class PdfProcessingPipeline {
       for (int i = 0; i < pageTexts.length; i++) {
         final text = pageTexts[i].trim();
         if (text.isNotEmpty) {
-          realBlocks.add(BookBlock(
-            id: const Uuid().v4(),
-            type: BlockType.paragraph,
-            text: text,
-            originalPageNumber: i + 1,
-          ));
+          realBlocks.add(
+            BookBlock(
+              id: const Uuid().v4(),
+              type: BlockType.paragraph,
+              text: text,
+              originalPageNumber: i + 1,
+            ),
+          );
         }
       }
 
       if (realBlocks.isEmpty) {
-        realBlocks.add(BookBlock(
-          id: const Uuid().v4(),
-          type: BlockType.paragraph,
-          text: 'This document contains visual scanned pages. Read in Original PDF Mode for full layout and illustrations.',
-          originalPageNumber: 1,
-        ));
+        realBlocks.add(
+          BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.paragraph,
+            text:
+                'This document contains visual scanned pages. Read in Original PDF Mode for full layout and illustrations.',
+            originalPageNumber: 1,
+          ),
+        );
       }
 
       return [
@@ -406,8 +452,12 @@ class PdfProcessingPipeline {
 
         // Filter out repeating running headers, footers, publisher marks, page numbers
         final lower = line.toLowerCase();
-        final isRunningHeader = lower == bookTitle.toLowerCase() ||
-            RegExp(r'^(teka[- ]teki|rumah aneh|uketsu|gramedia|penerbit|kompas|sfile|mobi|halaman\s*\d+|\d+)$', caseSensitive: false).hasMatch(line);
+        final isRunningHeader =
+            lower == bookTitle.toLowerCase() ||
+            RegExp(
+              r'^(teka[- ]teki|rumah aneh|uketsu|gramedia|penerbit|kompas|sfile|mobi|halaman\s*\d+|\d+)$',
+              caseSensitive: false,
+            ).hasMatch(line);
         if (isRunningHeader) continue;
 
         // Check if line looks like a real chapter header
@@ -421,65 +471,79 @@ class PdfProcessingPipeline {
         if ((isMatchChapter || isMatchStandalone || isChapterKeyword) &&
             currentBlocks.isNotEmpty) {
           // Finish previous chapter
-          chapters.add(BookChapter(
-            id: const Uuid().v4(),
-            index: chapterIndex++,
-            title: currentChapterTitle,
-            blocks: List.from(currentBlocks),
-          ));
+          chapters.add(
+            BookChapter(
+              id: const Uuid().v4(),
+              index: chapterIndex++,
+              title: currentChapterTitle,
+              blocks: List.from(currentBlocks),
+            ),
+          );
           currentBlocks.clear();
           currentChapterTitle = line;
-          currentBlocks.add(BookBlock(
-            id: const Uuid().v4(),
-            type: BlockType.heading,
-            text: line,
-            headingLevel: 1,
-            originalPageNumber: pageNum,
-          ));
+          currentBlocks.add(
+            BookBlock(
+              id: const Uuid().v4(),
+              type: BlockType.heading,
+              text: line,
+              headingLevel: 1,
+              originalPageNumber: pageNum,
+            ),
+          );
         } else {
           // Regular text block or heading inside chapter
-          currentBlocks.add(BookBlock(
-            id: const Uuid().v4(),
-            type: BlockType.paragraph,
-            text: line,
-            originalPageNumber: pageNum,
-          ));
+          currentBlocks.add(
+            BookBlock(
+              id: const Uuid().v4(),
+              type: BlockType.paragraph,
+              text: line,
+              originalPageNumber: pageNum,
+            ),
+          );
         }
       }
     }
 
     // Add trailing chapter
     if (currentBlocks.isNotEmpty) {
-      chapters.add(BookChapter(
-        id: const Uuid().v4(),
-        index: chapterIndex,
-        title: currentChapterTitle,
-        blocks: List.from(currentBlocks),
-      ));
+      chapters.add(
+        BookChapter(
+          id: const Uuid().v4(),
+          index: chapterIndex,
+          title: currentChapterTitle,
+          blocks: List.from(currentBlocks),
+        ),
+      );
     }
 
     if (chapters.isEmpty) {
-      chapters.add(BookChapter(
-        id: const Uuid().v4(),
-        index: 0,
-        title: bookTitle,
-        blocks: [
-          BookBlock(
-            id: const Uuid().v4(),
-            type: BlockType.paragraph,
-            text: 'Empty document content.',
-            originalPageNumber: 1,
-          ),
-        ],
-      ));
+      chapters.add(
+        BookChapter(
+          id: const Uuid().v4(),
+          index: 0,
+          title: bookTitle,
+          blocks: [
+            BookBlock(
+              id: const Uuid().v4(),
+              type: BlockType.paragraph,
+              text: 'Empty document content.',
+              originalPageNumber: 1,
+            ),
+          ],
+        ),
+      );
     }
 
     return chapters;
   }
 
-  static Future<List<String>> _runVisionOcrOnMac(String pdfPath, int totalPages) async {
+  static Future<List<String>> _runVisionOcrOnMac(
+    String pdfPath,
+    int totalPages,
+  ) async {
     try {
-      final script = '''
+      final script =
+          '''
 import Foundation
 import PDFKit
 import Vision

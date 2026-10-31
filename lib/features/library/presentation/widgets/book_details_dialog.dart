@@ -32,8 +32,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
     _currentBook = widget.book;
     _titleController = TextEditingController(text: _currentBook.title);
     _authorController = TextEditingController(text: _currentBook.author);
-    _descController =
-        TextEditingController(text: _currentBook.description ?? '');
+    _descController = TextEditingController(
+      text: _currentBook.description ?? '',
+    );
   }
 
   @override
@@ -50,9 +51,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
     final desc = _descController.text.trim();
 
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Title cannot be empty')));
       return;
     }
 
@@ -95,8 +96,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final progressAsync =
-        ref.watch(bookProgressStreamProvider(_currentBook.id));
+    final progressAsync = ref.watch(
+      bookProgressStreamProvider(_currentBook.id),
+    );
     final dateFormat = DateFormat.yMMMd();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -145,12 +147,15 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                         children: [
                           if (!_isEditing) ...[
                             IconButton(
-                              icon: const Icon(Icons.folder_special_outlined,
-                                  size: 19),
+                              icon: const Icon(
+                                Icons.folder_special_outlined,
+                                size: 19,
+                              ),
                               tooltip: 'Manage Collections',
-                              onPressed: () =>
-                                  ManageBookCollectionsDialog.show(
-                                      context, _currentBook),
+                              onPressed: () => ManageBookCollectionsDialog.show(
+                                context,
+                                _currentBook,
+                              ),
                             ),
                             IconButton(
                               icon: const Icon(Icons.edit_outlined, size: 19),
@@ -190,7 +195,8 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: (_currentBook.coverPath != null &&
+                          child:
+                              (_currentBook.coverPath != null &&
                                   File(_currentBook.coverPath!).existsSync())
                               ? Image.file(
                                   File(_currentBook.coverPath!),
@@ -217,11 +223,14 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                       labelText: 'Book Title',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 10),
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
                                     ),
                                     style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   const SizedBox(height: 10),
                                   TextField(
@@ -230,7 +239,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                       labelText: 'Author',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 10),
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
                                     ),
                                     style: const TextStyle(fontSize: 13),
                                   ),
@@ -242,7 +253,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                       labelText: 'Description / Notes',
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 8),
+                                        horizontal: 10,
+                                        vertical: 8,
+                                      ),
                                     ),
                                     style: const TextStyle(fontSize: 12),
                                   ),
@@ -284,8 +297,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                   ),
                                   _DetailRow(
                                     label: 'Added',
-                                    value: dateFormat
-                                        .format(_currentBook.createdAt),
+                                    value: dateFormat.format(
+                                      _currentBook.createdAt,
+                                    ),
                                   ),
                                   progressAsync.when(
                                     data: (p) => _DetailRow(
@@ -352,7 +366,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                             backgroundColor: const Color(0xFF007AFF),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 18, vertical: 10),
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -362,7 +378,10 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                   width: 14,
                                   height: 14,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
                               : const Icon(Icons.check, size: 16),
                           label: const Text('Save Changes'),
                           onPressed: _isSaving ? null : _saveMetadata,
@@ -374,8 +393,10 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                       children: [
                         // Delete Button
                         IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.redAccent),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                          ),
                           tooltip: 'Delete Book',
                           onPressed: () => _confirmDelete(context, ref),
                         ),
@@ -385,7 +406,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                         OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -393,9 +416,13 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                           onPressed: () {
                             Navigator.of(context).pop();
                             ref
-                                .read(activeReadingModeProvider(_currentBook.id)
-                                    .notifier)
-                                .state = ReadingMode.originalPdf;
+                                    .read(
+                                      activeReadingModeProvider(
+                                        _currentBook.id,
+                                      ).notifier,
+                                    )
+                                    .state =
+                                ReadingMode.originalPdf;
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => ReadingScreen(
@@ -415,7 +442,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                             backgroundColor: const Color(0xFF007AFF),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -426,9 +455,13 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                 ? ReadingMode.originalPdf
                                 : ReadingMode.reflowable;
                             ref
-                                .read(activeReadingModeProvider(_currentBook.id)
-                                    .notifier)
-                                .state = mode;
+                                    .read(
+                                      activeReadingModeProvider(
+                                        _currentBook.id,
+                                      ).notifier,
+                                    )
+                                    .state =
+                                mode;
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => ReadingScreen(
@@ -457,7 +490,8 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Book?'),
         content: Text(
-            'Are you sure you want to remove "${_currentBook.title}" from your library?'),
+          'Are you sure you want to remove "${_currentBook.title}" from your library?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -472,8 +506,10 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                   .read(databaseServiceProvider)
                   .safeDeleteBook(_currentBook.id);
             },
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.redAccent)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -507,10 +543,7 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

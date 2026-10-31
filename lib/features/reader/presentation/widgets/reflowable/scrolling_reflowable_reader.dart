@@ -38,8 +38,16 @@ class ScrollingReflowableReader extends StatefulWidget {
   final String? initialAnchorNodeId;
   final int initialChapterIndex;
   final VoidCallback onTapContent;
-  final Function(int chapterIndex, int position, double percentage, String? anchorNodeId, int charOffset) onProgressChanged;
+  final Function(
+    int chapterIndex,
+    int position,
+    double percentage,
+    String? anchorNodeId,
+    int charOffset,
+  )
+  onProgressChanged;
   final List<Highlight> highlights;
+  final List<ActiveSearchMatch> searchMatches;
   final HighlightCreationCallback? onHighlightCreated;
   final void Function(Highlight highlight)? onHighlightTap;
 
@@ -53,12 +61,14 @@ class ScrollingReflowableReader extends StatefulWidget {
     required this.onTapContent,
     required this.onProgressChanged,
     this.highlights = const [],
+    this.searchMatches = const [],
     this.onHighlightCreated,
     this.onHighlightTap,
   });
 
   @override
-  State<ScrollingReflowableReader> createState() => ScrollingReflowableReaderState();
+  State<ScrollingReflowableReader> createState() =>
+      ScrollingReflowableReaderState();
 }
 
 class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
@@ -113,40 +123,46 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
       // Chapter Header
       offsets.add(runningOffset);
-      items.add(_ScrollItem(
-        type: _ScrollItemType.chapterHeader,
-        chapterIndex: chIdx,
-        chapterTitle: chapter.title,
-        anchorId: 'header_$chIdx',
-        estimatedHeight: 120.0,
-      ));
+      items.add(
+        _ScrollItem(
+          type: _ScrollItemType.chapterHeader,
+          chapterIndex: chIdx,
+          chapterTitle: chapter.title,
+          anchorId: 'header_$chIdx',
+          estimatedHeight: 120.0,
+        ),
+      );
       runningOffset += 120.0;
 
       // Chapter Nodes
       for (final node in chapter.nodes) {
         final estHeight = _estimateNodeHeight(node);
         offsets.add(runningOffset);
-        items.add(_ScrollItem(
-          type: _ScrollItemType.node,
-          chapterIndex: chIdx,
-          chapterTitle: chapter.title,
-          node: node,
-          anchorId: node.id,
-          estimatedHeight: estHeight,
-        ));
+        items.add(
+          _ScrollItem(
+            type: _ScrollItemType.node,
+            chapterIndex: chIdx,
+            chapterTitle: chapter.title,
+            node: node,
+            anchorId: node.id,
+            estimatedHeight: estHeight,
+          ),
+        );
         runningOffset += estHeight;
       }
 
       // Chapter Divider
       if (chIdx < widget.document.chapters.length - 1) {
         offsets.add(runningOffset);
-        items.add(_ScrollItem(
-          type: _ScrollItemType.chapterDivider,
-          chapterIndex: chIdx,
-          chapterTitle: chapter.title,
-          anchorId: 'divider_$chIdx',
-          estimatedHeight: 70.0,
-        ));
+        items.add(
+          _ScrollItem(
+            type: _ScrollItemType.chapterDivider,
+            chapterIndex: chIdx,
+            chapterTitle: chapter.title,
+            anchorId: 'divider_$chIdx',
+            estimatedHeight: 70.0,
+          ),
+        );
         runningOffset += 70.0;
       }
     }
@@ -242,7 +258,9 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
     final currentOffset = _scrollController.offset;
     final maxOffset = _scrollController.position.maxScrollExtent;
-    final pct = (maxOffset > 0) ? (currentOffset / maxOffset).clamp(0.0, 1.0) : 0.0;
+    final pct = (maxOffset > 0)
+        ? (currentOffset / maxOffset).clamp(0.0, 1.0)
+        : 0.0;
 
     int low = 0;
     int high = _cumulativeOffsets.length - 1;
@@ -277,7 +295,10 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     final effectiveMargin = (screenWidth < 400)
         ? 16.0
         : (screenWidth < 650 ? 24.0 : widget.typography.horizontalMargin);
-    final maxContentWidth = math.min(760.0, screenWidth - (effectiveMargin * 2));
+    final maxContentWidth = math.min(
+      760.0,
+      screenWidth - (effectiveMargin * 2),
+    );
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -307,7 +328,9 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     switch (item.type) {
       case _ScrollItemType.chapterHeader:
         final chapter = widget.document.chapters[item.chapterIndex];
-        final readMins = ReflowableEngine.estimateChapterReadingMinutes(chapter);
+        final readMins = ReflowableEngine.estimateChapterReadingMinutes(
+          chapter,
+        );
         return Padding(
           padding: const EdgeInsets.only(top: 24, bottom: 20),
           child: Column(
@@ -402,7 +425,14 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     }
 
     final highlightsForNode = widget.highlights
-        .where((h) => h.anchorNodeId == node.id || (h.anchorNodeId == null && h.chapterId == node.id))
+        .where(
+          (h) =>
+              h.anchorNodeId == node.id ||
+              (h.anchorNodeId == null && h.chapterId == node.id),
+        )
+        .toList();
+    final searchMatchesForNode = widget.searchMatches
+        .where((sm) => sm.nodeId == node.id)
         .toList();
 
     if (node.type == ContentNodeType.heading) {
@@ -415,6 +445,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         sliceStartOffset: 0,
         sliceEndOffset: node.text.length,
         highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
         baseStyle: style,
         theme: widget.theme,
         onHighlightTap: widget.onHighlightTap,
@@ -428,7 +459,8 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         child: SelectableText.rich(
           richSpan,
           textAlign: widget.typography.textAlign,
-          contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state, node),
+          contextMenuBuilder: (ctx, state) =>
+              _buildContextMenu(ctx, state, node),
         ),
       );
     }
@@ -442,6 +474,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         sliceStartOffset: 0,
         sliceEndOffset: node.text.length,
         highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
         baseStyle: style,
         theme: widget.theme,
         onHighlightTap: widget.onHighlightTap,
@@ -464,7 +497,8 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
           child: SelectableText.rich(
             richSpan,
             textAlign: widget.typography.textAlign,
-            contextMenuBuilder: (ctx, state) => _buildContextMenu(ctx, state, node),
+            contextMenuBuilder: (ctx, state) =>
+                _buildContextMenu(ctx, state, node),
           ),
         ),
       );
@@ -477,6 +511,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       sliceStartOffset: 0,
       sliceEndOffset: node.text.length,
       highlightsForNode: highlightsForNode,
+      searchMatchesForNode: searchMatchesForNode,
       baseStyle: style,
       theme: widget.theme,
       onHighlightTap: widget.onHighlightTap,
@@ -503,7 +538,8 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
             child: Image.file(
               file,
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+              errorBuilder: (context, error, stackTrace) =>
+                  _buildPlaceholderImage(),
             ),
           ),
         );

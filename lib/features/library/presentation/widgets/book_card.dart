@@ -31,10 +31,7 @@ class BookCard extends ConsumerWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ReadingScreen(
-              book: book,
-              initialMode: defaultMode,
-            ),
+            builder: (_) => ReadingScreen(book: book, initialMode: defaultMode),
           ),
         );
       },
@@ -69,10 +66,9 @@ class BookCard extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2C2C2E),
-                    ),
-                    child: (book.coverPath != null &&
+                    decoration: const BoxDecoration(color: Color(0xFF2C2C2E)),
+                    child:
+                        (book.coverPath != null &&
                             File(book.coverPath!).existsSync())
                         ? Image.file(
                             File(book.coverPath!),
@@ -211,11 +207,7 @@ class BookCard extends ConsumerWidget {
       child: PopupMenuButton<String>(
         tooltip: 'Pilihan buku',
         padding: EdgeInsets.zero,
-        icon: Icon(
-          Icons.more_horiz,
-          size: 18,
-          color: Colors.grey.shade400,
-        ),
+        icon: Icon(Icons.more_horiz, size: 18, color: Colors.grey.shade400),
         color: const Color(0xFF222226),
         elevation: 12,
         shape: RoundedRectangleBorder(
@@ -251,8 +243,11 @@ class BookCard extends ConsumerWidget {
             height: 38,
             child: Row(
               children: [
-                Icon(Icons.folder_special_outlined,
-                    size: 17, color: Colors.white70),
+                Icon(
+                  Icons.folder_special_outlined,
+                  size: 17,
+                  color: Colors.white70,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Manage Collections',
@@ -285,7 +280,11 @@ class BookCard extends ConsumerWidget {
     );
   }
 
-  void _showContextMenu(BuildContext context, WidgetRef ref, Offset position) async {
+  void _showContextMenu(
+    BuildContext context,
+    WidgetRef ref,
+    Offset position,
+  ) async {
     final selected = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -320,8 +319,11 @@ class BookCard extends ConsumerWidget {
           height: 38,
           child: Row(
             children: [
-              Icon(Icons.folder_special_outlined,
-                  size: 17, color: Colors.white70),
+              Icon(
+                Icons.folder_special_outlined,
+                size: 17,
+                color: Colors.white70,
+              ),
               SizedBox(width: 10),
               Text(
                 'Manage Collections',
@@ -420,10 +422,7 @@ class BookCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
-              'Batal',
-              style: TextStyle(color: Colors.white70),
-            ),
+            child: const Text('Batal', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

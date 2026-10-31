@@ -14,13 +14,17 @@ import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/utils/file_storage_service.dart';
 import '../../models/book_document.dart';
 import '../../services/book_text_normalizer.dart';
+import '../../domain/engines/in_book_search_engine.dart';
 import '../../domain/engines/reflowable_engine.dart';
+import '../../domain/engines/reflowable_highlight_span_builder.dart';
 import '../../domain/models/reader_content.dart';
+import '../../domain/models/reading_navigation_history.dart';
 import '../../providers/reader_settings_provider.dart';
 import '../widgets/appearance_sheet.dart';
 import '../widgets/book_search_dialog.dart';
 import '../widgets/original_pdf_reader.dart';
 import '../widgets/reflowable/reflowable_reader_container.dart';
+import '../widgets/search_traversal_bar.dart';
 import '../widgets/toc_dialog.dart';
 
 class ReadingScreen extends ConsumerStatefulWidget {
@@ -64,6 +68,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   String _currentChapterTitle = '';
   int _estimatedMinutesLeftInChapter = 0;
 
+  late final ReadingNavigationHistory _navigationHistory;
+  List<ActiveSearchMatch> _activeSearchMatches = [];
+  List<InBookSearchResult> _searchResults = [];
+  int _currentSearchMatchIndex = 0;
+  String _activeSearchQuery = '';
+  bool _showSearchTraversal = false;
+
   final GlobalKey<ReflowableReaderContainerState> _reflowableKey =
       GlobalKey<ReflowableReaderContainerState>();
   final GlobalKey<OriginalPdfReaderState> _pdfKey =
@@ -72,6 +83,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   @override
   void initState() {
     super.initState();
+    _navigationHistory = ReadingNavigationHistory(bookId: widget.book.id);
     _currentPdfPath = widget.book.originalPdfPath;
     final currentProviderMode = ref.read(
       activeReadingModeProvider(widget.book.id),
@@ -113,7 +125,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     ref.read(activeReadingModeProvider(widget.book.id).notifier).state = mode;
     _saveProgress(
       chapter: _reflowableChapter,
-      position: mode == ReadingMode.originalPdf ? _pdfPage : _reflowablePosition,
+      position: mode == ReadingMode.originalPdf
+          ? _pdfPage
+          : _reflowablePosition,
       percentage: _progressPercentage,
     );
   }
@@ -129,15 +143,20 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
             _currentChapter = progress.currentChapter;
             _reflowableChapter = progress.currentChapter;
             _progressPercentage = progress.progressPercentage;
-            if (widget.initialMode == null && progress.lastReadingMode != null) {
+            if (widget.initialMode == null &&
+                progress.lastReadingMode != null) {
               if (progress.lastReadingMode == 'reflowable_scrolling') {
                 _readingMode = ReadingMode.reflowable;
-                ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state =
-                    ReflowableLayoutMode.scrolling;
+                ref
+                    .read(reflowableLayoutModeProvider(widget.book.id).notifier)
+                    .state = ReflowableLayoutMode
+                    .scrolling;
               } else if (progress.lastReadingMode == 'reflowable_paginated') {
                 _readingMode = ReadingMode.reflowable;
-                ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state =
-                    ReflowableLayoutMode.paginated;
+                ref
+                    .read(reflowableLayoutModeProvider(widget.book.id).notifier)
+                    .state = ReflowableLayoutMode
+                    .paginated;
               } else {
                 final restoredMode = ReadingMode.values
                     .where((m) => m.name == progress.lastReadingMode)
@@ -146,14 +165,20 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                   _readingMode = restoredMode;
                 }
               }
-              ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
+              ref
+                      .read(activeReadingModeProvider(widget.book.id).notifier)
+                      .state =
                   _readingMode;
             }
             if (_readingMode == ReadingMode.originalPdf) {
-              _pdfPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
+              _pdfPage = progress.currentPosition > 0
+                  ? progress.currentPosition
+                  : 1;
               _currentPage = _pdfPage;
             } else {
-              _reflowablePosition = progress.currentPosition > 0 ? progress.currentPosition : 0;
+              _reflowablePosition = progress.currentPosition > 0
+                  ? progress.currentPosition
+                  : 0;
               _currentPage = _reflowablePosition;
             }
           }
@@ -259,17 +284,130 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   }
 
   void _openBookSearchDialog() {
-    if (_document == null) return;
+    if (_document == null && _readerDocument == null) return;
     showDialog(
       context: context,
+      barrierColor: Colors.black.withAlpha(120),
       builder: (_) => BookSearchDialog(
-        document: _document!,
+        readerDocument: _readerDocument,
+        document: _document,
         theme: ref.read(readingThemeStateProvider),
-        onNavigateToResult: (targetChapter, pageNumber) {
-          _jumpToPosition(pageNumber, _readingMode);
+        onNavigateToResult: (result) {
+          _handleSearchResultSelected(result);
         },
       ),
     );
+  }
+
+  void _handleSearchResultSelected(InBookSearchResult result) {
+    _navigationHistory.recordLocation(
+      NavigationHistoryEntry(
+        bookId: widget.book.id,
+        chapterIndex: _reflowableChapter,
+        anchorNodeId: _activeAnchorNodeId,
+        characterOffset: _activeCharOffset,
+        pageNumber: _currentPage,
+        label: 'Sebelum pencarian',
+      ),
+    );
+
+    _activeSearchQuery = result.matchedText;
+    _currentSearchMatchIndex = 0;
+    _activeSearchMatches = [
+      ActiveSearchMatch(
+        nodeId: result.nodeId,
+        startOffset: result.startOffset,
+        endOffset: result.endOffset,
+        isActive: true,
+      ),
+    ];
+    _showSearchTraversal = true;
+
+    // Cache or fetch all matches for traversal
+    final doc =
+        _readerDocument ??
+        (_document != null
+            ? ReflowableEngine.normalizeDocument(_document!)
+            : null);
+    if (doc != null) {
+      InBookSearchEngine.search(document: doc, query: result.matchedText).then((
+        allFound,
+      ) {
+        if (mounted) {
+          setState(() {
+            _searchResults = allFound;
+            final foundIdx = allFound.indexWhere((r) => r.id == result.id);
+            if (foundIdx != -1) _currentSearchMatchIndex = foundIdx;
+          });
+        }
+      });
+    }
+
+    if (_readingMode == ReadingMode.reflowable) {
+      _reflowableKey.currentState?.jumpToAnchor(
+        result.nodeId,
+        result.startOffset,
+      );
+    } else {
+      _pdfKey.currentState?.jumpToPage(result.sourcePdfPage);
+    }
+    setState(() {});
+  }
+
+  void _goToSearchMatch(int index) {
+    if (_searchResults.isEmpty) return;
+    final clamped =
+        (index % _searchResults.length + _searchResults.length) %
+        _searchResults.length;
+    final result = _searchResults[clamped];
+
+    setState(() {
+      _currentSearchMatchIndex = clamped;
+      _activeSearchMatches = [
+        ActiveSearchMatch(
+          nodeId: result.nodeId,
+          startOffset: result.startOffset,
+          endOffset: result.endOffset,
+          isActive: true,
+        ),
+      ];
+    });
+
+    if (_readingMode == ReadingMode.reflowable) {
+      _reflowableKey.currentState?.jumpToAnchor(
+        result.nodeId,
+        result.startOffset,
+      );
+    } else {
+      _pdfKey.currentState?.jumpToPage(result.sourcePdfPage);
+    }
+  }
+
+  void _goToNextSearchMatch() {
+    _goToSearchMatch(_currentSearchMatchIndex + 1);
+  }
+
+  void _goToPreviousSearchMatch() {
+    _goToSearchMatch(_currentSearchMatchIndex - 1);
+  }
+
+  void _handleHistoryBack() {
+    final prev = _navigationHistory.goBack();
+    if (prev == null) return;
+
+    if (_readingMode == ReadingMode.reflowable) {
+      if (prev.anchorNodeId != null) {
+        _reflowableKey.currentState?.jumpToAnchor(
+          prev.anchorNodeId!,
+          prev.characterOffset,
+        );
+      } else {
+        _reflowableKey.currentState?.jumpToChapter(prev.chapterIndex);
+      }
+    } else {
+      _pdfKey.currentState?.jumpToPage(prev.pageNumber);
+    }
+    setState(() {});
   }
 
   void _previousPage(ReadingMode mode) {
@@ -353,8 +491,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       final newFile = File(result.first.path!);
       if (!await newFile.exists()) return;
 
-      final storedPdf =
-          await FileStorageService.copyPdfToStorage(newFile, widget.book.id);
+      final storedPdf = await FileStorageService.copyPdfToStorage(
+        newFile,
+        widget.book.id,
+      );
       await ref
           .read(databaseServiceProvider)
           .updateBookPdfPath(widget.book.id, storedPdf.path);
@@ -445,7 +585,47 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       builder: (_) => TocDialog(
         bookId: widget.book.id,
         bookDocument: _document,
+        readerDocument: _readerDocument,
+        currentChapterIndex: _reflowableChapter,
+        currentAnchorNodeId: _activeAnchorNodeId,
+        onNavigateToTocItem: (chIndex, pageNum, anchorNodeId) {
+          _navigationHistory.recordLocation(
+            NavigationHistoryEntry(
+              bookId: widget.book.id,
+              chapterIndex: _reflowableChapter,
+              anchorNodeId: _activeAnchorNodeId,
+              characterOffset: _activeCharOffset,
+              pageNumber: _currentPage,
+              label: 'Sebelum navigasi daftar isi',
+            ),
+          );
+          if (_readingMode == ReadingMode.originalPdf) {
+            _pdfKey.currentState?.jumpToPage(pageNum);
+          } else {
+            if (anchorNodeId != null) {
+              _reflowableKey.currentState?.jumpToAnchor(anchorNodeId, 0);
+            } else {
+              _reflowableKey.currentState?.jumpToChapter(chIndex);
+            }
+          }
+          _saveProgress(
+            chapter: chIndex,
+            position: pageNum,
+            percentage: _totalPages > 0 ? (pageNum / _totalPages) : 0.0,
+          );
+          setState(() {});
+        },
         onNavigateToChapter: (chIndex, pageNum) {
+          _navigationHistory.recordLocation(
+            NavigationHistoryEntry(
+              bookId: widget.book.id,
+              chapterIndex: _reflowableChapter,
+              anchorNodeId: _activeAnchorNodeId,
+              characterOffset: _activeCharOffset,
+              pageNumber: _currentPage,
+              label: 'Sebelum navigasi bab',
+            ),
+          );
           if (_readingMode == ReadingMode.originalPdf) {
             _pdfKey.currentState?.jumpToPage(pageNum);
           } else {
@@ -456,18 +636,35 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
             position: pageNum,
             percentage: _totalPages > 0 ? (pageNum / _totalPages) : 0.0,
           );
+          setState(() {});
         },
         onNavigateToPosition: (pos) {
-          if (_readingMode == ReadingMode.originalPdf) {
-            _pdfKey.currentState?.jumpToPage(pos);
-          } else {
-            _reflowableKey.currentState?.jumpToPage(pos);
-          }
-          _saveProgress(
-            chapter: _currentChapter,
-            position: pos,
-            percentage: _totalPages > 0 ? (pos / _totalPages) : 0.0,
+          _navigationHistory.recordLocation(
+            NavigationHistoryEntry(
+              bookId: widget.book.id,
+              chapterIndex: _reflowableChapter,
+              anchorNodeId: _activeAnchorNodeId,
+              characterOffset: _activeCharOffset,
+              pageNumber: _currentPage,
+              label: 'Sebelum navigasi posisi',
+            ),
           );
+          _jumpToPosition(pos, _readingMode);
+          setState(() {});
+        },
+        onNavigateToAnchor: (anchorNodeId, charOffset) {
+          _navigationHistory.recordLocation(
+            NavigationHistoryEntry(
+              bookId: widget.book.id,
+              chapterIndex: _reflowableChapter,
+              anchorNodeId: _activeAnchorNodeId,
+              characterOffset: _activeCharOffset,
+              pageNumber: _currentPage,
+              label: 'Sebelum navigasi jangkar',
+            ),
+          );
+          _reflowableKey.currentState?.jumpToAnchor(anchorNodeId, charOffset);
+          setState(() {});
         },
       ),
     );
@@ -479,7 +676,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     final isReflowable = _readingMode == ReadingMode.reflowable;
 
     final existing = bookmarks.where((b) {
-      if (isReflowable && _activeAnchorNodeId != null && b.anchorNodeId != null) {
+      if (isReflowable &&
+          _activeAnchorNodeId != null &&
+          b.anchorNodeId != null) {
         return b.anchorNodeId == _activeAnchorNodeId;
       }
       return b.position == _currentPage;
@@ -508,7 +707,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           bookId: drift.Value(widget.book.id),
           chapterId: drift.Value(
             _readerDocument != null && _readerDocument!.chapters.isNotEmpty
-                ? _readerDocument!.chapters[_currentChapter.clamp(0, _readerDocument!.chapters.length - 1)].id
+                ? _readerDocument!
+                      .chapters[_currentChapter.clamp(
+                        0,
+                        _readerDocument!.chapters.length - 1,
+                      )]
+                      .id
                 : null,
           ),
           position: drift.Value(_currentPage),
@@ -537,7 +741,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     final bookmarksAsync = ref.watch(
       bookBookmarksStreamProvider(widget.book.id),
     );
-    final isBookmarked = bookmarksAsync.value?.any((b) {
+    final isBookmarked =
+        bookmarksAsync.value?.any((b) {
           if (_readingMode == ReadingMode.reflowable &&
               _activeAnchorNodeId != null &&
               b.anchorNodeId != null) {
@@ -551,12 +756,35 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       autofocus: true,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
+          // Traversal shortcuts when in search mode
+          if (_showSearchTraversal) {
+            if (event.logicalKey == LogicalKeyboardKey.escape) {
+              setState(() {
+                _showSearchTraversal = false;
+                _activeSearchMatches = [];
+              });
+              return KeyEventResult.handled;
+            } else if (event.logicalKey == LogicalKeyboardKey.enter) {
+              if (HardwareKeyboard.instance.isShiftPressed) {
+                _goToPreviousSearchMatch();
+              } else {
+                _goToNextSearchMatch();
+              }
+              return KeyEventResult.handled;
+            }
+          }
+
           final isMetaOrCtrl =
               HardwareKeyboard.instance.isMetaPressed ||
               HardwareKeyboard.instance.isControlPressed;
 
           if (isMetaOrCtrl) {
-            if (event.logicalKey == LogicalKeyboardKey.equal ||
+            if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              if (_navigationHistory.canGoBack) {
+                _handleHistoryBack();
+                return KeyEventResult.handled;
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.equal ||
                 event.logicalKey == LogicalKeyboardKey.add) {
               if (_readingMode == ReadingMode.originalPdf) {
                 _pdfKey.currentState?.zoomIn();
@@ -625,7 +853,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     ? ReflowableReaderContainer(
                         key: _reflowableKey,
                         bookId: widget.book.id,
-                        document: _readerDocument ??
+                        document:
+                            _readerDocument ??
                             ReflowableEngine.normalizeDocument(_document!),
                         theme: activeTheme,
                         typography: typoSettings,
@@ -633,6 +862,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                         initialPosition: _currentPage,
                         initialAnchorNodeId: _activeAnchorNodeId,
                         initialCharOffset: _activeCharOffset,
+                        searchMatches: _activeSearchMatches,
                         onTapContent: _toggleControls,
                         onHighlightCreated: _handleHighlightCreated,
                         onTotalPagesCalculated: (total) {
@@ -643,18 +873,19 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                             });
                           }
                         },
-                        onProgressChanged: (ch, page, pct, anchorId, charOffset) {
-                          _reflowableChapter = ch;
-                          _reflowablePosition = page;
-                          _activeAnchorNodeId = anchorId;
-                          _activeCharOffset = charOffset;
-                          _updateChapterInfo(ch);
-                          _saveProgress(
-                            chapter: ch,
-                            position: page,
-                            percentage: pct,
-                          );
-                        },
+                        onProgressChanged:
+                            (ch, page, pct, anchorId, charOffset) {
+                              _reflowableChapter = ch;
+                              _reflowablePosition = page;
+                              _activeAnchorNodeId = anchorId;
+                              _activeCharOffset = charOffset;
+                              _updateChapterInfo(ch);
+                              _saveProgress(
+                                chapter: ch,
+                                position: page,
+                                percentage: pct,
+                              );
+                            },
                       )
                     : OriginalPdfReader(
                         key: _pdfKey,
@@ -724,6 +955,32 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                   isBookmarked,
                 ),
               ),
+
+              // 2.5 Floating In-Book Search Traversal Bar
+              if (_showSearchTraversal)
+                Positioned(
+                  top: _showControls ? 74 : 18,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: SearchTraversalBar(
+                      query: _activeSearchQuery,
+                      currentIndex: _currentSearchMatchIndex,
+                      totalCount: _searchResults.isNotEmpty
+                          ? _searchResults.length
+                          : 1,
+                      theme: activeTheme,
+                      onPrevious: _goToPreviousSearchMatch,
+                      onNext: _goToNextSearchMatch,
+                      onClose: () {
+                        setState(() {
+                          _showSearchTraversal = false;
+                          _activeSearchMatches = [];
+                        });
+                      },
+                    ),
+                  ),
+                ),
 
               // 3. Minimalist Floating Bottom Bar with Slider & Steppers
               AnimatedPositioned(
@@ -797,6 +1054,19 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     onPressed: () => Navigator.of(context).pop(),
                   ),
 
+                  // History Back button (undo jump)
+                  if (_navigationHistory.canGoBack)
+                    IconButton(
+                      key: const ValueKey('reader_history_back_button'),
+                      tooltip: 'Kembali ke lokasi membaca sebelumnya (⌘←)',
+                      icon: const Icon(
+                        Icons.history_rounded,
+                        color: Color(0xFF007AFF),
+                        size: 20,
+                      ),
+                      onPressed: _handleHistoryBack,
+                    ),
+
                   // Book Title & Chapter subtitle
                   Expanded(
                     child: Column(
@@ -866,7 +1136,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                   if (readingMode == ReadingMode.reflowable)
                     Consumer(
                       builder: (context, ref, _) {
-                        final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.book.id));
+                        final layoutMode = ref.watch(
+                          reflowableLayoutModeProvider(widget.book.id),
+                        );
                         return IconButton(
                           tooltip: layoutMode == ReflowableLayoutMode.paginated
                               ? 'Beralih ke Gulir Vertikal'
@@ -879,11 +1151,21 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                             size: 20,
                           ),
                           onPressed: () {
-                            final current = ref.read(reflowableLayoutModeProvider(widget.book.id));
-                            final next = current == ReflowableLayoutMode.paginated
+                            final current = ref.read(
+                              reflowableLayoutModeProvider(widget.book.id),
+                            );
+                            final next =
+                                current == ReflowableLayoutMode.paginated
                                 ? ReflowableLayoutMode.scrolling
                                 : ReflowableLayoutMode.paginated;
-                            ref.read(reflowableLayoutModeProvider(widget.book.id).notifier).state = next;
+                            ref
+                                    .read(
+                                      reflowableLayoutModeProvider(
+                                        widget.book.id,
+                                      ).notifier,
+                                    )
+                                    .state =
+                                next;
                             _saveProgress(
                               chapter: _reflowableChapter,
                               position: _reflowablePosition,
@@ -899,7 +1181,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       isDesktopOrTablet)
                     Consumer(
                       builder: (context, ref, _) {
-                        final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.book.id));
+                        final layoutMode = ref.watch(
+                          reflowableLayoutModeProvider(widget.book.id),
+                        );
                         if (layoutMode != ReflowableLayoutMode.paginated) {
                           return const SizedBox.shrink();
                         }
@@ -993,6 +1277,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                   // Table of Contents
                   if (!isUltraCompact)
                     IconButton(
+                      key: const ValueKey('reader_toc_button'),
                       tooltip: 'Daftar Isi',
                       icon: Icon(
                         Icons.list_alt,
@@ -1003,12 +1288,16 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     ),
 
                   // In-Book Search button
-                  if (_document != null && isDesktopOrTablet)
+                  if ((_document != null || _readerDocument != null) &&
+                      isDesktopOrTablet)
                     IconButton(
+                      key: const ValueKey('reader_search_button'),
                       tooltip: 'Cari dalam buku',
                       icon: Icon(
                         Icons.search,
-                        color: activeTheme.textColor,
+                        color: _showSearchTraversal
+                            ? const Color(0xFFFF9500)
+                            : activeTheme.textColor,
                         size: 20,
                       ),
                       onPressed: _openBookSearchDialog,

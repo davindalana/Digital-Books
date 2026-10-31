@@ -230,4 +230,3 @@ class TypographySettings {
   String get cacheKey =>
       '${fontFamily.key}_${fontSize.toStringAsFixed(1)}_${lineSpacing.toStringAsFixed(2)}_${paragraphSpacing.toStringAsFixed(1)}_${letterSpacing.toStringAsFixed(2)}_${textAlign.name}_${horizontalMargin.toStringAsFixed(0)}_${twoPageSpread ? 1 : 0}';
 }
-

@@ -14,7 +14,8 @@ class BookPageTurnView extends StatefulWidget {
   final TypographySettings typography;
   final Function(int newPageIndex) onPageChanged;
   final VoidCallback onTapCenter;
-  final Widget Function(ReflowablePageContent page, {bool? isLeftPage}) pageBuilder;
+  final Widget Function(ReflowablePageContent page, {bool? isLeftPage})
+  pageBuilder;
 
   const BookPageTurnView({
     super.key,
@@ -172,14 +173,20 @@ class BookPageTurnViewState extends State<BookPageTurnView>
   }
 
   // --- Interactive Drag Gesture Handling ("ketika melakukan geser") ---
-  void _onHorizontalDragStart(DragStartDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragStart(
+    DragStartDetails details,
+    BoxConstraints constraints,
+  ) {
     if (_isFlipping && !_isDragging) return;
     _dragStartX = details.localPosition.dx;
     _isDragging = true;
     _controller.stop();
   }
 
-  void _onHorizontalDragUpdate(DragUpdateDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragUpdate(
+    DragUpdateDetails details,
+    BoxConstraints constraints,
+  ) {
     if (!_isDragging || _dragStartX == null || widget.pages.isEmpty) return;
 
     final deltaX = details.localPosition.dx - _dragStartX!;
@@ -219,7 +226,10 @@ class BookPageTurnViewState extends State<BookPageTurnView>
     }
   }
 
-  void _onHorizontalDragEnd(DragEndDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragEnd(
+    DragEndDetails details,
+    BoxConstraints constraints,
+  ) {
     if (!_isDragging) return;
     _isDragging = false;
     _dragStartX = null;
@@ -236,7 +246,8 @@ class BookPageTurnViewState extends State<BookPageTurnView>
     final isForward = _direction == FlipDirection.forward;
 
     // Determine completion threshold: drag progress > 22% or fast flick velocity
-    final completed = (isForward && (velocity < -250 || _controller.value > 0.22)) ||
+    final completed =
+        (isForward && (velocity < -250 || _controller.value > 0.22)) ||
         (!isForward && (velocity > 250 || _controller.value > 0.22));
 
     if (completed) {
@@ -282,7 +293,8 @@ class BookPageTurnViewState extends State<BookPageTurnView>
             }
           },
           onHorizontalDragStart: (d) => _onHorizontalDragStart(d, constraints),
-          onHorizontalDragUpdate: (d) => _onHorizontalDragUpdate(d, constraints),
+          onHorizontalDragUpdate: (d) =>
+              _onHorizontalDragUpdate(d, constraints),
           onHorizontalDragEnd: (d) => _onHorizontalDragEnd(d, constraints),
           child: Container(
             color: widget.theme.backgroundColor,
@@ -320,7 +332,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                 children: [
                   Expanded(child: _buildSolidPage(leftPage, isLeftPage: true)),
                   _buildSpineCrease(),
-                  Expanded(child: _buildSolidPage(rightPage, isLeftPage: false)),
+                  Expanded(
+                    child: _buildSolidPage(rightPage, isLeftPage: false),
+                  ),
                 ],
               );
             }
@@ -377,7 +391,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
+                            color: Colors.black.withAlpha(
+                              ((1.0 - t) * 120).toInt(),
+                            ),
                           ),
                         ),
                       ),
@@ -541,7 +557,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
+                            color: Colors.black.withAlpha(
+                              ((1.0 - t) * 120).toInt(),
+                            ),
                           ),
                         ),
                       ),
@@ -651,7 +669,9 @@ class BookPageTurnViewState extends State<BookPageTurnView>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 120).toInt()),
+                            color: Colors.black.withAlpha(
+                              ((1.0 - t) * 120).toInt(),
+                            ),
                           ),
                         ),
                       ),
@@ -668,9 +688,7 @@ class BookPageTurnViewState extends State<BookPageTurnView>
   // Helper: Guarantees 100% solid opaque surface with RepaintBoundary
   Widget _buildSolidPage(ReflowablePageContent? page, {bool? isLeftPage}) {
     if (page == null) {
-      return Container(
-        color: widget.theme.backgroundColor,
-      );
+      return Container(color: widget.theme.backgroundColor);
     }
 
     return RepaintBoundary(

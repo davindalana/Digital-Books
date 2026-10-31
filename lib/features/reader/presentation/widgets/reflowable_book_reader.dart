@@ -76,7 +76,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.typography.fontSize != widget.typography.fontSize ||
         oldWidget.typography.lineSpacing != widget.typography.lineSpacing ||
-        oldWidget.typography.horizontalMargin != widget.typography.horizontalMargin ||
+        oldWidget.typography.horizontalMargin !=
+            widget.typography.horizontalMargin ||
         oldWidget.typography.twoPageSpread != widget.typography.twoPageSpread ||
         oldWidget.document != widget.document) {
       if (_lastWidth > 0 && _lastHeight > 0) {
@@ -150,17 +151,26 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     final double effectiveMargin = (rawPageWidth < 400)
         ? 16.0
         : (rawPageWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final double contentWidth = (rawPageWidth - (effectiveMargin * 2))
-        .clamp(180.0, 1200.0);
+    final double contentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(
+      180.0,
+      1200.0,
+    );
 
     // Height budget:
     // Vertical container padding (40px) + Running header (30px) + Running footer (28px) + Safety buffer (30px)
     final double availableHeight = (height - 128.0).clamp(160.0, 3000.0);
-    final double lineHeight = widget.typography.fontSize * widget.typography.lineSpacing;
+    final double lineHeight =
+        widget.typography.fontSize * widget.typography.lineSpacing;
 
     // Conservative line budget: subtract 3 lines so text NEVER touches or clips at the bottom
-    final int maxLinesPerPage = math.max(4, (availableHeight / lineHeight).floor() - 3);
-    final int charsPerLine = math.max(20, (contentWidth / (widget.typography.fontSize * 0.60)).floor());
+    final int maxLinesPerPage = math.max(
+      4,
+      (availableHeight / lineHeight).floor() - 3,
+    );
+    final int charsPerLine = math.max(
+      20,
+      (contentWidth / (widget.typography.fontSize * 0.60)).floor(),
+    );
 
     int runningPageIndex = 0;
 
@@ -222,7 +232,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               charsPerLine: charsPerLine,
               maxLinesPerPage: maxLinesPerPage,
               onAddChunk: (chunkBlock, chunkLines) {
-                if (currentLinesUsed + chunkLines > maxLinesPerPage && pageBlocks.isNotEmpty) {
+                if (currentLinesUsed + chunkLines > maxLinesPerPage &&
+                    pageBlocks.isNotEmpty) {
                   pushPage();
                 }
                 pageBlocks.add(chunkBlock);
@@ -295,7 +306,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       }
 
       final chunkText = text.substring(startIndex, endIndex).trim();
-      final chunkLines = math.max(1, (chunkText.length / charsPerLine).ceil()) + 1;
+      final chunkLines =
+          math.max(1, (chunkText.length / charsPerLine).ceil()) + 1;
 
       onAddChunk(
         BookBlock(
@@ -409,17 +421,22 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         final h = constraints.maxHeight;
 
         // Recalculate dynamic pagination if size changed significantly
-        if ((w - _lastWidth).abs() > 10 || (h - _lastHeight).abs() > 10 || _pages.isEmpty) {
-          final previousRatio = _pages.isNotEmpty ? (_currentPageIndex / _pages.length) : 0.0;
+        if ((w - _lastWidth).abs() > 10 ||
+            (h - _lastHeight).abs() > 10 ||
+            _pages.isEmpty) {
+          final previousRatio = _pages.isNotEmpty
+              ? (_currentPageIndex / _pages.length)
+              : 0.0;
           _lastWidth = w;
           _lastHeight = h;
           _paginateContent(w, h);
           if (_currentPageIndex == 0) {
             _currentPageIndex = _calculateInitialPageIndex();
           } else {
-            _currentPageIndex = (_pages.length * previousRatio)
-                .round()
-                .clamp(0, math.max(0, _pages.length - 1));
+            _currentPageIndex = (_pages.length * previousRatio).round().clamp(
+              0,
+              math.max(0, _pages.length - 1),
+            );
           }
         }
 
@@ -498,7 +515,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     final firstPageOfChapter = _chapterFirstPageMap[page.chapterIndex] ?? 0;
     final isFirstPageOfChapter = page.pageIndexInBook == firstPageOfChapter;
 
-    final double rawPageWidth = (_lastWidth >= 850 && widget.typography.twoPageSpread)
+    final double rawPageWidth =
+        (_lastWidth >= 850 && widget.typography.twoPageSpread)
         ? ((_lastWidth - 32) / 2)
         : (_lastWidth > 0 ? _lastWidth : 600);
     final double effectiveMargin = (rawPageWidth < 400)
@@ -507,10 +525,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
     return Container(
       color: widget.theme.backgroundColor,
-      padding: EdgeInsets.symmetric(
-        horizontal: effectiveMargin,
-        vertical: 20,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: effectiveMargin, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -841,7 +856,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     final text = block.text;
 
     // Check if line is a standalone title / subtitle / disclaimer header that should be centered
-    final isShortCentered = (text.length <= 50 &&
+    final isShortCentered =
+        (text.length <= 50 &&
             !text.endsWith('.') &&
             !text.endsWith(',') &&
             !text.startsWith('(') &&
@@ -879,7 +895,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     final hasRealWord =
         firstWord.length >= 3 && RegExp(r'[aeiouyAEIOUY]').hasMatch(firstWord);
 
-    final canHaveDropCap = isFirstParagraphOfChapter &&
+    final canHaveDropCap =
+        isFirstParagraphOfChapter &&
         text.length > 100 &&
         hasRealWord &&
         RegExp(r'^[A-Za-z]').hasMatch(text) &&
@@ -1039,7 +1056,9 @@ class _FloatingReaderArrowState extends State<_FloatingReaderArrow> {
 
   @override
   Widget build(BuildContext context) {
-    final bgAlpha = _isHovered ? (widget.isDark ? 210 : 190) : (widget.isDark ? 80 : 60);
+    final bgAlpha = _isHovered
+        ? (widget.isDark ? 210 : 190)
+        : (widget.isDark ? 80 : 60);
     final borderAlpha = _isHovered ? 80 : 30;
 
     return MouseRegion(

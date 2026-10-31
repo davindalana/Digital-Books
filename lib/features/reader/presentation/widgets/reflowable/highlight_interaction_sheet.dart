@@ -50,7 +50,8 @@ class HighlightInteractionSheet extends StatefulWidget {
   }
 
   @override
-  State<HighlightInteractionSheet> createState() => _HighlightInteractionSheetState();
+  State<HighlightInteractionSheet> createState() =>
+      _HighlightInteractionSheetState();
 }
 
 class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
@@ -118,7 +119,9 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        widget.existingHighlight != null ? 'Edit Sorotan & Catatan' : 'Buat Sorotan Baru',
+                        widget.existingHighlight != null
+                            ? 'Edit Sorotan & Catatan'
+                            : 'Buat Sorotan Baru',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -138,7 +141,10 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
 
               // 2. Selected Text Quote Preview
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: currentColorType.getBackgroundColor(widget.theme),
                   borderRadius: BorderRadius.circular(8),
@@ -201,7 +207,11 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                             : null,
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, size: 20, color: Colors.white)
+                          ? const Icon(
+                              Icons.check,
+                              size: 20,
+                              color: Colors.white,
+                            )
                           : null,
                     ),
                   );
@@ -225,10 +235,16 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                 maxLines: 3,
                 style: TextStyle(fontSize: 14, color: textColor),
                 decoration: InputDecoration(
-                  hintText: 'Tulis pemikiran atau referensi untuk kutipan ini...',
-                  hintStyle: TextStyle(fontSize: 13, color: secondaryColor.withValues(alpha: 0.6)),
+                  hintText:
+                      'Tulis pemikiran atau referensi untuk kutipan ini...',
+                  hintStyle: TextStyle(
+                    fontSize: 13,
+                    color: secondaryColor.withValues(alpha: 0.6),
+                  ),
                   filled: true,
-                  fillColor: isDark ? const Color(0xFF2A2A2E) : const Color(0xFFF3F3F5),
+                  fillColor: isDark
+                      ? const Color(0xFF2A2A2E)
+                      : const Color(0xFFF3F3F5),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide.none,
@@ -243,7 +259,10 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                 children: [
                   if (widget.onDelete != null)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
                       tooltip: 'Hapus Sorotan',
                       onPressed: () {
                         Navigator.of(context).pop();
@@ -253,15 +272,23 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                   const Spacer(),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Batal', style: TextStyle(color: secondaryColor)),
+                    child: Text(
+                      'Batal',
+                      style: TextStyle(color: secondaryColor),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton.icon(
                     icon: const Icon(Icons.check, size: 16),
-                    label: Text(widget.existingHighlight != null ? 'Perbarui' : 'Simpan'),
+                    label: Text(
+                      widget.existingHighlight != null ? 'Perbarui' : 'Simpan',
+                    ),
                     onPressed: () {
                       final noteText = _noteController.text.trim();
-                      widget.onSave(_selectedColor, noteText.isEmpty ? null : noteText);
+                      widget.onSave(
+                        _selectedColor,
+                        noteText.isEmpty ? null : noteText,
+                      );
                       Navigator.of(context).pop();
                     },
                   ),

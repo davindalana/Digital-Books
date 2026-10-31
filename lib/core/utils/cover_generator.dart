@@ -32,8 +32,13 @@ class CoverGenerator {
     // 1. On macOS, render Page 1 using native CoreGraphics & PDFKit with CoreImage Unsharp Mask
     if (Platform.isMacOS && File(pdfPath).existsSync()) {
       try {
-        final success = await _renderPage1WithNativeMac(pdfPath, coverFile.path);
-        if (success && await coverFile.exists() && await coverFile.length() > 5000) {
+        final success = await _renderPage1WithNativeMac(
+          pdfPath,
+          coverFile.path,
+        );
+        if (success &&
+            await coverFile.exists() &&
+            await coverFile.length() > 5000) {
           return coverFile;
         }
       } catch (e) {
@@ -49,7 +54,10 @@ class CoverGenerator {
     );
   }
 
-  static Future<bool> _renderPage1WithNativeMac(String pdfPath, String outPath) async {
+  static Future<bool> _renderPage1WithNativeMac(
+    String pdfPath,
+    String outPath,
+  ) async {
     const swiftCode = '''
 import Foundation
 import PDFKit
@@ -169,10 +177,7 @@ exit(CGImageDestinationFinalize(destination) ? 0 : 1)
         ..shader = ui.Gradient.linear(
           const Offset(28, 0),
           const Offset(36, 0),
-          [
-            Colors.white.withAlpha(40),
-            Colors.transparent,
-          ],
+          [Colors.white.withAlpha(40), Colors.transparent],
           [0.0, 1.0],
         );
       canvas.drawRect(const Rect.fromLTWH(28, 0, 8, height), spineHighlight);
@@ -209,7 +214,9 @@ exit(CGImageDestinationFinalize(destination) ? 0 : 1)
       canvas.drawCircle(const Offset(width / 2, 130), 20, ornamentPaint);
 
       // Draw Book Icon / Monogram Initial in Circle
-      final initial = title.trim().isNotEmpty ? title.trim()[0].toUpperCase() : 'B';
+      final initial = title.trim().isNotEmpty
+          ? title.trim()[0].toUpperCase()
+          : 'B';
       final initialPainter = TextPainter(
         text: TextSpan(
           text: initial,
@@ -266,8 +273,9 @@ exit(CGImageDestinationFinalize(destination) ? 0 : 1)
       );
 
       // Author Text
-      final cleanAuthor =
-          author.trim().isEmpty ? 'Digital Edition' : author.trim();
+      final cleanAuthor = author.trim().isEmpty
+          ? 'Digital Edition'
+          : author.trim();
       final authorSpan = TextSpan(
         text: cleanAuthor.toUpperCase(),
         style: const TextStyle(
@@ -329,12 +337,74 @@ exit(CGImageDestinationFinalize(destination) ? 0 : 1)
   static Future<File> _generateFallbackPng(File targetFile) async {
     // 1x1 dark gray PNG
     final fallbackBytes = Uint8List.fromList([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x60, 0x60, 0x00, 0x00,
-      0x00, 0x04, 0x00, 0x01, 0xA2, 0x12, 0x2A, 0x24, 0x00, 0x00, 0x00, 0x00,
-      0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+      0x89,
+      0x50,
+      0x4E,
+      0x47,
+      0x0D,
+      0x0A,
+      0x1A,
+      0x0A,
+      0x00,
+      0x00,
+      0x00,
+      0x0D,
+      0x49,
+      0x48,
+      0x44,
+      0x52,
+      0x00,
+      0x00,
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+      0x00,
+      0x01,
+      0x08,
+      0x06,
+      0x00,
+      0x00,
+      0x00,
+      0x1F,
+      0x15,
+      0xC4,
+      0x89,
+      0x00,
+      0x00,
+      0x00,
+      0x0A,
+      0x49,
+      0x44,
+      0x41,
+      0x54,
+      0x78,
+      0x9C,
+      0x63,
+      0x60,
+      0x60,
+      0x00,
+      0x00,
+      0x00,
+      0x04,
+      0x00,
+      0x01,
+      0xA2,
+      0x12,
+      0x2A,
+      0x24,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x49,
+      0x45,
+      0x4E,
+      0x44,
+      0xAE,
+      0x42,
+      0x60,
+      0x82,
     ]);
     await targetFile.writeAsBytes(fallbackBytes);
     return targetFile;

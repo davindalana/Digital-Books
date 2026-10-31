@@ -5,10 +5,7 @@ import '../domain/models/reading_location.dart';
 
 export '../domain/models/reading_location.dart' show ReflowableLayoutMode;
 
-enum ReadingMode {
-  reflowable,
-  originalPdf,
-}
+enum ReadingMode { reflowable, originalPdf }
 
 enum PdfViewMode {
   paginated('Halaman'),
@@ -18,22 +15,26 @@ enum PdfViewMode {
   const PdfViewMode(this.label);
 }
 
-final readingThemeStateProvider =
-    StateProvider<ReadingThemeType>((ref) => ReadingThemeType.black);
+final readingThemeStateProvider = StateProvider<ReadingThemeType>(
+  (ref) => ReadingThemeType.black,
+);
 
-final typographySettingsStateProvider =
-    StateProvider<TypographySettings>((ref) => const TypographySettings());
+final typographySettingsStateProvider = StateProvider<TypographySettings>(
+  (ref) => const TypographySettings(),
+);
 
-final activeReadingModeProvider =
-    StateProvider.family<ReadingMode, String>((ref, bookId) => ReadingMode.reflowable);
+final activeReadingModeProvider = StateProvider.family<ReadingMode, String>(
+  (ref, bookId) => ReadingMode.reflowable,
+);
 
 final reflowableLayoutModeProvider =
     StateProvider.family<ReflowableLayoutMode, String>(
-        (ref, bookId) => ReflowableLayoutMode.paginated);
+      (ref, bookId) => ReflowableLayoutMode.paginated,
+    );
 
-final pdfViewModeProvider =
-    StateProvider<PdfViewMode>((ref) => PdfViewMode.paginated);
+final pdfViewModeProvider = StateProvider<PdfViewMode>(
+  (ref) => PdfViewMode.paginated,
+);
 
 /// Screen brightness dimmer for comfortable night reading (0.0 = normal, up to 0.6 = dark ambient tint)
 final readerBrightnessDimmerProvider = StateProvider<double>((ref) => 0.0);
-

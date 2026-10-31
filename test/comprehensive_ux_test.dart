@@ -66,68 +66,72 @@ void main() {
       );
     });
 
-    testWidgets('ReflowableBookReader renders cleanly on mobile screen (400x700)',
-        (tester) async {
-      tester.view.physicalSize = const Size(400, 700);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'ReflowableBookReader renders cleanly on mobile screen (400x700)',
+      (tester) async {
+        tester.view.physicalSize = const Size(400, 700);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ReflowableBookReader(
-              document: sampleDoc,
-              theme: ReadingThemeType.warmPaper,
-              typography: const TypographySettings(),
-              initialChapterIndex: 1,
-              initialPosition: 1,
-              onProgressChanged: (ch, page, pct) {},
-              onTapContent: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ReflowableBookReader(
+                document: sampleDoc,
+                theme: ReadingThemeType.warmPaper,
+                typography: const TypographySettings(),
+                initialChapterIndex: 1,
+                initialPosition: 1,
+                onProgressChanged: (ch, page, pct) {},
+                onTapContent: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Verify the chapter heading and paragraph render without any layout exceptions
-      expect(find.byType(ReflowableBookReader), findsOneWidget);
-      expect(find.byType(BookPageTurnView), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        // Verify the chapter heading and paragraph render without any layout exceptions
+        expect(find.byType(ReflowableBookReader), findsOneWidget);
+        expect(find.byType(BookPageTurnView), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
-        'ReflowableBookReader dynamically adapts to desktop wide screen (1200x800) two-page spread',
-        (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+      'ReflowableBookReader dynamically adapts to desktop wide screen (1200x800) two-page spread',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ReflowableBookReader(
-              document: sampleDoc,
-              theme: ReadingThemeType.white,
-              typography: const TypographySettings(twoPageSpread: true),
-              initialChapterIndex: 0,
-              initialPosition: 1,
-              onProgressChanged: (ch, page, pct) {},
-              onTapContent: () {},
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ReflowableBookReader(
+                document: sampleDoc,
+                theme: ReadingThemeType.white,
+                typography: const TypographySettings(twoPageSpread: true),
+                initialChapterIndex: 0,
+                initialPosition: 1,
+                onProgressChanged: (ch, page, pct) {},
+                onTapContent: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Confirm zero exceptions and smooth two-page desktop layout
-      expect(tester.takeException(), isNull);
-      expect(find.byType(BookPageTurnView), findsOneWidget);
-    });
+        // Confirm zero exceptions and smooth two-page desktop layout
+        expect(tester.takeException(), isNull);
+        expect(find.byType(BookPageTurnView), findsOneWidget);
+      },
+    );
 
-    testWidgets('BookPageTurnView flips forward and backward smoothly on tap',
-        (tester) async {
+    testWidgets('BookPageTurnView flips forward and backward smoothly on tap', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(500, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -200,8 +204,9 @@ void main() {
       expect(normalized.chapters.isNotEmpty, isTrue);
 
       final allBlocks = normalized.chapters.expand((c) => c.blocks).toList();
-      final imageBlocks =
-          allBlocks.where((b) => b.type == BlockType.image).toList();
+      final imageBlocks = allBlocks
+          .where((b) => b.type == BlockType.image)
+          .toList();
 
       // Image block MUST be preserved!
       expect(imageBlocks.length, equals(1));
@@ -209,41 +214,46 @@ void main() {
       expect(imageBlocks.first.imagePath, equals('/path/to/image.png'));
 
       // Paragraph de-hyphenation check
-      final paragraphs =
-          allBlocks.where((b) => b.type == BlockType.paragraph).toList();
+      final paragraphs = allBlocks
+          .where((b) => b.type == BlockType.paragraph)
+          .toList();
       expect(paragraphs.any((p) => p.text.contains('membingungkan')), isTrue);
     });
 
-    test('BookTextNormalizer removes single-letter OCR noise and publisher headers', () {
-      final docWithNoise = const BookDocument(
-        id: 'noise_test',
-        title: 'Kesetiaan Mr. X',
-        author: 'Keigo Higashino',
-        totalPages: 10,
-        chapters: [
-          BookChapter(
-            id: 'ch0',
-            index: 0,
-            title: 'Pengantar',
-            blocks: [
-              BookBlock(
-                id: 'b1',
-                type: BlockType.paragraph,
-                text: 'Ith Lh\nKESETIAAN MR. X\nK H\nG\nS\nH\nHTA LA\nKESETAAN MK X\nSanksi Pelanggaran Pasal 113',
-              ),
-            ],
-          ),
-        ],
-      );
+    test(
+      'BookTextNormalizer removes single-letter OCR noise and publisher headers',
+      () {
+        final docWithNoise = const BookDocument(
+          id: 'noise_test',
+          title: 'Kesetiaan Mr. X',
+          author: 'Keigo Higashino',
+          totalPages: 10,
+          chapters: [
+            BookChapter(
+              id: 'ch0',
+              index: 0,
+              title: 'Pengantar',
+              blocks: [
+                BookBlock(
+                  id: 'b1',
+                  type: BlockType.paragraph,
+                  text:
+                      'Ith Lh\nKESETIAAN MR. X\nK H\nG\nS\nH\nHTA LA\nKESETAAN MK X\nSanksi Pelanggaran Pasal 113',
+                ),
+              ],
+            ),
+          ],
+        );
 
-      final normalized = BookTextNormalizer.normalizeDocument(docWithNoise);
-      final allBlocks = normalized.chapters.expand((c) => c.blocks).toList();
-      final text = allBlocks.map((b) => b.text).join(' ');
+        final normalized = BookTextNormalizer.normalizeDocument(docWithNoise);
+        final allBlocks = normalized.chapters.expand((c) => c.blocks).toList();
+        final text = allBlocks.map((b) => b.text).join(' ');
 
-      // Should not contain isolated letters G, S, H or garbage headers
-      expect(text.contains('Sanksi Pelanggaran Pasal 113'), isTrue);
-      expect(text.contains('Ith Lh'), isFalse);
-      expect(text.contains('HTA LA'), isFalse);
-    });
+        // Should not contain isolated letters G, S, H or garbage headers
+        expect(text.contains('Sanksi Pelanggaran Pasal 113'), isTrue);
+        expect(text.contains('Ith Lh'), isFalse);
+        expect(text.contains('HTA LA'), isFalse);
+      },
+    );
   });
 }

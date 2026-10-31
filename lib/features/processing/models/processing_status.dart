@@ -27,23 +27,23 @@ class ProcessingProgress {
   });
 
   factory ProcessingProgress.initial() => const ProcessingProgress(
-        stage: ProcessingStage.idle,
-        progress: 0.0,
-        message: 'Waiting to start...',
-      );
+    stage: ProcessingStage.idle,
+    progress: 0.0,
+    message: 'Waiting to start...',
+  );
 
   factory ProcessingProgress.failed(String error) => ProcessingProgress(
-        stage: ProcessingStage.failed,
-        progress: 0.0,
-        message: 'An error occurred during processing',
-        error: error,
-      );
+    stage: ProcessingStage.failed,
+    progress: 0.0,
+    message: 'An error occurred during processing',
+    error: error,
+  );
 
   factory ProcessingProgress.completed() => const ProcessingProgress(
-        stage: ProcessingStage.completed,
-        progress: 1.0,
-        message: 'Book successfully imported and converted!',
-      );
+    stage: ProcessingStage.completed,
+    progress: 1.0,
+    message: 'Book successfully imported and converted!',
+  );
 
   ProcessingProgress copyWith({
     ProcessingStage? stage,
@@ -59,4 +59,3 @@ class ProcessingProgress {
     );
   }
 }
-

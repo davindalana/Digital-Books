@@ -26,13 +26,12 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         databaseServiceProvider.overrideWithValue(dbService),
-        bookBookmarksStreamProvider(book.id).overrideWith((ref) => Stream.value(<Bookmark>[])),
+        bookBookmarksStreamProvider(
+          book.id,
+        ).overrideWith((ref) => Stream.value(<Bookmark>[])),
       ],
       child: MaterialApp(
-        home: ReadingScreen(
-          book: book,
-          initialMode: ReadingMode.originalPdf,
-        ),
+        home: ReadingScreen(book: book, initialMode: ReadingMode.originalPdf),
       ),
     );
   }
@@ -49,91 +48,105 @@ void main() {
       updatedAt: DateTime.now(),
     );
 
-    testWidgets('Renders top and bottom floating bars on iPhone (390x844) without overflow',
-        (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'Renders top and bottom floating bars on iPhone (390x844) without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(buildTestableReadingScreen(testBook));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableReadingScreen(testBook));
+        await tester.pumpAndSettle();
 
-      // Top bar back button and book title
-      expect(find.byKey(const ValueKey('reader_top_back_button')), findsOneWidget);
-      expect(find.text('The 48 Laws Of Power'), findsOneWidget);
+        // Top bar back button and book title
+        expect(
+          find.byKey(const ValueKey('reader_top_back_button')),
+          findsOneWidget,
+        );
+        expect(find.text('The 48 Laws Of Power'), findsOneWidget);
 
-      // Bottom bar page indicator
-      expect(find.text('Page 1 of 13'), findsOneWidget);
+        // Bottom bar page indicator
+        expect(find.text('Page 1 of 13'), findsOneWidget);
 
-      // Verify no RenderFlex overflow exception
-      expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        // Verify no RenderFlex overflow exception
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('Renders cleanly on small Android phone (360x780) without overflow',
-        (tester) async {
-      tester.view.physicalSize = const Size(360, 780);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'Renders cleanly on small Android phone (360x780) without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 780);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(buildTestableReadingScreen(testBook));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableReadingScreen(testBook));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('reader_top_back_button')), findsOneWidget);
-      expect(find.text('The 48 Laws Of Power'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        expect(
+          find.byKey(const ValueKey('reader_top_back_button')),
+          findsOneWidget,
+        );
+        expect(find.text('The 48 Laws Of Power'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('Renders full desktop controls on macOS (1280x800) including zoom buttons',
-        (tester) async {
-      tester.view.physicalSize = const Size(1280, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'Renders full desktop controls on macOS (1280x800) including zoom buttons',
+      (tester) async {
+        tester.view.physicalSize = const Size(1280, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(buildTestableReadingScreen(testBook));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableReadingScreen(testBook));
+        await tester.pumpAndSettle();
 
-      // Desktop shows Zoom In and Zoom Out tooltips/buttons
-      expect(find.byTooltip('Zoom In (Cmd +)'), findsOneWidget);
-      expect(find.byTooltip('Zoom Out (Cmd -)'), findsOneWidget);
-      expect(find.byTooltip('Mode Gulir Vertikal'), findsOneWidget);
+        // Desktop shows Zoom In and Zoom Out tooltips/buttons
+        expect(find.byTooltip('Zoom In (Cmd +)'), findsOneWidget);
+        expect(find.byTooltip('Zoom Out (Cmd -)'), findsOneWidget);
+        expect(find.byTooltip('Mode Gulir Vertikal'), findsOneWidget);
 
-      // Tap zoom in without errors
-      await tester.tap(find.byTooltip('Zoom In (Cmd +)'));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
+        // Tap zoom in without errors
+        await tester.tap(find.byTooltip('Zoom In (Cmd +)'));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
 
-      // Tap view mode toggle
-      await tester.tap(find.byTooltip('Mode Gulir Vertikal'));
-      await tester.pump();
-      expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        // Tap view mode toggle
+        await tester.tap(find.byTooltip('Mode Gulir Vertikal'));
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('Appearance sheet opens and allows theme change & layout mode selection',
-        (tester) async {
-      tester.view.physicalSize = const Size(820, 1180);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'Appearance sheet opens and allows theme change & layout mode selection',
+      (tester) async {
+        tester.view.physicalSize = const Size(820, 1180);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(buildTestableReadingScreen(testBook));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestableReadingScreen(testBook));
+        await tester.pumpAndSettle();
 
-      // Tap appearance icon
-      await tester.tap(find.byTooltip('Tampilan & Tema'));
-      await tester.pumpAndSettle();
+        // Tap appearance icon
+        await tester.tap(find.byTooltip('Tampilan & Tema'));
+        await tester.pumpAndSettle();
 
-      // Verify layout selector is visible in Appearance sheet
-      expect(find.text('TATA LETAK HALAMAN'), findsOneWidget);
-      expect(find.text('Halaman'), findsWidgets);
-      expect(find.text('Gulir Vertikal'), findsOneWidget);
+        // Verify layout selector is visible in Appearance sheet
+        expect(find.text('TATA LETAK HALAMAN'), findsOneWidget);
+        expect(find.text('Halaman'), findsWidgets);
+        expect(find.text('Gulir Vertikal'), findsOneWidget);
 
-      // Tap Gulir Vertikal
-      await tester.tap(find.text('Gulir Vertikal'));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        // Tap Gulir Vertikal
+        await tester.tap(find.text('Gulir Vertikal'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
   });
 }

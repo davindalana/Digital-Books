@@ -26,7 +26,8 @@ void main() {
               const BookBlock(
                 id: 'blk-2',
                 type: BlockType.paragraph,
-                text: 'Call me Ishmael. Some years ago—never mind how long precisely...',
+                text:
+                    'Call me Ishmael. Some years ago—never mind how long precisely...',
                 originalPageNumber: 1,
               ),
             ],
@@ -46,9 +47,10 @@ void main() {
       expect(restored.chapters.length, 1);
       expect(restored.chapters.first.title, 'Chapter 1: Loomings');
       expect(restored.chapters.first.blocks.length, 2);
-      expect(restored.chapters.first.blocks.last.text,
-          contains('Call me Ishmael'));
+      expect(
+        restored.chapters.first.blocks.last.text,
+        contains('Call me Ishmael'),
+      );
     });
   });
 }
-

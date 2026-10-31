@@ -49,15 +49,20 @@ void main() {
     final books = [bookB, bookA, bookC];
 
     test('Sort by Title A to Z and Z to A', () {
-      final sortedAsc = BookSortHelper.sortBooks(books, BookSortOption.titleAsc);
+      final sortedAsc = BookSortHelper.sortBooks(
+        books,
+        BookSortOption.titleAsc,
+      );
       expect(sortedAsc.map((b) => b.title).toList(), [
         'Atomic Habits',
         'Deep Work',
         'Thinking, Fast and Slow',
       ]);
 
-      final sortedDesc =
-          BookSortHelper.sortBooks(books, BookSortOption.titleDesc);
+      final sortedDesc = BookSortHelper.sortBooks(
+        books,
+        BookSortOption.titleDesc,
+      );
       expect(sortedDesc.map((b) => b.title).toList(), [
         'Thinking, Fast and Slow',
         'Deep Work',
@@ -66,8 +71,10 @@ void main() {
     });
 
     test('Sort by Author A to Z', () {
-      final sortedAuthor =
-          BookSortHelper.sortBooks(books, BookSortOption.authorAsc);
+      final sortedAuthor = BookSortHelper.sortBooks(
+        books,
+        BookSortOption.authorAsc,
+      );
       expect(sortedAuthor.map((b) => b.author).toList(), [
         'Cal Newport',
         'Daniel Kahneman',
@@ -76,16 +83,20 @@ void main() {
     });
 
     test('Sort by Date Added Descending and Ascending', () {
-      final sortedNewest =
-          BookSortHelper.sortBooks(books, BookSortOption.dateAddedDesc);
+      final sortedNewest = BookSortHelper.sortBooks(
+        books,
+        BookSortOption.dateAddedDesc,
+      );
       expect(sortedNewest.map((b) => b.id).toList(), [
         'book-c', // now
         'book-b', // now - 5d
         'book-a', // now - 10d
       ]);
 
-      final sortedOldest =
-          BookSortHelper.sortBooks(books, BookSortOption.dateAddedAsc);
+      final sortedOldest = BookSortHelper.sortBooks(
+        books,
+        BookSortOption.dateAddedAsc,
+      );
       expect(sortedOldest.map((b) => b.id).toList(), [
         'book-a',
         'book-b',
@@ -94,11 +105,7 @@ void main() {
     });
 
     test('Sort by Progress with progressMap', () {
-      final progressMap = {
-        'book-a': 0.85,
-        'book-b': 0.10,
-        'book-c': 0.50,
-      };
+      final progressMap = {'book-a': 0.85, 'book-b': 0.10, 'book-c': 0.50};
 
       final sortedProgDesc = BookSortHelper.sortBooks(
         books,
@@ -137,88 +144,92 @@ void main() {
       await db.close();
     });
 
-    test('Metadata editing updates title, author, description, and timestamp',
-        () async {
-      final t0 = DateTime(2026, 1, 1);
-      const bookId = 'meta-test-book';
+    test(
+      'Metadata editing updates title, author, description, and timestamp',
+      () async {
+        final t0 = DateTime(2026, 1, 1);
+        const bookId = 'meta-test-book';
 
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const drift.Value(bookId),
-          title: const drift.Value('Initial Title'),
-          author: const drift.Value('Initial Author'),
-          description: const drift.Value('Initial Description'),
-          originalPdfPath: const drift.Value('/path/original.pdf'),
-          totalPages: const drift.Value(120),
-          createdAt: drift.Value(t0),
-          updatedAt: drift.Value(t0),
-        ),
-      );
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const drift.Value(bookId),
+            title: const drift.Value('Initial Title'),
+            author: const drift.Value('Initial Author'),
+            description: const drift.Value('Initial Description'),
+            originalPdfPath: const drift.Value('/path/original.pdf'),
+            totalPages: const drift.Value(120),
+            createdAt: drift.Value(t0),
+            updatedAt: drift.Value(t0),
+          ),
+        );
 
-      final bookBefore = await dbService.getBookById(bookId);
-      expect(bookBefore!.title, 'Initial Title');
-      expect(bookBefore.author, 'Initial Author');
+        final bookBefore = await dbService.getBookById(bookId);
+        expect(bookBefore!.title, 'Initial Title');
+        expect(bookBefore.author, 'Initial Author');
 
-      await dbService.updateBookMetadata(
-        bookId,
-        title: 'Refined Title',
-        author: 'Renowned Author',
-        description: 'New detailed notes and summary.',
-      );
+        await dbService.updateBookMetadata(
+          bookId,
+          title: 'Refined Title',
+          author: 'Renowned Author',
+          description: 'New detailed notes and summary.',
+        );
 
-      final bookAfter = await dbService.getBookById(bookId);
-      expect(bookAfter!.title, 'Refined Title');
-      expect(bookAfter.author, 'Renowned Author');
-      expect(bookAfter.description, 'New detailed notes and summary.');
-      expect(bookAfter.updatedAt.isAfter(t0), isTrue);
-    });
+        final bookAfter = await dbService.getBookById(bookId);
+        expect(bookAfter!.title, 'Refined Title');
+        expect(bookAfter.author, 'Renowned Author');
+        expect(bookAfter.description, 'New detailed notes and summary.');
+        expect(bookAfter.updatedAt.isAfter(t0), isTrue);
+      },
+    );
 
-    test('Duplicate book detection detects existing titles and authors',
-        () async {
-      final now = DateTime.now();
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const drift.Value('dup-001'),
-          title: const drift.Value('The 48 Laws Of Power'),
-          author: const drift.Value('Robert Greene'),
-          originalPdfPath: const drift.Value('/path/power.pdf'),
-          totalPages: const drift.Value(452),
-          createdAt: drift.Value(now),
-          updatedAt: drift.Value(now),
-        ),
-      );
+    test(
+      'Duplicate book detection detects existing titles and authors',
+      () async {
+        final now = DateTime.now();
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const drift.Value('dup-001'),
+            title: const drift.Value('The 48 Laws Of Power'),
+            author: const drift.Value('Robert Greene'),
+            originalPdfPath: const drift.Value('/path/power.pdf'),
+            totalPages: const drift.Value(452),
+            createdAt: drift.Value(now),
+            updatedAt: drift.Value(now),
+          ),
+        );
 
-      // Exact case match
-      final match1 = await dbService.findDuplicateBook(
-        title: 'The 48 Laws Of Power',
-        author: 'Robert Greene',
-      );
-      expect(match1, isNotNull);
-      expect(match1!.id, 'dup-001');
+        // Exact case match
+        final match1 = await dbService.findDuplicateBook(
+          title: 'The 48 Laws Of Power',
+          author: 'Robert Greene',
+        );
+        expect(match1, isNotNull);
+        expect(match1!.id, 'dup-001');
 
-      // Case-insensitive match with extra whitespace
-      final match2 = await dbService.findDuplicateBook(
-        title: '  the 48 laws of power  ',
-        author: 'robert greene',
-      );
-      expect(match2, isNotNull);
-      expect(match2!.id, 'dup-001');
+        // Case-insensitive match with extra whitespace
+        final match2 = await dbService.findDuplicateBook(
+          title: '  the 48 laws of power  ',
+          author: 'robert greene',
+        );
+        expect(match2, isNotNull);
+        expect(match2!.id, 'dup-001');
 
-      // Match by title when author is unknown
-      final match3 = await dbService.findDuplicateBook(
-        title: 'The 48 Laws of Power',
-        author: 'Unknown Author',
-      );
-      expect(match3, isNotNull);
-      expect(match3!.id, 'dup-001');
+        // Match by title when author is unknown
+        final match3 = await dbService.findDuplicateBook(
+          title: 'The 48 Laws of Power',
+          author: 'Unknown Author',
+        );
+        expect(match3, isNotNull);
+        expect(match3!.id, 'dup-001');
 
-      // Unrelated book returns null
-      final matchNone = await dbService.findDuplicateBook(
-        title: 'Clean Code',
-        author: 'Robert C. Martin',
-      );
-      expect(matchNone, isNull);
-    });
+        // Unrelated book returns null
+        final matchNone = await dbService.findDuplicateBook(
+          title: 'Clean Code',
+          author: 'Robert C. Martin',
+        );
+        expect(matchNone, isNull);
+      },
+    );
 
     test('Collections management full lifecycle', () async {
       final now = DateTime.now();
@@ -268,8 +279,7 @@ void main() {
       await dbService.addBookToCollection(book1, colId);
       await dbService.addBookToCollection(book2, colId);
 
-      var booksInCol =
-          await dbService.watchBooksInCollection(colId).first;
+      var booksInCol = await dbService.watchBooksInCollection(colId).first;
       expect(booksInCol.length, 2);
       expect(booksInCol.map((b) => b.id).toSet(), {book1, book2});
 
@@ -280,8 +290,11 @@ void main() {
       expect(colIdsForBook1, [colId]);
 
       // 3. Rename Collection
-      await dbService.updateCollection(colId,
-          name: 'Philosophy & Logic', description: 'Updated description');
+      await dbService.updateCollection(
+        colId,
+        name: 'Philosophy & Logic',
+        description: 'Updated description',
+      );
       collections = await dbService.watchCollections().first;
       expect(collections.first.name, 'Philosophy & Logic');
 
@@ -362,7 +375,9 @@ void main() {
           bookId: const drift.Value(book1),
           startPosition: const drift.Value(14),
           endPosition: const drift.Value(14),
-          selectedText: const drift.Value('Simplicity is prerequisite for reliability.'),
+          selectedText: const drift.Value(
+            'Simplicity is prerequisite for reliability.',
+          ),
           color: const drift.Value('yellow'),
           note: const drift.Value('Edsger Dijkstra quote'),
           createdAt: drift.Value(now),
@@ -371,8 +386,10 @@ void main() {
 
       final allHighlights = await dbService.watchAllHighlights().first;
       expect(allHighlights.length, 1);
-      expect(allHighlights.first.highlight.selectedText,
-          'Simplicity is prerequisite for reliability.');
+      expect(
+        allHighlights.first.highlight.selectedText,
+        'Simplicity is prerequisite for reliability.',
+      );
       expect(allHighlights.first.book.title, 'Book One');
     });
   });
@@ -389,29 +406,28 @@ void main() {
       updatedAt: DateTime(2026, 1, 1),
     );
 
-    testWidgets('BookListTile displays metadata, format, and progress',
-        (tester) async {
+    testWidgets('BookListTile displays metadata, format, and progress', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            bookProgressStreamProvider('ui-test-book')
-                .overrideWith((ref) => Stream.value(
-                      ReadingProgress(
-                        id: 'prog-1',
-                        bookId: 'ui-test-book',
-                        currentChapter: 1,
-                        currentPosition: 50,
-                        progressPercentage: 0.25,
-                        lastReadAt: DateTime.now(),
-                      ),
-                    )),
+            bookProgressStreamProvider('ui-test-book').overrideWith(
+              (ref) => Stream.value(
+                ReadingProgress(
+                  id: 'prog-1',
+                  bookId: 'ui-test-book',
+                  currentChapter: 1,
+                  currentPosition: 50,
+                  progressPercentage: 0.25,
+                  lastReadAt: DateTime.now(),
+                ),
+              ),
+            ),
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: BookListTile(
-                book: sampleBook,
-                progressPercentage: 0.25,
-              ),
+              body: BookListTile(book: sampleBook, progressPercentage: 0.25),
             ),
           ),
         ),
@@ -427,8 +443,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('BookDetailsDialog renders info and supports edit mode',
-        (tester) async {
+    testWidgets('BookDetailsDialog renders info and supports edit mode', (
+      tester,
+    ) async {
       final db = AppDatabase(NativeDatabase.memory());
       final dbService = DatabaseService(db);
       addTearDown(() => db.close());
@@ -449,13 +466,12 @@ void main() {
         ProviderScope(
           overrides: [
             databaseServiceProvider.overrideWithValue(dbService),
-            bookProgressStreamProvider('ui-test-book')
-                .overrideWith((ref) => Stream.value(null)),
+            bookProgressStreamProvider(
+              'ui-test-book',
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: MaterialApp(
-            home: Scaffold(
-              body: BookDetailsDialog(book: sampleBook),
-            ),
+            home: Scaffold(body: BookDetailsDialog(book: sampleBook)),
           ),
         ),
       );
@@ -478,18 +494,24 @@ void main() {
 
       // Enter new title
       final titleField = find.widgetWithText(TextField, 'Design Patterns');
-      await tester.enterText(titleField, 'Design Patterns: Elements of Reusable OO Software');
+      await tester.enterText(
+        titleField,
+        'Design Patterns: Elements of Reusable OO Software',
+      );
       await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
 
       // Check in-memory DB got updated
       final updatedDbBook = await dbService.getBookById(sampleBook.id);
-      expect(updatedDbBook!.title,
-          'Design Patterns: Elements of Reusable OO Software');
+      expect(
+        updatedDbBook!.title,
+        'Design Patterns: Elements of Reusable OO Software',
+      );
     });
 
-    testWidgets('LibraryScreen renders desktop sidebar and toggles view mode',
-        (tester) async {
+    testWidgets('LibraryScreen renders desktop sidebar and toggles view mode', (
+      tester,
+    ) async {
       final db = AppDatabase(NativeDatabase.memory());
       final dbService = DatabaseService(db);
       addTearDown(() => db.close());
@@ -501,30 +523,28 @@ void main() {
         ProviderScope(
           overrides: [
             databaseServiceProvider.overrideWithValue(dbService),
-            allBooksStreamProvider
-                .overrideWith((ref) => Stream.value([sampleBook])),
-            recentlyAddedStreamProvider
-                .overrideWith((ref) => Stream.value([sampleBook])),
-            currentlyReadingStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            finishedBooksStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            collectionsStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            collectionBookCountsStreamProvider
-                .overrideWith((ref) => Stream.value({})),
-            allBookmarksStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            allHighlightsStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            searchBooksStreamProvider
-                .overrideWith((ref) => Stream.value([])),
-            bookProgressStreamProvider(sampleBook.id)
-                .overrideWith((ref) => Stream.value(null)),
+            allBooksStreamProvider.overrideWith(
+              (ref) => Stream.value([sampleBook]),
+            ),
+            recentlyAddedStreamProvider.overrideWith(
+              (ref) => Stream.value([sampleBook]),
+            ),
+            currentlyReadingStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
+            ),
+            finishedBooksStreamProvider.overrideWith((ref) => Stream.value([])),
+            collectionsStreamProvider.overrideWith((ref) => Stream.value([])),
+            collectionBookCountsStreamProvider.overrideWith(
+              (ref) => Stream.value({}),
+            ),
+            allBookmarksStreamProvider.overrideWith((ref) => Stream.value([])),
+            allHighlightsStreamProvider.overrideWith((ref) => Stream.value([])),
+            searchBooksStreamProvider.overrideWith((ref) => Stream.value([])),
+            bookProgressStreamProvider(
+              sampleBook.id,
+            ).overrideWith((ref) => Stream.value(null)),
           ],
-          child: const MaterialApp(
-            home: LibraryScreen(),
-          ),
+          child: const MaterialApp(home: LibraryScreen()),
         ),
       );
 

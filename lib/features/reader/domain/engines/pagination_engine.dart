@@ -44,7 +44,8 @@ class PaginatedPage {
     for (final slice in slices) {
       if (slice.node.id == nodeId) {
         if (charOffset >= slice.startCharOffset &&
-            (charOffset <= slice.endCharOffset || slice.endCharOffset >= slice.node.text.length)) {
+            (charOffset <= slice.endCharOffset ||
+                slice.endCharOffset >= slice.node.text.length)) {
           return true;
         }
       }
@@ -127,14 +128,20 @@ class PaginationEngine {
   }) {
     // 1. Check cache
     final isTwoPageSpread = viewportWidth >= 850 && typography.twoPageSpread;
-    final double rawPageWidth = isTwoPageSpread ? ((viewportWidth - 32) / 2) : viewportWidth;
+    final double rawPageWidth = isTwoPageSpread
+        ? ((viewportWidth - 32) / 2)
+        : viewportWidth;
     final double effectiveMargin = (rawPageWidth < 400)
         ? 16.0
         : (rawPageWidth < 650 ? 22.0 : typography.horizontalMargin);
-    final double contentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(160.0, 1400.0);
+    final double contentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(
+      160.0,
+      1400.0,
+    );
 
-    final double availableHeight = (viewportHeight - (verticalPadding * 2) - headerHeight - footerHeight)
-        .clamp(120.0, 4000.0);
+    final double availableHeight =
+        (viewportHeight - (verticalPadding * 2) - headerHeight - footerHeight)
+            .clamp(120.0, 4000.0);
 
     final cacheKey =
         '${chapter.id}_${contentWidth.toInt()}x${availableHeight.toInt()}_${typography.cacheKey}_$startBookPageIndex';
@@ -177,7 +184,8 @@ class PaginationEngine {
       // Images
       if (node.type == ContentNodeType.image) {
         const double estimatedImageHeight = 220.0;
-        if (currentUsedHeight + estimatedImageHeight > availableHeight && currentPageSlices.isNotEmpty) {
+        if (currentUsedHeight + estimatedImageHeight > availableHeight &&
+            currentPageSlices.isNotEmpty) {
           pushCurrentPage();
         }
         currentPageSlices.add(
@@ -199,17 +207,21 @@ class PaginationEngine {
       final textStyle = node.type == ContentNodeType.heading
           ? typography.headingStyle(level: node.level)
           : (node.type == ContentNodeType.quote
-              ? typography.quoteStyle()
-              : typography.bodyStyle());
+                ? typography.quoteStyle()
+                : typography.bodyStyle());
 
       // Orphan heading prevention:
       // If block is a heading, verify that the heading AND at least 2 lines of following text fit.
       // If not, break to the next page immediately so heading does not sit alone at the bottom.
       if (node.type == ContentNodeType.heading) {
         final headingHeight = _measureTextHeight(text, textStyle, contentWidth);
-        final minHeadingBudget = headingHeight + (typography.fontSize * typography.lineSpacing * 2) + typography.paragraphSpacing;
+        final minHeadingBudget =
+            headingHeight +
+            (typography.fontSize * typography.lineSpacing * 2) +
+            typography.paragraphSpacing;
 
-        if (currentUsedHeight + minHeadingBudget > availableHeight && currentPageSlices.isNotEmpty) {
+        if (currentUsedHeight + minHeadingBudget > availableHeight &&
+            currentPageSlices.isNotEmpty) {
           pushCurrentPage();
         }
 
@@ -221,7 +233,8 @@ class PaginationEngine {
             endCharOffset: text.length,
           ),
         );
-        currentUsedHeight += headingHeight + (typography.paragraphSpacing * 1.5);
+        currentUsedHeight +=
+            headingHeight + (typography.paragraphSpacing * 1.5);
         continue;
       }
 
@@ -233,12 +246,17 @@ class PaginationEngine {
 
         // If less than one line of text fits, start a fresh page
         final singleLineHeight = typography.fontSize * typography.lineSpacing;
-        if (remainingHeightBudget < singleLineHeight && currentPageSlices.isNotEmpty) {
+        if (remainingHeightBudget < singleLineHeight &&
+            currentPageSlices.isNotEmpty) {
           pushCurrentPage();
           continue;
         }
 
-        final fullHeight = _measureTextHeight(remainingText, textStyle, contentWidth);
+        final fullHeight = _measureTextHeight(
+          remainingText,
+          textStyle,
+          contentWidth,
+        );
 
         if (fullHeight <= remainingHeightBudget) {
           // Entire remaining paragraph fits
@@ -270,7 +288,10 @@ class PaginationEngine {
               continue;
             } else {
               // Even a fresh page cannot fit: force split by line count
-              final forcedIndex = math.max(1, (remainingText.length * 0.5).floor());
+              final forcedIndex = math.max(
+                1,
+                (remainingText.length * 0.5).floor(),
+              );
               currentPageSlices.add(
                 PaginatedNodeSlice(
                   node: node,
@@ -285,8 +306,14 @@ class PaginationEngine {
               pushCurrentPage();
             }
           } else {
-            final sliceText = remainingText.substring(0, splitIndex).trimRight();
-            final actualSliceHeight = _measureTextHeight(sliceText, textStyle, contentWidth);
+            final sliceText = remainingText
+                .substring(0, splitIndex)
+                .trimRight();
+            final actualSliceHeight = _measureTextHeight(
+              sliceText,
+              textStyle,
+              contentWidth,
+            );
 
             currentPageSlices.add(
               PaginatedNodeSlice(
@@ -298,7 +325,8 @@ class PaginationEngine {
                 hasMore: true,
               ),
             );
-            currentUsedHeight += actualSliceHeight + typography.paragraphSpacing;
+            currentUsedHeight +=
+                actualSliceHeight + typography.paragraphSpacing;
             charStart += splitIndex;
 
             // Page is now full, push it
@@ -340,7 +368,11 @@ class PaginationEngine {
   }
 
   /// Measures exact rendered height of text using Flutter's native [TextPainter].
-  static double _measureTextHeight(String text, TextStyle style, double maxWidth) {
+  static double _measureTextHeight(
+    String text,
+    TextStyle style,
+    double maxWidth,
+  ) {
     if (text.isEmpty) return 0.0;
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -367,7 +399,9 @@ class PaginationEngine {
     )..layout(maxWidth: maxWidth);
 
     try {
-      final textPosition = textPainter.getPositionForOffset(Offset(maxWidth, maxHeight));
+      final textPosition = textPainter.getPositionForOffset(
+        Offset(maxWidth, maxHeight),
+      );
       int candidateOffset = textPosition.offset.clamp(0, text.length);
 
       if (candidateOffset >= text.length) {
@@ -375,7 +409,9 @@ class PaginationEngine {
       }
 
       // Walk backward to find the nearest whitespace boundary
-      while (candidateOffset > 0 && candidateOffset < text.length && text[candidateOffset].trim().isNotEmpty) {
+      while (candidateOffset > 0 &&
+          candidateOffset < text.length &&
+          text[candidateOffset].trim().isNotEmpty) {
         candidateOffset--;
       }
 

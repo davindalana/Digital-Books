@@ -21,18 +21,22 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final collectionsAsync = ref.watch(collectionsStreamProvider);
-    final bookCollectionIdsAsync =
-        ref.watch(bookCollectionIdsStreamProvider(book.id));
+    final bookCollectionIdsAsync = ref.watch(
+      bookCollectionIdsStreamProvider(book.id),
+    );
     final dbService = ref.read(databaseServiceProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AlertDialog(
-      backgroundColor:
-          isDark ? const Color(0xFF1E1E22) : const Color(0xFFF9F9FB),
+      backgroundColor: isDark
+          ? const Color(0xFF1E1E22)
+          : const Color(0xFFF9F9FB),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isDark ? Colors.white.withAlpha(25) : Colors.black.withAlpha(20),
+          color: isDark
+              ? Colors.white.withAlpha(25)
+              : Colors.black.withAlpha(20),
         ),
       ),
       title: Row(
@@ -43,8 +47,11 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
               color: const Color(0xFF007AFF).withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.folder_special_rounded,
-                color: Color(0xFF007AFF), size: 20),
+            child: const Icon(
+              Icons.folder_special_rounded,
+              color: Color(0xFF007AFF),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           const Expanded(
@@ -70,20 +77,27 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.folder_open_rounded,
-                        size: 40, color: Colors.grey.shade400),
+                    Icon(
+                      Icons.folder_open_rounded,
+                      size: 40,
+                      color: Colors.grey.shade400,
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'No Collections Created Yet',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Organize books into custom reading lists or genres.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade500),
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -121,7 +135,9 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
                     title: Text(
                       col.name,
                       style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     secondary: Icon(
                       Icons.folder_rounded,
@@ -137,7 +153,9 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
                         await dbService.addBookToCollection(book.id, col.id);
                       } else {
                         await dbService.removeBookFromCollection(
-                            book.id, col.id);
+                          book.id,
+                          col.id,
+                        );
                       }
                     },
                   );
@@ -162,23 +180,30 @@ class ManageBookCollectionsDialog extends ConsumerWidget {
   }
 
   static Future<void> _showCreateCollectionDialog(
-      BuildContext context, WidgetRef ref) async {
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final controller = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final createdName = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? const Color(0xFF1E1E22) : const Color(0xFFF9F9FB),
+        backgroundColor: isDark
+            ? const Color(0xFF1E1E22)
+            : const Color(0xFFF9F9FB),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(
-            color: isDark ? Colors.white.withAlpha(25) : Colors.black.withAlpha(20),
+            color: isDark
+                ? Colors.white.withAlpha(25)
+                : Colors.black.withAlpha(20),
           ),
         ),
-        title: const Text('New Collection',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'New Collection',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,

@@ -35,19 +35,24 @@ void main() {
           ContentNode(
             id: 'p1',
             type: ContentNodeType.paragraph,
-            text: 'Membaca di era layar modern menuntut keseimbangan antara keanggunan tipografi cetak dan keluwesan media digital. Tata letak reflowable memungkinkan teks mengalir secara alami pada berbagai resolusi jendela macOS. ' * 3,
+            text:
+                'Membaca di era layar modern menuntut keseimbangan antara keanggunan tipografi cetak dan keluwesan media digital. Tata letak reflowable memungkinkan teks mengalir secara alami pada berbagai resolusi jendela macOS. ' *
+                3,
             sourcePdfPage: 1,
           ),
           const ContentNode(
             id: 'q1',
             type: ContentNodeType.quote,
-            text: 'Buku digital yang baik tidak memaksa mata pembaca beradaptasi pada mesin, melainkan mesin yang beradaptasi dengan ritme alami membaca manusia.',
+            text:
+                'Buku digital yang baik tidak memaksa mata pembaca beradaptasi pada mesin, melainkan mesin yang beradaptasi dengan ritme alami membaca manusia.',
             sourcePdfPage: 2,
           ),
           ContentNode(
             id: 'p2',
             type: ContentNodeType.paragraph,
-            text: 'Dengan dukungan paginasi cerdas dan mode gulir vertikal berkesinambungan (continuous scrolling), pembaca memiliki kebebasan penuh memilih preferensi kenyamanan mereka tanpa khawatir kehilangan posisi baca saat berganti mode. ' * 2,
+            text:
+                'Dengan dukungan paginasi cerdas dan mode gulir vertikal berkesinambungan (continuous scrolling), pembaca memiliki kebebasan penuh memilih preferensi kenyamanan mereka tanpa khawatir kehilangan posisi baca saat berganti mode. ' *
+                2,
             sourcePdfPage: 2,
           ),
         ],
@@ -67,13 +72,17 @@ void main() {
           ContentNode(
             id: 'p3',
             type: ContentNodeType.paragraph,
-            text: 'Kunci dari pengalaman membaca hibrida yang mulus adalah preservasi anchor node berbasis ID dan karakter offset. Kapan pun ukuran jendela diubah atau ukuran font disesuaikan, lokasi baca tetap tepat pada kalimat yang sedang dibaca. ' * 3,
+            text:
+                'Kunci dari pengalaman membaca hibrida yang mulus adalah preservasi anchor node berbasis ID dan karakter offset. Kapan pun ukuran jendela diubah atau ukuran font disesuaikan, lokasi baca tetap tepat pada kalimat yang sedang dibaca. ' *
+                3,
             sourcePdfPage: 3,
           ),
           ContentNode(
             id: 'p4',
             type: ContentNodeType.paragraph,
-            text: 'Setiap node teks mempertahankan referensi ke nomor halaman fisik dokumen asli, memungkinkan sitasi akademik dan verifikasi rujukan tetap akurat tanpa mengorbankan keterbacaan tipografis. ' * 2,
+            text:
+                'Setiap node teks mempertahankan referensi ke nomor halaman fisik dokumen asli, memungkinkan sitasi akademik dan verifikasi rujukan tetap akurat tanpa mengorbankan keterbacaan tipografis. ' *
+                2,
             sourcePdfPage: 4,
           ),
         ],
@@ -81,10 +90,12 @@ void main() {
     ],
   );
 
-  const screenshotDir = '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
+  const screenshotDir =
+      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
 
   Future<void> captureBoundary(GlobalKey key, String filename) async {
-    final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    final boundary =
+        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) {
       debugPrint('WARNING: Could not find RenderRepaintBoundary for $filename');
       return;
@@ -94,11 +105,15 @@ void main() {
     if (byteData != null) {
       final file = File('$screenshotDir/$filename');
       file.writeAsBytesSync(byteData.buffer.asUint8List());
-      debugPrint('CAPTURED SCREENSHOT: ${file.path} (${file.lengthSync()} bytes)');
+      debugPrint(
+        'CAPTURED SCREENSHOT: ${file.path} (${file.lengthSync()} bytes)',
+      );
     }
   }
 
-  testWidgets('Phase 2.2 macOS Native Visual QA: All Modes, Spreads & Themes', (tester) async {
+  testWidgets('Phase 2.2 macOS Native Visual QA: All Modes, Spreads & Themes', (
+    tester,
+  ) async {
     final repaintKey = GlobalKey();
 
     // 1. SCENARIO 1: Paginated Single-Page Narrow Viewport (<850px)
@@ -106,7 +121,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reflowableLayoutModeProvider('book-mac-qa').overrideWith((ref) => ReflowableLayoutMode.paginated),
+          reflowableLayoutModeProvider(
+            'book-mac-qa',
+          ).overrideWith((ref) => ReflowableLayoutMode.paginated),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -143,7 +160,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reflowableLayoutModeProvider('book-mac-qa').overrideWith((ref) => ReflowableLayoutMode.paginated),
+          reflowableLayoutModeProvider(
+            'book-mac-qa',
+          ).overrideWith((ref) => ReflowableLayoutMode.paginated),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -180,7 +199,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reflowableLayoutModeProvider('book-mac-qa').overrideWith((ref) => ReflowableLayoutMode.paginated),
+          reflowableLayoutModeProvider(
+            'book-mac-qa',
+          ).overrideWith((ref) => ReflowableLayoutMode.paginated),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -221,7 +242,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reflowableLayoutModeProvider('book-mac-qa').overrideWith((ref) => ReflowableLayoutMode.scrolling),
+          reflowableLayoutModeProvider(
+            'book-mac-qa',
+          ).overrideWith((ref) => ReflowableLayoutMode.scrolling),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -261,7 +284,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          reflowableLayoutModeProvider('book-mac-qa').overrideWith((ref) => ReflowableLayoutMode.paginated),
+          reflowableLayoutModeProvider(
+            'book-mac-qa',
+          ).overrideWith((ref) => ReflowableLayoutMode.paginated),
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -291,7 +316,10 @@ void main() {
                       left: 16,
                       right: 16,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(12),
@@ -310,12 +338,18 @@ void main() {
                             Expanded(
                               child: Text(
                                 sampleDoc.title,
-                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(6),
@@ -323,9 +357,20 @@ void main() {
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.auto_stories, size: 14, color: Colors.blue),
+                                  Icon(
+                                    Icons.auto_stories,
+                                    size: 14,
+                                    color: Colors.blue,
+                                  ),
                                   SizedBox(width: 4),
-                                  Text('Buku Terbuka (Spread)', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    'Buku Terbuka (Spread)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -340,7 +385,10 @@ void main() {
                       left: 32,
                       right: 32,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.95),
                           borderRadius: BorderRadius.circular(20),
@@ -355,9 +403,27 @@ void main() {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Bab 1 dari 2', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                            Text('Halaman 1–2 dari 4', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                            Text('25% selesai', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                            Text(
+                              'Bab 1 dari 2',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            Text(
+                              'Halaman 1–2 dari 4',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '25% selesai',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -372,8 +438,13 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    await captureBoundary(repaintKey, 'phase_2_2_reading_screen_full_overlay.png');
+    await captureBoundary(
+      repaintKey,
+      'phase_2_2_reading_screen_full_overlay.png',
+    );
 
-    debugPrint('--- All 5 Phase 2.2 native visual QA screenshots captured successfully! ---');
+    debugPrint(
+      '--- All 5 Phase 2.2 native visual QA screenshots captured successfully! ---',
+    );
   });
 }

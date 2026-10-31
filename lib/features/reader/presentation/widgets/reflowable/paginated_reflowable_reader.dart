@@ -6,6 +6,7 @@ import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
+import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'reflowable_page_renderer.dart';
 
@@ -17,9 +18,17 @@ class PaginatedReflowableReader extends StatefulWidget {
   final String? initialAnchorNodeId;
   final int initialCharOffset;
   final VoidCallback onTapContent;
-  final Function(int chapterIndex, int pageNumber, double percentage, String? anchorNodeId, int charOffset) onProgressChanged;
+  final Function(
+    int chapterIndex,
+    int pageNumber,
+    double percentage,
+    String? anchorNodeId,
+    int charOffset,
+  )
+  onProgressChanged;
   final void Function(int totalPages)? onTotalPagesCalculated;
   final List<Highlight> highlights;
+  final List<ActiveSearchMatch> searchMatches;
   final HighlightCreationCallback? onHighlightCreated;
   final void Function(Highlight highlight)? onHighlightTap;
 
@@ -35,12 +44,14 @@ class PaginatedReflowableReader extends StatefulWidget {
     required this.onProgressChanged,
     this.onTotalPagesCalculated,
     this.highlights = const [],
+    this.searchMatches = const [],
     this.onHighlightCreated,
     this.onHighlightTap,
   });
 
   @override
-  State<PaginatedReflowableReader> createState() => PaginatedReflowableReaderState();
+  State<PaginatedReflowableReader> createState() =>
+      PaginatedReflowableReaderState();
 }
 
 class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
@@ -89,7 +100,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final effectiveMargin = (availableWidth < 400)
         ? 16.0
         : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(160.0, 900.0);
+    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(
+      160.0,
+      900.0,
+    );
     final contentHeight = (_lastHeight - 56.0).clamp(200.0, 3000.0);
 
     final newPages = PaginationEngine.paginateDocument(
@@ -113,7 +127,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
     setState(() {
       _pages = newPages;
-      _currentPageIndex = targetIndex.clamp(0, math.max(0, newPages.length - 1));
+      _currentPageIndex = targetIndex.clamp(
+        0,
+        math.max(0, newPages.length - 1),
+      );
     });
 
     widget.onTotalPagesCalculated?.call(_pages.length);
@@ -226,7 +243,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final effectiveMargin = (availableWidth < 400)
         ? 16.0
         : (availableWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(160.0, 900.0);
+    final contentWidth = (availableWidth - (effectiveMargin * 2)).clamp(
+      160.0,
+      900.0,
+    );
     final contentHeight = (height - 56.0).clamp(200.0, 3000.0);
 
     final pages = PaginationEngine.paginateDocument(
@@ -377,6 +397,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
           showFooter: true,
           isLeftPage: false,
           highlights: widget.highlights,
+          searchMatches: widget.searchMatches,
           onHighlightCreated: widget.onHighlightCreated,
           onHighlightTap: widget.onHighlightTap,
         ),
@@ -393,7 +414,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final effectiveMargin = (halfWidth < 400)
         ? 16.0
         : (halfWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (halfWidth - (effectiveMargin * 2)).clamp(160.0, 800.0);
+    final contentWidth = (halfWidth - (effectiveMargin * 2)).clamp(
+      160.0,
+      800.0,
+    );
 
     return Row(
       key: ValueKey('page_${leftIndex}_spread_true'),
@@ -415,6 +439,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
               showFooter: true,
               isLeftPage: true,
               highlights: widget.highlights,
+              searchMatches: widget.searchMatches,
               onHighlightCreated: widget.onHighlightCreated,
               onHighlightTap: widget.onHighlightTap,
             ),
@@ -453,6 +478,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                     showFooter: true,
                     isLeftPage: false,
                     highlights: widget.highlights,
+                    searchMatches: widget.searchMatches,
                     onHighlightCreated: widget.onHighlightCreated,
                     onHighlightTap: widget.onHighlightTap,
                   ),

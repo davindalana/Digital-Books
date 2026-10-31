@@ -1,14 +1,7 @@
 import 'dart:convert';
 import '../../models/book_document.dart';
 
-enum ContentNodeType {
-  heading,
-  paragraph,
-  quote,
-  image,
-  pageBreak,
-  divider,
-}
+enum ContentNodeType { heading, paragraph, quote, image, pageBreak, divider }
 
 class ContentNode {
   final String id;
@@ -30,29 +23,33 @@ class ContentNode {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.name,
-        'text': text,
-        'level': level,
-        'imagePath': imagePath,
-        'sourcePdfPage': sourcePdfPage,
-        'attributes': attributes,
-      };
+    'id': id,
+    'type': type.name,
+    'text': text,
+    'level': level,
+    'imagePath': imagePath,
+    'sourcePdfPage': sourcePdfPage,
+    'attributes': attributes,
+  };
 
   factory ContentNode.fromJson(Map<String, dynamic> json) => ContentNode(
-        id: json['id'] as String? ?? '',
-        type: ContentNodeType.values.firstWhere(
-          (e) => e.name == json['type'],
-          orElse: () => ContentNodeType.paragraph,
-        ),
-        text: json['text'] as String? ?? '',
-        level: json['level'] as int? ?? 1,
-        imagePath: json['imagePath'] as String?,
-        sourcePdfPage: json['sourcePdfPage'] as int? ?? 1,
-        attributes: (json['attributes'] as Map<String, dynamic>?) ?? const {},
-      );
+    id: json['id'] as String? ?? '',
+    type: ContentNodeType.values.firstWhere(
+      (e) => e.name == json['type'],
+      orElse: () => ContentNodeType.paragraph,
+    ),
+    text: json['text'] as String? ?? '',
+    level: json['level'] as int? ?? 1,
+    imagePath: json['imagePath'] as String?,
+    sourcePdfPage: json['sourcePdfPage'] as int? ?? 1,
+    attributes: (json['attributes'] as Map<String, dynamic>?) ?? const {},
+  );
 
-  factory ContentNode.fromBookBlock(BookBlock block, int chapterIndex, int nodeIndex) {
+  factory ContentNode.fromBookBlock(
+    BookBlock block,
+    int chapterIndex,
+    int nodeIndex,
+  ) {
     ContentNodeType nodeType;
     switch (block.type) {
       case BlockType.heading:
@@ -131,20 +128,20 @@ class ReaderChapter {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'index': index,
-        'title': title,
-        'nodes': nodes.map((n) => n.toJson()).toList(),
-      };
+    'id': id,
+    'index': index,
+    'title': title,
+    'nodes': nodes.map((n) => n.toJson()).toList(),
+  };
 
   factory ReaderChapter.fromJson(Map<String, dynamic> json) => ReaderChapter(
-        id: json['id'] as String? ?? '',
-        index: json['index'] as int? ?? 0,
-        title: json['title'] as String? ?? 'Untitled Chapter',
-        nodes: (json['nodes'] as List<dynamic>? ?? [])
-            .map((n) => ContentNode.fromJson(n as Map<String, dynamic>))
-            .toList(),
-      );
+    id: json['id'] as String? ?? '',
+    index: json['index'] as int? ?? 0,
+    title: json['title'] as String? ?? 'Untitled Chapter',
+    nodes: (json['nodes'] as List<dynamic>? ?? [])
+        .map((n) => ContentNode.fromJson(n as Map<String, dynamic>))
+        .toList(),
+  );
 
   factory ReaderChapter.fromBookChapter(BookChapter chapter) {
     return ReaderChapter(
@@ -185,26 +182,26 @@ class ReaderDocument {
   });
 
   Map<String, dynamic> toJson() => {
-        'bookId': bookId,
-        'title': title,
-        'author': author,
-        'totalPages': totalPages,
-        'chapters': chapters.map((c) => c.toJson()).toList(),
-        'metadata': metadata,
-      };
+    'bookId': bookId,
+    'title': title,
+    'author': author,
+    'totalPages': totalPages,
+    'chapters': chapters.map((c) => c.toJson()).toList(),
+    'metadata': metadata,
+  };
 
   String toJsonString() => jsonEncode(toJson());
 
   factory ReaderDocument.fromJson(Map<String, dynamic> json) => ReaderDocument(
-        bookId: json['bookId'] as String? ?? '',
-        title: json['title'] as String? ?? 'Untitled',
-        author: json['author'] as String? ?? 'Unknown',
-        totalPages: json['totalPages'] as int? ?? 0,
-        chapters: (json['chapters'] as List<dynamic>? ?? [])
-            .map((c) => ReaderChapter.fromJson(c as Map<String, dynamic>))
-            .toList(),
-        metadata: (json['metadata'] as Map<String, dynamic>?) ?? const {},
-      );
+    bookId: json['bookId'] as String? ?? '',
+    title: json['title'] as String? ?? 'Untitled',
+    author: json['author'] as String? ?? 'Unknown',
+    totalPages: json['totalPages'] as int? ?? 0,
+    chapters: (json['chapters'] as List<dynamic>? ?? [])
+        .map((c) => ReaderChapter.fromJson(c as Map<String, dynamic>))
+        .toList(),
+    metadata: (json['metadata'] as Map<String, dynamic>?) ?? const {},
+  );
 
   factory ReaderDocument.fromJsonString(String jsonString) =>
       ReaderDocument.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
@@ -231,4 +228,3 @@ class ReaderDocument {
     );
   }
 }
-
