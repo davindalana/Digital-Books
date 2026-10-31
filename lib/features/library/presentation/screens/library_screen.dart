@@ -19,6 +19,7 @@ import '../../../reader/providers/reader_settings_provider.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_details_dialog.dart';
 import '../widgets/book_list_tile.dart';
+import '../widgets/backup_restore_dialog.dart';
 import '../widgets/import_pdf_dialog.dart';
 
 enum LibraryNavigationSection {
@@ -1850,6 +1851,43 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         const SizedBox(height: 32),
 
         const Text(
+          'DATA INTEGRITY & BACKUP',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 0,
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF1E1E22)
+              : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(
+                  Icons.settings_backup_restore_rounded,
+                  color: Color(0xFF007AFF),
+                ),
+                title: const Text('Backup & Restore Library'),
+                subtitle: const Text(
+                  'Export or restore books metadata, progress, bookmarks, and notes',
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                onTap: () => BackupRestoreDialog.show(context),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        const Text(
           'ABOUT',
           style: TextStyle(
             fontSize: 12,
@@ -1871,7 +1909,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             children: [
               const ListTile(
                 title: Text('Personal Digital Library'),
-                subtitle: Text('Version 0.2.0 • Apple Books Experience'),
+                subtitle: Text('Version 0.2.6 • Apple Books Experience'),
               ),
               const Divider(height: 1),
               const ListTile(

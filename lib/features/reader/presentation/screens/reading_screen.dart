@@ -47,7 +47,8 @@ class ReadingScreen extends ConsumerStatefulWidget {
   ConsumerState<ReadingScreen> createState() => _ReadingScreenState();
 }
 
-class _ReadingScreenState extends ConsumerState<ReadingScreen> {
+class _ReadingScreenState extends ConsumerState<ReadingScreen>
+    with WidgetsBindingObserver {
   bool _showControls = true;
   BookDocument? _document;
   ReaderDocument? _readerDocument;
@@ -83,6 +84,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _navigationHistory = ReadingNavigationHistory(bookId: widget.book.id);
     _currentPdfPath = widget.book.originalPdfPath;
     final currentProviderMode = ref.read(
@@ -104,6 +106,36 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
             _readingMode;
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _saveProgress(
+      chapter: _reflowableChapter,
+      position: _readingMode == ReadingMode.originalPdf
+          ? _pdfPage
+          : _reflowablePosition,
+      percentage: _progressPercentage,
+    );
+    _activeSearchMatches.clear();
+    _showSearchTraversal = false;
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _saveProgress(
+        chapter: _reflowableChapter,
+        position: _readingMode == ReadingMode.originalPdf
+            ? _pdfPage
+            : _reflowablePosition,
+        percentage: _progressPercentage,
+      );
+    }
   }
 
   void _setReadingMode(ReadingMode mode) {
@@ -491,13 +523,86 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       final newFile = File(result.first.path!);
       if (!await newFile.exists()) return;
 
+      final newHash = await FileStorageService.computeFileSha256(newFile);
+
+      // Validate checksum against original book hash if available
+      if (widget.book.fileHash != null &&
+          widget.book.fileHash!.isNotEmpty &&
+          widget.book.fileHash != newHash &&
+          mounted) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.white.withAlpha(25)),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orangeAccent,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'File Checksum Mismatch',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: const Text(
+              'The selected PDF does not match the original file checksum (SHA-256). It appears to be a different document.\n\nRelinking to an incompatible file may cause existing bookmarks, highlights, and reading positions to be inaccurate.\n\nDo you want to proceed anyway?',
+              style: TextStyle(fontSize: 13, color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.black,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Relink Anyway'),
+              ),
+            ],
+          ),
+        );
+
+        if (proceed != true) return;
+      }
+
       final storedPdf = await FileStorageService.copyPdfToStorage(
         newFile,
         widget.book.id,
       );
       await ref
           .read(databaseServiceProvider)
-          .updateBookPdfPath(widget.book.id, storedPdf.path);
+          .updateBookPdfPath(
+            widget.book.id,
+            storedPdf.path,
+            newFileHash: newHash,
+          );
 
       if (mounted) {
         setState(() {

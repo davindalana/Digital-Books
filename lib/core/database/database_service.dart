@@ -170,10 +170,17 @@ class DatabaseService {
     return matches.isNotEmpty;
   }
 
-  Future<int> updateBookPdfPath(String bookId, String newPdfPath) {
+  Future<int> updateBookPdfPath(
+    String bookId,
+    String newPdfPath, {
+    String? newFileHash,
+  }) {
     return (db.update(db.books)..where((t) => t.id.equals(bookId))).write(
       BooksCompanion(
         originalPdfPath: Value(newPdfPath),
+        fileHash: newFileHash != null
+            ? Value(newFileHash)
+            : const Value.absent(),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -272,6 +279,13 @@ class DatabaseService {
   }
 
   // --- Bookmarks ---
+  Future<List<Bookmark>> getBookmarksForBook(String bookId) {
+    return (db.select(db.bookmarks)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([(t) => OrderingTerm(expression: t.position)]))
+        .get();
+  }
+
   Stream<List<Bookmark>> watchBookmarks(String bookId) {
     return (db.select(db.bookmarks)
           ..where((t) => t.bookId.equals(bookId))
@@ -355,6 +369,13 @@ class DatabaseService {
   }
 
   // --- Highlights ---
+  Future<List<Highlight>> getHighlightsForBook(String bookId) {
+    return (db.select(db.highlights)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+        .get();
+  }
+
   Stream<List<Highlight>> watchHighlights(String bookId) {
     return (db.select(db.highlights)
           ..where((t) => t.bookId.equals(bookId))
@@ -440,6 +461,12 @@ class DatabaseService {
   }
 
   // --- Collections ---
+  Future<List<Collection>> getAllCollections() {
+    return (db.select(
+      db.collections,
+    )..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
+  }
+
   Stream<List<Collection>> watchCollections() {
     return (db.select(
       db.collections,
@@ -490,6 +517,10 @@ class DatabaseService {
       db.bookCollections,
     )..where((t) => t.bookId.equals(bookId))).get();
     return rows.map((r) => r.collectionId).toList();
+  }
+
+  Future<List<BookCollection>> getAllBookCollections() {
+    return db.select(db.bookCollections).get();
   }
 
   Stream<List<String>> watchCollectionIdsForBook(String bookId) {

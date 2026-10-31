@@ -46,7 +46,8 @@ class ReflowableHighlightSpanBuilder {
     // User highlights
     final localHighlights = <({Highlight hl, int start, int end})>[];
     for (final hl in highlightsForNode) {
-      if (hl.endOffset <= sliceStartOffset || hl.startOffset >= sliceEndOffset) {
+      if (hl.endOffset <= sliceStartOffset ||
+          hl.startOffset >= sliceEndOffset) {
         continue;
       }
       final localStart = math
@@ -66,7 +67,8 @@ class ReflowableHighlightSpanBuilder {
     final localSearchMatches =
         <({ActiveSearchMatch match, int start, int end})>[];
     for (final sm in searchMatchesForNode) {
-      if (sm.endOffset <= sliceStartOffset || sm.startOffset >= sliceEndOffset) {
+      if (sm.endOffset <= sliceStartOffset ||
+          sm.startOffset >= sliceEndOffset) {
         continue;
       }
       final localStart = math
