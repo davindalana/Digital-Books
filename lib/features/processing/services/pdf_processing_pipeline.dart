@@ -91,7 +91,7 @@ class PdfProcessingPipeline {
       // Fallback title to filename if still empty
       if (title.isEmpty) {
         final baseName = p.basenameWithoutExtension(pdfFile.path);
-        title = _sanitizeFilenameToTitle(baseName);
+        title = sanitizeFilenameToTitle(baseName);
       }
       if (author.isEmpty) {
         author = 'Unknown Author';
@@ -256,7 +256,7 @@ class PdfProcessingPipeline {
     }
   }
 
-  static String _sanitizeFilenameToTitle(String filename) {
+  static String sanitizeFilenameToTitle(String filename) {
     var clean = filename.replaceAll(RegExp(r'[_\-\.]+'), ' ');
     clean = clean.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (clean.isEmpty) return 'Untitled Book';
@@ -265,6 +265,40 @@ class PdfProcessingPipeline {
       if (word.isEmpty) return '';
       return word[0].toUpperCase() + word.substring(1).toLowerCase();
     }).join(' ');
+  }
+
+  static Future<({String title, String author})> peekPdfMetadata(File pdfFile) async {
+    try {
+      final bytes = await pdfFile.readAsBytes();
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      String title = '';
+      String author = '';
+      try {
+        final info = document.documentInformation;
+        if (info.title.isNotEmpty) {
+          title = info.title.trim();
+        }
+        if (info.author.isNotEmpty) {
+          author = info.author.trim();
+        }
+      } finally {
+        document.dispose();
+      }
+      if (title.isEmpty) {
+        final baseName = p.basenameWithoutExtension(pdfFile.path);
+        title = sanitizeFilenameToTitle(baseName);
+      }
+      if (author.isEmpty) {
+        author = 'Unknown Author';
+      }
+      return (title: title, author: author);
+    } catch (_) {
+      final baseName = p.basenameWithoutExtension(pdfFile.path);
+      return (
+        title: sanitizeFilenameToTitle(baseName),
+        author: 'Unknown Author',
+      );
+    }
   }
 
   static List<BookChapter> _buildChaptersFromPages({

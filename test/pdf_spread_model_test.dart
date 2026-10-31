@@ -32,51 +32,61 @@ void main() {
       expect(facingSpread5.containsPage(12), isFalse);
     });
 
-    test('Two-page spread generation maps exact book facing pairs (e.g. 10-11, 12-13)', () {
-      // Test generation logic directly
-      final spreads = <PdfSpread>[
-        const PdfSpread(spreadIndex: 0, leftPage: null, rightPage: 1, isCover: true),
-      ];
+    test(
+      'Two-page spread generation maps exact book facing pairs (e.g. 10-11, 12-13)',
+      () {
+        // Test generation logic directly
+        final spreads = <PdfSpread>[
+          const PdfSpread(
+            spreadIndex: 0,
+            leftPage: null,
+            rightPage: 1,
+            isCover: true,
+          ),
+        ];
 
-      const totalPages = 271;
-      int page = 2;
-      int spreadIdx = 1;
-      while (page <= totalPages) {
-        final left = page;
-        final right = (page + 1 <= totalPages) ? page + 1 : null;
-        spreads.add(PdfSpread(
-          spreadIndex: spreadIdx,
-          leftPage: left,
-          rightPage: right,
-          isCover: false,
-        ));
-        spreadIdx++;
-        page += 2;
-      }
+        const totalPages = 271;
+        int page = 2;
+        int spreadIdx = 1;
+        while (page <= totalPages) {
+          final left = page;
+          final right = (page + 1 <= totalPages) ? page + 1 : null;
+          spreads.add(
+            PdfSpread(
+              spreadIndex: spreadIdx,
+              leftPage: left,
+              rightPage: right,
+              isCover: false,
+            ),
+          );
+          spreadIdx++;
+          page += 2;
+        }
 
-      // Total spreads for 271 pages: Cover (1) + 135 spreads (2-271) = 136 spreads
-      expect(spreads.length, equals(136));
+        // Total spreads for 271 pages: Cover (1) + 135 spreads (2-271) = 136 spreads
+        expect(spreads.length, equals(136));
 
-      // Spread 0: Cover (Page 1)
-      expect(spreads[0].isCover, isTrue);
-      expect(spreads[0].rightPage, equals(1));
+        // Spread 0: Cover (Page 1)
+        expect(spreads[0].isCover, isTrue);
+        expect(spreads[0].rightPage, equals(1));
 
-      // Spread 1: Pages 2 and 3
-      expect(spreads[1].leftPage, equals(2));
-      expect(spreads[1].rightPage, equals(3));
+        // Spread 1: Pages 2 and 3
+        expect(spreads[1].leftPage, equals(2));
+        expect(spreads[1].rightPage, equals(3));
 
-      // Spread 5: Pages 10 and 11 (Matching user's archive.org screenshot 1)
-      expect(spreads[5].leftPage, equals(10));
-      expect(spreads[5].rightPage, equals(11));
+        // Spread 5: Pages 10 and 11 (Matching user's archive.org screenshot 1)
+        expect(spreads[5].leftPage, equals(10));
+        expect(spreads[5].rightPage, equals(11));
 
-      // Spread 6: Pages 12 and 13 (Matching user's archive.org screenshot 2)
-      expect(spreads[6].leftPage, equals(12));
-      expect(spreads[6].rightPage, equals(13));
+        // Spread 6: Pages 12 and 13 (Matching user's archive.org screenshot 2)
+        expect(spreads[6].leftPage, equals(12));
+        expect(spreads[6].rightPage, equals(13));
 
-      // Last spread 135: Pages 270 and 271
-      expect(spreads[135].leftPage, equals(270));
-      expect(spreads[135].rightPage, equals(271));
-    });
+        // Last spread 135: Pages 270 and 271
+        expect(spreads[135].leftPage, equals(270));
+        expect(spreads[135].rightPage, equals(271));
+      },
+    );
 
     test('Spread index lookup is instantaneous O(1) for any page number', () {
       int getSpreadIndex(int p) {

@@ -5,10 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../../../../core/providers/database_providers.dart';
 import '../../../processing/models/processing_status.dart';
 import '../../../processing/providers/import_provider.dart';
+import '../../../processing/services/pdf_processing_pipeline.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
+
+enum _DuplicatePromptAction { openExisting, importAnyway, cancel }
 
 class ImportPdfHelper {
   static Future<void> pickAndImportPdf(BuildContext context, WidgetRef ref) async {
@@ -40,6 +44,112 @@ class ImportPdfHelper {
         final tempFile = File(p.join(tempDir.path, platformFile.name));
         await tempFile.writeAsBytes(bytes);
         selectedFile = tempFile;
+      }
+
+      if (!context.mounted) return;
+
+      // Duplicate Check
+      final peek = await PdfProcessingPipeline.peekPdfMetadata(selectedFile);
+      final existing = await ref.read(databaseServiceProvider).findDuplicateBook(
+            title: peek.title,
+            author: peek.author,
+          );
+
+      if (existing != null && context.mounted) {
+        final action = await showDialog<_DuplicatePromptAction>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E22),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.white.withAlpha(25)),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF007AFF).withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.copy_rounded,
+                    color: Color(0xFF007AFF),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Book Already in Library',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              '"${existing.title}" is already in your library.\n\nWould you like to open the existing book, or import it anyway?',
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: Colors.white70,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(ctx).pop(_DuplicatePromptAction.cancel),
+                child: const Text('Cancel',
+                    style: TextStyle(color: Colors.white70)),
+              ),
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.white.withAlpha(40)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () =>
+                    Navigator.of(ctx).pop(_DuplicatePromptAction.importAnyway),
+                child: const Text('Import Anyway',
+                    style: TextStyle(color: Colors.white)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF007AFF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () =>
+                    Navigator.of(ctx).pop(_DuplicatePromptAction.openExisting),
+                child: const Text('Open Existing Book'),
+              ),
+            ],
+          ),
+        );
+
+        if (action == null || action == _DuplicatePromptAction.cancel) {
+          return;
+        }
+        if (action == _DuplicatePromptAction.openExisting) {
+          if (context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReadingScreen(
+                  book: existing,
+                  initialMode: existing.isScanned
+                      ? ReadingMode.originalPdf
+                      : ReadingMode.reflowable,
+                ),
+              ),
+            );
+          }
+          return;
+        }
       }
 
       if (!context.mounted) return;

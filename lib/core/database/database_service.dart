@@ -80,6 +80,50 @@ class DatabaseService {
     return db.update(db.books).replace(book);
   }
 
+  Future<int> updateBookMetadata(
+    String bookId, {
+    required String title,
+    required String author,
+    String? description,
+  }) {
+    return (db.update(db.books)..where((t) => t.id.equals(bookId))).write(
+      BooksCompanion(
+        title: Value(title),
+        author: Value(author),
+        description: Value(description),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  Future<Book?> findDuplicateBook({
+    required String title,
+    required String author,
+  }) async {
+    final trimmedTitle = title.trim().toLowerCase();
+    final trimmedAuthor = author.trim().toLowerCase();
+
+    // 1. Exact match on title and author
+    final exactMatches = await (db.select(db.books)
+          ..where((t) =>
+              t.title.lower().equals(trimmedTitle) &
+              t.author.lower().equals(trimmedAuthor)))
+        .get();
+    if (exactMatches.isNotEmpty) {
+      return exactMatches.first;
+    }
+
+    // 2. Exact match on title alone (if author was unknown or slightly formatted)
+    final titleMatches = await (db.select(db.books)
+          ..where((t) => t.title.lower().equals(trimmedTitle)))
+        .get();
+    if (titleMatches.isNotEmpty) {
+      return titleMatches.first;
+    }
+
+    return null;
+  }
+
   Future<int> deleteBook(String id) {
     return (db.delete(db.books)..where((t) => t.id.equals(id))).go();
   }
@@ -153,6 +197,24 @@ class DatabaseService {
         .watch();
   }
 
+  Stream<List<BookmarkWithBook>> watchAllBookmarks() {
+    final query = db.select(db.bookmarks).join([
+      innerJoin(
+        db.books,
+        db.books.id.equalsExp(db.bookmarks.bookId),
+      ),
+    ])..orderBy([
+        OrderingTerm(expression: db.bookmarks.createdAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map((rows) {
+      return rows.map((r) => BookmarkWithBook(
+        bookmark: r.readTable(db.bookmarks),
+        book: r.readTable(db.books),
+      )).toList();
+    });
+  }
+
   Future<int> addBookmark(BookmarksCompanion bookmark) {
     return db.into(db.bookmarks).insert(bookmark);
   }
@@ -169,6 +231,24 @@ class DatabaseService {
         .watch();
   }
 
+  Stream<List<HighlightWithBook>> watchAllHighlights() {
+    final query = db.select(db.highlights).join([
+      innerJoin(
+        db.books,
+        db.books.id.equalsExp(db.highlights.bookId),
+      ),
+    ])..orderBy([
+        OrderingTerm(expression: db.highlights.createdAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map((rows) {
+      return rows.map((r) => HighlightWithBook(
+        highlight: r.readTable(db.highlights),
+        book: r.readTable(db.books),
+      )).toList();
+    });
+  }
+
   Future<int> addHighlight(HighlightsCompanion highlight) {
     return db.into(db.highlights).insert(highlight);
   }
@@ -180,7 +260,7 @@ class DatabaseService {
   // --- Collections ---
   Stream<List<Collection>> watchCollections() {
     return (db.select(db.collections)
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
         .watch();
   }
 
@@ -188,8 +268,57 @@ class DatabaseService {
     return db.into(db.collections).insert(collection);
   }
 
+  Future<int> updateCollection(String id, {required String name, String? description}) {
+    return (db.update(db.collections)..where((t) => t.id.equals(id))).write(
+      CollectionsCompanion(
+        name: Value(name),
+        description: Value(description),
+      ),
+    );
+  }
+
   Future<int> deleteCollection(String id) {
     return (db.delete(db.collections)..where((t) => t.id.equals(id))).go();
+  }
+
+  Stream<List<Book>> watchBooksInCollection(String collectionId) {
+    final query = db.select(db.books).join([
+      innerJoin(
+        db.bookCollections,
+        db.bookCollections.bookId.equalsExp(db.books.id),
+      ),
+    ])
+      ..where(db.bookCollections.collectionId.equals(collectionId))
+      ..orderBy([
+        OrderingTerm(expression: db.books.updatedAt, mode: OrderingMode.desc),
+      ]);
+
+    return query.watch().map((rows) {
+      return rows.map((r) => r.readTable(db.books)).toList();
+    });
+  }
+
+  Future<List<String>> getCollectionIdsForBook(String bookId) async {
+    final rows = await (db.select(db.bookCollections)
+          ..where((t) => t.bookId.equals(bookId)))
+        .get();
+    return rows.map((r) => r.collectionId).toList();
+  }
+
+  Stream<List<String>> watchCollectionIdsForBook(String bookId) {
+    return (db.select(db.bookCollections)..where((t) => t.bookId.equals(bookId)))
+        .watch()
+        .map((rows) => rows.map((r) => r.collectionId).toList());
+  }
+
+  Stream<Map<String, int>> watchCollectionBookCounts() {
+    return db.select(db.bookCollections).watch().map((rows) {
+      final counts = <String, int>{};
+      for (final r in rows) {
+        counts[r.collectionId] = (counts[r.collectionId] ?? 0) + 1;
+      }
+      return counts;
+    });
   }
 
   Future<int> addBookToCollection(String bookId, String collectionId) {
@@ -214,5 +343,19 @@ class BookWithProgress {
   final ReadingProgress? progress;
 
   const BookWithProgress({required this.book, this.progress});
+}
+
+class BookmarkWithBook {
+  final Bookmark bookmark;
+  final Book book;
+
+  const BookmarkWithBook({required this.bookmark, required this.book});
+}
+
+class HighlightWithBook {
+  final Highlight highlight;
+  final Book book;
+
+  const HighlightWithBook({required this.highlight, required this.book});
 }
 

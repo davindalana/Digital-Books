@@ -27,7 +27,8 @@ class PdfSpread {
   int get primaryPage => rightPage ?? leftPage ?? 1;
 
   /// The secondary page index if facing page exists
-  int? get secondaryPage => (leftPage != null && rightPage != null) ? rightPage : null;
+  int? get secondaryPage =>
+      (leftPage != null && rightPage != null) ? rightPage : null;
 
   /// Check whether a page number is inside this spread
   bool containsPage(int page) => leftPage == page || rightPage == page;
@@ -100,7 +101,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   PdfDocument? get document => _document;
   PdfViewMode get viewMode => widget.viewMode;
   bool get isTwoPageSpreadActive {
-    final double width = mounted ? (MediaQuery.maybeSizeOf(context)?.width ?? 800.0) : 800.0;
+    final double width = mounted
+        ? (MediaQuery.maybeSizeOf(context)?.width ?? 800.0)
+        : 800.0;
     return _isEffectiveSpread(width);
   }
 
@@ -157,14 +160,15 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     });
 
     _zoomController = TransformationController();
-    _zoomAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    )..addListener(() {
-        if (_zoomAnimation != null) {
-          _zoomController.value = _zoomAnimation!.value;
-        }
-      });
+    _zoomAnimationController =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 220),
+        )..addListener(() {
+          if (_zoomAnimation != null) {
+            _zoomController.value = _zoomAnimation!.value;
+          }
+        });
     _zoomCurvedAnimation = CurvedAnimation(
       parent: _zoomAnimationController,
       curve: Curves.easeOutCubic,
@@ -181,8 +185,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final maxScroll = _scrollController.position.maxScrollExtent;
     if (maxScroll <= 0) return;
 
-    final approxPageHeight = (maxScroll + _scrollController.position.viewportDimension) / _totalPages;
-    final estimatedPage = ((offset + (approxPageHeight * 0.45)) / approxPageHeight).floor() + 1;
+    final approxPageHeight =
+        (maxScroll + _scrollController.position.viewportDimension) /
+        _totalPages;
+    final estimatedPage =
+        ((offset + (approxPageHeight * 0.45)) / approxPageHeight).floor() + 1;
     final clampedPage = estimatedPage.clamp(1, _totalPages);
     if (clampedPage != _currentPage) {
       setState(() => _currentPage = clampedPage);
@@ -262,11 +269,16 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       resetZoom();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        if (widget.viewMode == PdfViewMode.continuous && _scrollController.hasClients) {
+        if (widget.viewMode == PdfViewMode.continuous &&
+            _scrollController.hasClients) {
           final maxScroll = _scrollController.position.maxScrollExtent;
-          final approxPageHeight = (maxScroll + _scrollController.position.viewportDimension) /
+          final approxPageHeight =
+              (maxScroll + _scrollController.position.viewportDimension) /
               (_totalPages > 0 ? _totalPages : 1);
-          final targetOffset = ((_currentPage - 1) * approxPageHeight).clamp(0.0, maxScroll);
+          final targetOffset = ((_currentPage - 1) * approxPageHeight).clamp(
+            0.0,
+            maxScroll,
+          );
           _scrollController.jumpTo(targetOffset);
         }
       });
@@ -295,19 +307,31 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
   List<PdfSpread> _generateSpreads(int totalPages, bool isTwoPage) {
     if (totalPages <= 0) {
-      return const [PdfSpread(spreadIndex: 0, leftPage: null, rightPage: 1, isCover: true)];
+      return const [
+        PdfSpread(spreadIndex: 0, leftPage: null, rightPage: 1, isCover: true),
+      ];
     }
 
     if (!isTwoPage) {
       return List.generate(
         totalPages,
-        (i) => PdfSpread(spreadIndex: i, leftPage: null, rightPage: i + 1, isCover: i == 0),
+        (i) => PdfSpread(
+          spreadIndex: i,
+          leftPage: null,
+          rightPage: i + 1,
+          isCover: i == 0,
+        ),
       );
     }
 
     // Spread 0: Cover page (Page 1 standalone)
     final spreads = <PdfSpread>[
-      const PdfSpread(spreadIndex: 0, leftPage: null, rightPage: 1, isCover: true),
+      const PdfSpread(
+        spreadIndex: 0,
+        leftPage: null,
+        rightPage: 1,
+        isCover: true,
+      ),
     ];
 
     int page = 2;
@@ -315,12 +339,14 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     while (page <= totalPages) {
       final left = page;
       final right = (page + 1 <= totalPages) ? page + 1 : null;
-      spreads.add(PdfSpread(
-        spreadIndex: spreadIdx,
-        leftPage: left,
-        rightPage: right,
-        isCover: false,
-      ));
+      spreads.add(
+        PdfSpread(
+          spreadIndex: spreadIdx,
+          leftPage: left,
+          rightPage: right,
+          isCover: false,
+        ),
+      );
       spreadIdx++;
       page += 2;
     }
@@ -328,7 +354,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     return spreads;
   }
 
-  int _getSpreadIndexForPage(int page, List<PdfSpread> spreads, bool isTwoPage) {
+  int _getSpreadIndexForPage(
+    int page,
+    List<PdfSpread> spreads,
+    bool isTwoPage,
+  ) {
     if (spreads.isEmpty) return 0;
     if (!isTwoPage) {
       return (page - 1).clamp(0, spreads.length - 1);
@@ -363,9 +393,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     });
     _turnController.reset();
 
-    if (widget.viewMode == PdfViewMode.continuous && _scrollController.hasClients) {
+    if (widget.viewMode == PdfViewMode.continuous &&
+        _scrollController.hasClients) {
       final maxScroll = _scrollController.position.maxScrollExtent;
-      final approxHeight = (maxScroll + _scrollController.position.viewportDimension) /
+      final approxHeight =
+          (maxScroll + _scrollController.position.viewportDimension) /
           (_totalPages > 0 ? _totalPages : 1);
       final targetOffset = ((target - 1) * approxHeight).clamp(0.0, maxScroll);
       _scrollController.jumpTo(targetOffset);
@@ -442,7 +474,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final center = Offset(size.width / 2, size.height / 2);
 
     final target = Matrix4.identity()
-      ..setTranslationRaw(center.dx * (1 - targetScale), center.dy * (1 - targetScale), 0.0)
+      ..setTranslationRaw(
+        center.dx * (1 - targetScale),
+        center.dy * (1 - targetScale),
+        0.0,
+      )
       // ignore: deprecated_member_use
       ..scale(targetScale, targetScale, 1.0);
 
@@ -475,27 +511,37 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   }
 
   // --- Interactive Drag Handling ---
-  void _onHorizontalDragStart(DragStartDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragStart(
+    DragStartDetails details,
+    BoxConstraints constraints,
+  ) {
     if (_isZoomed || (_isFlipping && !_isDragging)) return;
     _dragStartX = details.localPosition.dx;
     _turnController.stop();
   }
 
-  void _onHorizontalDragUpdate(DragUpdateDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragUpdate(
+    DragUpdateDetails details,
+    BoxConstraints constraints,
+  ) {
     if (_isZoomed || _dragStartX == null || _document == null) return;
     final deltaX = details.localPosition.dx - _dragStartX!;
     if (!_isDragging && deltaX.abs() < 8.0) return;
 
     final isSpread = _effectiveTwoPage;
     final spreads = _getSpreads(isSpread);
-    final dragSpan = isSpread ? (constraints.maxWidth * 0.45) : (constraints.maxWidth * 0.80);
+    final dragSpan = isSpread
+        ? (constraints.maxWidth * 0.45)
+        : (constraints.maxWidth * 0.80);
 
     if (deltaX < 0) {
       // Swiping left -> Turn forward to next spread
       final target = _currentSpreadIndex + 1;
       if (target >= spreads.length) return;
 
-      if (!_isDragging || _targetSpreadIndex != target || _direction != FlipDirection.forward) {
+      if (!_isDragging ||
+          _targetSpreadIndex != target ||
+          _direction != FlipDirection.forward) {
         setState(() {
           _isDragging = true;
           _direction = FlipDirection.forward;
@@ -510,7 +556,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       final target = _currentSpreadIndex - 1;
       if (target < 0) return;
 
-      if (!_isDragging || _targetSpreadIndex != target || _direction != FlipDirection.backward) {
+      if (!_isDragging ||
+          _targetSpreadIndex != target ||
+          _direction != FlipDirection.backward) {
         setState(() {
           _isDragging = true;
           _direction = FlipDirection.backward;
@@ -523,7 +571,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     }
   }
 
-  void _onHorizontalDragEnd(DragEndDetails details, BoxConstraints constraints) {
+  void _onHorizontalDragEnd(
+    DragEndDetails details,
+    BoxConstraints constraints,
+  ) {
     if (!_isDragging) {
       _dragStartX = null;
       return;
@@ -539,7 +590,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
     final velocity = details.primaryVelocity ?? 0.0;
     final isForward = _direction == FlipDirection.forward;
-    final completed = (isForward && (velocity < -250 || _turnController.value > 0.20)) ||
+    final completed =
+        (isForward && (velocity < -250 || _turnController.value > 0.20)) ||
         (!isForward && (velocity > 250 || _turnController.value > 0.20));
 
     if (completed) {
@@ -628,7 +680,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         const SingleActivator(LogicalKeyboardKey.minus, meta: true): zoomOut,
         const SingleActivator(LogicalKeyboardKey.minus, control: true): zoomOut,
         const SingleActivator(LogicalKeyboardKey.digit0, meta: true): resetZoom,
-        const SingleActivator(LogicalKeyboardKey.digit0, control: true): resetZoom,
+        const SingleActivator(LogicalKeyboardKey.digit0, control: true):
+            resetZoom,
       },
       child: Focus(
         autofocus: true,
@@ -643,7 +696,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
               final spreads = _getSpreads(isSpread);
               if (_currentSpreadIndex >= spreads.length) {
-                _currentSpreadIndex = _getSpreadIndexForPage(_currentPage, spreads, isSpread);
+                _currentSpreadIndex = _getSpreadIndexForPage(
+                  _currentPage,
+                  spreads,
+                  isSpread,
+                );
               }
 
               return Stack(
@@ -662,12 +719,20 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                       ),
                       child: isContinuous
                           ? _buildContinuousView(doc, constraints)
-                          : _buildInteractiveBookView(doc, constraints, isSpread, spreads),
+                          : _buildInteractiveBookView(
+                              doc,
+                              constraints,
+                              isSpread,
+                              spreads,
+                            ),
                     ),
                   ),
 
                   // Floating Previous Button on left edge
-                  if (isDesktopOrTablet && !isContinuous && widget.showControls && _currentSpreadIndex > 0)
+                  if (isDesktopOrTablet &&
+                      !isContinuous &&
+                      widget.showControls &&
+                      _currentSpreadIndex > 0)
                     Positioned(
                       left: 16,
                       top: 0,
@@ -682,7 +747,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                     ),
 
                   // Floating Next Button on right edge
-                  if (isDesktopOrTablet && !isContinuous && widget.showControls && _currentSpreadIndex < spreads.length - 1)
+                  if (isDesktopOrTablet &&
+                      !isContinuous &&
+                      widget.showControls &&
+                      _currentSpreadIndex < spreads.length - 1)
                     Positioned(
                       right: 16,
                       top: 0,
@@ -724,12 +792,25 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           return _buildSolidSpread(doc, curSpread, constraints, isSpread);
         }
 
-        final targetSpread = spreads[_targetSpreadIndex!.clamp(0, spreads.length - 1)];
+        final targetSpread =
+            spreads[_targetSpreadIndex!.clamp(0, spreads.length - 1)];
 
         if (isSpread) {
-          return _buildTwoPageFlip(doc, constraints, curSpread, targetSpread, t);
+          return _buildTwoPageFlip(
+            doc,
+            constraints,
+            curSpread,
+            targetSpread,
+            t,
+          );
         } else {
-          return _buildSinglePageFlip(doc, constraints, curSpread, targetSpread, t);
+          return _buildSinglePageFlip(
+            doc,
+            constraints,
+            curSpread,
+            targetSpread,
+            t,
+          );
         }
       },
     );
@@ -776,7 +857,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   }
 
   // Sizing Geometry for Open Book
-  ({double bookW, double bookH, double pageW, double pageH}) _calculateBookGeometry(
+  ({double bookW, double bookH, double pageW, double pageH})
+  _calculateBookGeometry(
     PdfDocument doc,
     BoxConstraints constraints,
     bool isTwoPage,
@@ -787,8 +869,14 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         : (constraints.maxWidth > 1200 ? 36.0 : 20.0);
     final verticalMargin = constraints.maxHeight < 600 ? 10.0 : 18.0;
 
-    final availW = math.max(100.0, constraints.maxWidth - (horizontalMargin * 2));
-    final availH = math.max(100.0, constraints.maxHeight - (verticalMargin * 2));
+    final availW = math.max(
+      100.0,
+      constraints.maxWidth - (horizontalMargin * 2),
+    );
+    final availH = math.max(
+      100.0,
+      constraints.maxHeight - (verticalMargin * 2),
+    );
 
     double pageRatio = 1.0 / 1.414;
     if (doc.pages.isNotEmpty && doc.pages.first.height > 0) {
@@ -805,12 +893,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         bookH = availH;
         bookW = bookH * spreadRatio;
       }
-      return (
-        bookW: bookW,
-        bookH: bookH,
-        pageW: bookW / 2.0,
-        pageH: bookH,
-      );
+      return (bookW: bookW, bookH: bookH, pageW: bookW / 2.0, pageH: bookH);
     } else {
       double bookW, bookH;
       if (availH.isInfinite || availW / availH <= pageRatio) {
@@ -820,12 +903,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         bookH = availH;
         bookW = bookH * pageRatio;
       }
-      return (
-        bookW: bookW,
-        bookH: bookH,
-        pageW: bookW,
-        pageH: bookH,
-      );
+      return (bookW: bookW, bookH: bookH, pageW: bookW, pageH: bookH);
     }
   }
 
@@ -836,7 +914,12 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     BoxConstraints constraints,
     bool isTwoPage,
   ) {
-    final geo = _calculateBookGeometry(doc, constraints, isTwoPage, spread.isCover);
+    final geo = _calculateBookGeometry(
+      doc,
+      constraints,
+      isTwoPage,
+      spread.isCover,
+    );
 
     if (!isTwoPage || spread.isCover) {
       // Single Page / Cover card
@@ -886,7 +969,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                           colors: [
-                            Colors.black.withAlpha(widget.theme.isDark ? 90 : 45),
+                            Colors.black.withAlpha(
+                              widget.theme.isDark ? 90 : 45,
+                            ),
                             Colors.transparent,
                           ],
                         ),
@@ -1019,8 +1104,12 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
-                        end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
+                        begin: isLeft
+                            ? Alignment.centerLeft
+                            : Alignment.centerRight,
+                        end: isLeft
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         colors: [
                           Colors.transparent,
                           Colors.black.withAlpha(widget.theme.isDark ? 55 : 32),
@@ -1043,8 +1132,12 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: isLeft ? Alignment.centerLeft : Alignment.centerRight,
-                        end: isLeft ? Alignment.centerRight : Alignment.centerLeft,
+                        begin: isLeft
+                            ? Alignment.centerLeft
+                            : Alignment.centerRight,
+                        end: isLeft
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         colors: [
                           Colors.black.withAlpha(widget.theme.isDark ? 25 : 12),
                           Colors.transparent,
@@ -1157,7 +1250,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 110).toInt()),
+                            color: Colors.black.withAlpha(
+                              ((1.0 - t) * 110).toInt(),
+                            ),
                           ),
                         ),
                       ),
@@ -1347,7 +1442,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Container(
-                            color: Colors.black.withAlpha(((1.0 - t) * 110).toInt()),
+                            color: Colors.black.withAlpha(
+                              ((1.0 - t) * 110).toInt(),
+                            ),
                           ),
                         ),
                       ),
@@ -1477,7 +1574,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                           Positioned.fill(
                             child: IgnorePointer(
                               child: Container(
-                                color: Colors.black.withAlpha(((1.0 - t) * 110).toInt()),
+                                color: Colors.black.withAlpha(
+                                  ((1.0 - t) * 110).toInt(),
+                                ),
                               ),
                             ),
                           ),
@@ -1501,9 +1600,14 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     return ListView.builder(
       controller: _scrollController,
       scrollDirection: Axis.vertical,
-      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       itemCount: _totalPages,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 20,
+      ),
       itemBuilder: (context, index) {
         final pageNum = index + 1;
         final geo = _calculateBookGeometry(doc, constraints, false, false);
@@ -1519,7 +1623,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(widget.theme.isDark ? 150 : 35),
+                    color: Colors.black.withAlpha(
+                      widget.theme.isDark ? 150 : 35,
+                    ),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -1561,7 +1667,9 @@ class _FloatingNavArrowState extends State<_FloatingNavArrow> {
 
   @override
   Widget build(BuildContext context) {
-    final bgAlpha = _isHovered ? (widget.isDark ? 210 : 190) : (widget.isDark ? 90 : 70);
+    final bgAlpha = _isHovered
+        ? (widget.isDark ? 210 : 190)
+        : (widget.isDark ? 90 : 70);
     final borderAlpha = _isHovered ? 80 : 35;
 
     return MouseRegion(
@@ -1632,7 +1740,9 @@ class _PdfErrorView extends StatelessWidget {
             color: theme.isDark ? const Color(0xFF1E1E22) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: theme.isDark ? Colors.white.withAlpha(25) : Colors.black.withAlpha(15),
+              color: theme.isDark
+                  ? Colors.white.withAlpha(25)
+                  : Colors.black.withAlpha(15),
             ),
             boxShadow: [
               BoxShadow(
@@ -1688,7 +1798,10 @@ class _PdfErrorView extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF007AFF),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1696,7 +1809,10 @@ class _PdfErrorView extends StatelessWidget {
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text(
                       'Coba Lagi',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
                     ),
                     onPressed: onRetry,
                   ),
@@ -1707,15 +1823,24 @@ class _PdfErrorView extends StatelessWidget {
                         side: BorderSide(
                           color: theme.isDark ? Colors.white24 : Colors.black26,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      icon: const Icon(Icons.chrome_reader_mode_outlined, size: 18),
+                      icon: const Icon(
+                        Icons.chrome_reader_mode_outlined,
+                        size: 18,
+                      ),
                       label: const Text(
                         'Buka Versi Teks',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                       onPressed: onSwitchToReflowable,
                     ),
@@ -1723,7 +1848,10 @@ class _PdfErrorView extends StatelessWidget {
                     TextButton.icon(
                       style: TextButton.styleFrom(
                         foregroundColor: theme.secondaryTextColor,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                       ),
                       icon: const Icon(Icons.arrow_back_rounded, size: 18),
                       label: const Text('Kembali ke Library'),

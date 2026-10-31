@@ -7,6 +7,7 @@ import '../../../../core/utils/file_storage_service.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import 'book_details_dialog.dart';
+import 'manage_collections_dialog.dart';
 
 class BookCard extends ConsumerWidget {
   final Book book;
@@ -225,6 +226,8 @@ class BookCard extends ConsumerWidget {
         onSelected: (value) {
           if (value == 'info') {
             _openInfo(context);
+          } else if (value == 'collections') {
+            ManageBookCollectionsDialog.show(context, book);
           } else if (value == 'delete') {
             _confirmDelete(context, ref);
           }
@@ -239,6 +242,21 @@ class BookCard extends ConsumerWidget {
                 SizedBox(width: 10),
                 Text(
                   'Info About Book',
+                  style: TextStyle(fontSize: 13, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'collections',
+            height: 38,
+            child: Row(
+              children: [
+                Icon(Icons.folder_special_outlined,
+                    size: 17, color: Colors.white70),
+                SizedBox(width: 10),
+                Text(
+                  'Manage Collections',
                   style: TextStyle(fontSize: 13, color: Colors.white),
                 ),
               ],
@@ -298,6 +316,21 @@ class BookCard extends ConsumerWidget {
             ],
           ),
         ),
+        const PopupMenuItem<String>(
+          value: 'collections',
+          height: 38,
+          child: Row(
+            children: [
+              Icon(Icons.folder_special_outlined,
+                  size: 17, color: Colors.white70),
+              SizedBox(width: 10),
+              Text(
+                'Manage Collections',
+                style: TextStyle(fontSize: 13, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
         const PopupMenuDivider(height: 1),
         const PopupMenuItem<String>(
           value: 'delete',
@@ -324,6 +357,8 @@ class BookCard extends ConsumerWidget {
 
     if (selected == 'info') {
       _openInfo(context);
+    } else if (selected == 'collections') {
+      ManageBookCollectionsDialog.show(context, book);
     } else if (selected == 'delete') {
       _confirmDelete(context, ref);
     }

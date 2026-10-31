@@ -8,16 +8,98 @@ import '../../../../core/providers/database_providers.dart';
 import '../../../../core/utils/file_storage_service.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
+import 'manage_collections_dialog.dart';
 
-class BookDetailsDialog extends ConsumerWidget {
+class BookDetailsDialog extends ConsumerStatefulWidget {
   final Book book;
 
   const BookDetailsDialog({super.key, required this.book});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final progressAsync = ref.watch(bookProgressStreamProvider(book.id));
+  ConsumerState<BookDetailsDialog> createState() => _BookDetailsDialogState();
+}
+
+class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
+  bool _isEditing = false;
+  bool _isSaving = false;
+  late TextEditingController _titleController;
+  late TextEditingController _authorController;
+  late TextEditingController _descController;
+  late Book _currentBook;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentBook = widget.book;
+    _titleController = TextEditingController(text: _currentBook.title);
+    _authorController = TextEditingController(text: _currentBook.author);
+    _descController =
+        TextEditingController(text: _currentBook.description ?? '');
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _authorController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveMetadata() async {
+    final title = _titleController.text.trim();
+    final author = _authorController.text.trim();
+    final desc = _descController.text.trim();
+
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Title cannot be empty')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      await dbService.updateBookMetadata(
+        _currentBook.id,
+        title: title,
+        author: author.isEmpty ? 'Unknown Author' : author,
+        description: desc.isEmpty ? null : desc,
+      );
+
+      final updated = await dbService.getBookById(_currentBook.id);
+      if (mounted) {
+        setState(() {
+          if (updated != null) _currentBook = updated;
+          _isEditing = false;
+          _isSaving = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Book details updated successfully'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update book: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progressAsync =
+        ref.watch(bookProgressStreamProvider(_currentBook.id));
     final dateFormat = DateFormat.yMMMd();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -30,202 +112,339 @@ class BookDetailsDialog extends ConsumerWidget {
             width: 520,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
+              color: isDark
                   ? const Color(0xFF1E1E22).withAlpha(240)
                   : const Color(0xFFF9F9FB).withAlpha(245),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Theme.of(context).brightness == Brightness.dark
+                color: isDark
                     ? Colors.white.withAlpha(25)
                     : Colors.black.withAlpha(20),
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Row: Cover + Info
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Cover Preview
-                    Container(
-                      width: 100,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(40),
-                            blurRadius: 10,
-                            offset: const Offset(2, 4),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Action Bar in Dialog (Edit Toggle & Close)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _isEditing ? 'EDIT BOOK DETAILS' : 'BOOK INFO',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: isDark
+                              ? Colors.grey.shade400
+                              : Colors.grey.shade600,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          if (!_isEditing) ...[
+                            IconButton(
+                              icon: const Icon(Icons.folder_special_outlined,
+                                  size: 19),
+                              tooltip: 'Manage Collections',
+                              onPressed: () =>
+                                  ManageBookCollectionsDialog.show(
+                                      context, _currentBook),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 19),
+                              tooltip: 'Edit Metadata',
+                              onPressed: () =>
+                                  setState(() => _isEditing = true),
+                            ),
+                          ],
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 19),
+                            tooltip: 'Close',
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: (book.coverPath != null &&
-                                File(book.coverPath!).existsSync())
-                            ? Image.file(
-                                File(book.coverPath!),
-                                fit: BoxFit.cover,
-                                filterQuality: FilterQuality.medium,
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Top Row: Cover + Info or Edit Fields
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Cover Preview
+                      Container(
+                        width: 100,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(40),
+                              blurRadius: 10,
+                              offset: const Offset(2, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: (_currentBook.coverPath != null &&
+                                  File(_currentBook.coverPath!).existsSync())
+                              ? Image.file(
+                                  File(_currentBook.coverPath!),
+                                  fit: BoxFit.cover,
+                                  filterQuality: FilterQuality.medium,
+                                )
+                              : Container(
+                                  color: const Color(0xFF2C2C2E),
+                                  child: const Icon(Icons.book, size: 40),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+
+                      // Info Column or Edit Fields
+                      Expanded(
+                        child: _isEditing
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  TextField(
+                                    controller: _titleController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Book Title',
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 10),
+                                    ),
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: _authorController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Author',
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 10),
+                                    ),
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: _descController,
+                                    maxLines: 3,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Description / Notes',
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 8),
+                                    ),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
                               )
-                            : Container(
-                                color: const Color(0xFF2C2C2E),
-                                child: const Icon(Icons.book, size: 40),
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _currentBook.title,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.25,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _currentBook.author,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.grey.shade400
+                                          : Colors.grey.shade700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _DetailRow(
+                                    label: 'Pages',
+                                    value: '${_currentBook.totalPages} pages',
+                                  ),
+                                  _DetailRow(
+                                    label: 'Format',
+                                    value: _currentBook.isScanned
+                                        ? 'Scanned PDF'
+                                        : 'Digital Text PDF',
+                                  ),
+                                  _DetailRow(
+                                    label: 'Added',
+                                    value: dateFormat
+                                        .format(_currentBook.createdAt),
+                                  ),
+                                  progressAsync.when(
+                                    data: (p) => _DetailRow(
+                                      label: 'Progress',
+                                      value: p != null
+                                          ? '${(p.progressPercentage * 100).toInt()}% (Page ${p.currentPosition})'
+                                          : 'Not started',
+                                    ),
+                                    loading: () => const SizedBox(),
+                                    error: (e, stack) => const SizedBox(),
+                                  ),
+                                ],
                               ),
                       ),
-                    ),
-                    const SizedBox(width: 18),
-
-                    // Info Column
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            book.title,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              height: 1.25,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            book.author,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade400,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _DetailRow(
-                            label: 'Pages',
-                            value: '${book.totalPages} pages',
-                          ),
-                          _DetailRow(
-                            label: 'Format',
-                            value: book.isScanned
-                                ? 'Scanned PDF'
-                                : 'Digital Text PDF',
-                          ),
-                          _DetailRow(
-                            label: 'Added',
-                            value: dateFormat.format(book.createdAt),
-                          ),
-                          progressAsync.when(
-                            data: (p) => _DetailRow(
-                              label: 'Progress',
-                              value: p != null
-                                  ? '${(p.progressPercentage * 100).toInt()}% (Page ${p.currentPosition})'
-                                  : 'Not started',
-                            ),
-                            loading: () => const SizedBox(),
-                            error: (e, stack) => const SizedBox(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                // Description if available
-                if (book.description != null && book.description!.isNotEmpty) ...[
-                  Text(
-                    'About this book',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade400,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    book.description!,
-                    style: const TextStyle(fontSize: 13, height: 1.4),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                    ],
                   ),
                   const SizedBox(height: 20),
-                ],
 
-                // Action Buttons
-                Row(
-                  children: [
-                    // Delete Button
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                      tooltip: 'Delete Book',
-                      onPressed: () => _confirmDelete(context, ref),
-                    ),
-                    const Spacer(),
-
-                    // Read in PDF Mode Button
-                    OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                  // Description if in read-only mode and not empty
+                  if (!_isEditing &&
+                      _currentBook.description != null &&
+                      _currentBook.description!.isNotEmpty) ...[
+                    Text(
+                      'About this book',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                        letterSpacing: 0.8,
                       ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        ref
-                            .read(activeReadingModeProvider(book.id).notifier)
-                            .state = ReadingMode.originalPdf;
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReadingScreen(
-                              book: book,
-                              initialMode: ReadingMode.originalPdf,
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Original PDF'),
                     ),
-                    const SizedBox(width: 10),
-
-                    // Read in Reflowable Book Mode Button
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007AFF),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        final mode = book.isScanned
-                            ? ReadingMode.originalPdf
-                            : ReadingMode.reflowable;
-                        ref
-                            .read(activeReadingModeProvider(book.id).notifier)
-                            .state = mode;
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReadingScreen(
-                              book: book,
-                              initialMode: mode,
-                            ),
-                          ),
-                        );
-                      },
-                      child: const Text('Read Book'),
+                    const SizedBox(height: 6),
+                    Text(
+                      _currentBook.description!,
+                      style: const TextStyle(fontSize: 13, height: 1.4),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 20),
                   ],
-                ),
-              ],
+
+                  // Action Buttons Row
+                  if (_isEditing)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: _isSaving
+                              ? null
+                              : () {
+                                  _titleController.text = _currentBook.title;
+                                  _authorController.text = _currentBook.author;
+                                  _descController.text =
+                                      _currentBook.description ?? '';
+                                  setState(() => _isEditing = false);
+                                },
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF007AFF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.check, size: 16),
+                          label: const Text('Save Changes'),
+                          onPressed: _isSaving ? null : _saveMetadata,
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        // Delete Button
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.redAccent),
+                          tooltip: 'Delete Book',
+                          onPressed: () => _confirmDelete(context, ref),
+                        ),
+                        const Spacer(),
+
+                        // Read in PDF Mode Button
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            ref
+                                .read(activeReadingModeProvider(_currentBook.id)
+                                    .notifier)
+                                .state = ReadingMode.originalPdf;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ReadingScreen(
+                                  book: _currentBook,
+                                  initialMode: ReadingMode.originalPdf,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('Original PDF'),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Read in Reflowable Book Mode Button
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF007AFF),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            final mode = _currentBook.isScanned
+                                ? ReadingMode.originalPdf
+                                : ReadingMode.reflowable;
+                            ref
+                                .read(activeReadingModeProvider(_currentBook.id)
+                                    .notifier)
+                                .state = mode;
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ReadingScreen(
+                                  book: _currentBook,
+                                  initialMode: mode,
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text('Read Book'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -238,7 +457,8 @@ class BookDetailsDialog extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Book?'),
-        content: Text('Are you sure you want to remove "${book.title}" from your library?'),
+        content: Text(
+            'Are you sure you want to remove "${_currentBook.title}" from your library?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
@@ -250,14 +470,17 @@ class BookDetailsDialog extends ConsumerWidget {
               Navigator.of(context).pop();
 
               await FileStorageService.deleteBookFiles(
-                bookId: book.id,
-                originalPdfPath: book.originalPdfPath,
-                processedBookPath: book.processedBookPath,
-                coverPath: book.coverPath,
+                bookId: _currentBook.id,
+                originalPdfPath: _currentBook.originalPdfPath,
+                processedBookPath: _currentBook.processedBookPath,
+                coverPath: _currentBook.coverPath,
               );
-              await ref.read(databaseServiceProvider).deleteBook(book.id);
+              await ref
+                  .read(databaseServiceProvider)
+                  .deleteBook(_currentBook.id);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            child: const Text('Delete',
+                style: TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -273,6 +496,7 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -283,7 +507,7 @@ class _DetailRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade400,
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
             ),
           ),
