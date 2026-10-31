@@ -10,6 +10,7 @@ import '../../../core/database/database_service.dart';
 import '../../../core/utils/cover_generator.dart';
 import '../../../core/utils/file_storage_service.dart';
 import '../../reader/models/book_document.dart';
+import '../../reader/services/book_text_normalizer.dart';
 import '../models/processing_status.dart';
 
 class PdfProcessingPipeline {
@@ -176,7 +177,7 @@ class PdfProcessingPipeline {
       notify(ProcessingStage.generatingBook, 0.90, 'Generating digital book format...');
       final storedPdf = await FileStorageService.copyPdfToStorage(pdfFile, bookId);
 
-      final bookDoc = BookDocument(
+      final rawBookDoc = BookDocument(
         id: bookId,
         title: title,
         author: author,
@@ -189,6 +190,8 @@ class PdfProcessingPipeline {
           'importedAt': DateTime.now().toIso8601String(),
         },
       );
+
+      final bookDoc = BookTextNormalizer.normalizeDocument(rawBookDoc);
 
       final processedBookFile = await FileStorageService.saveProcessedBook(
         bookId,
@@ -215,7 +218,7 @@ class PdfProcessingPipeline {
       await _dbService.insertBook(bookCompanion);
 
       // Save chapters to DB
-      final chapterCompanions = chapters.asMap().entries.map((entry) {
+      final chapterCompanions = bookDoc.chapters.asMap().entries.map((entry) {
         final index = entry.key;
         final ch = entry.value;
         return ChaptersCompanion(

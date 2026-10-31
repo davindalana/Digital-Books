@@ -93,6 +93,25 @@ class BookPageTurnViewState extends State<BookPageTurnView>
         widget.pages.isNotEmpty ? widget.pages.length - 1 : 0,
       );
     }
+    if (widget.isTwoPageSpread && _currentPageIndex % 2 != 0) {
+      _currentPageIndex = math.max(0, _currentPageIndex - 1);
+    }
+    if (oldWidget.initialPageIndex != widget.initialPageIndex &&
+        !_isFlipping &&
+        !_isDragging) {
+      int clamped = widget.initialPageIndex.clamp(
+        0,
+        widget.pages.isNotEmpty ? widget.pages.length - 1 : 0,
+      );
+      if (widget.isTwoPageSpread && clamped % 2 != 0) {
+        clamped -= 1;
+      }
+      _currentPageIndex = clamped;
+      _targetPageIndex = null;
+      _isFlipping = false;
+      _isDragging = false;
+      _controller.reset();
+    }
   }
 
   @override

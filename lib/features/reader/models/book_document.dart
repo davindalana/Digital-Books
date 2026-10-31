@@ -97,6 +97,25 @@ class BookDocument {
     this.metadata = const {},
   });
 
+  BookDocument copyWith({
+    String? id,
+    String? title,
+    String? author,
+    int? totalPages,
+    bool? isScanned,
+    List<BookChapter>? chapters,
+    Map<String, dynamic>? metadata,
+  }) =>
+      BookDocument(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        author: author ?? this.author,
+        totalPages: totalPages ?? this.totalPages,
+        isScanned: isScanned ?? this.isScanned,
+        chapters: chapters ?? this.chapters,
+        metadata: metadata ?? this.metadata,
+      );
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'title': title,

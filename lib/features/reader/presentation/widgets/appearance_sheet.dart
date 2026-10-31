@@ -98,7 +98,63 @@ class AppearanceSheet extends ConsumerWidget {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
+
+                // In-App Night Brightness Dimmer
+                Consumer(
+                  builder: (context, ref, _) {
+                    final dimmer = ref.watch(readerBrightnessDimmerProvider);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(18)
+                            : Colors.black.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.brightness_low,
+                            size: 18,
+                            color: activeTheme.secondaryTextColor,
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: const Color(0xFF007AFF),
+                                inactiveTrackColor: activeTheme.isDark
+                                    ? Colors.white.withAlpha(40)
+                                    : Colors.black.withAlpha(30),
+                                thumbColor: Colors.white,
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                              ),
+                              child: Slider(
+                                value: (1.0 - dimmer).clamp(0.4, 1.0),
+                                min: 0.4,
+                                max: 1.0,
+                                onChanged: (val) {
+                                  ref
+                                      .read(readerBrightnessDimmerProvider.notifier)
+                                      .state = 1.0 - val;
+                                },
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.brightness_high,
+                            size: 20,
+                            color: activeTheme.secondaryTextColor,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
 
                 // Font Size Controls (A- / A+)
                 Container(

@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
+import '../../../../core/database/database_service.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/typography/typography_settings.dart';
@@ -391,7 +393,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  // --- Home: Reading Now Shelf + Recently Added ---
+  // --- Home: Reading Now Hero Spotlight + Shelf + Recently Added ---
   Widget _buildHomeSection() {
     final currentlyReadingAsync = ref.watch(currentlyReadingStreamProvider);
     final recentlyAddedAsync = ref.watch(recentlyAddedStreamProvider);
@@ -399,48 +401,54 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       children: [
-        // Continue Reading Shelf
+        // Continue Reading Hero Spotlight
         currentlyReadingAsync.when(
           data: (books) {
-            if (books.isEmpty) return const SizedBox();
+            if (books.isEmpty) return const SizedBox.shrink();
+            final heroItem = books.first;
+            final remainingBooks = books.sublist(1);
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'CONTINUE READING',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                    color: Colors.grey,
+                _buildHeroReadingCard(heroItem, isStarted: true),
+                if (remainingBooks.isNotEmpty) ...[
+                  const Text(
+                    'BUKU LAIN SEDANG DIBACA',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Colors.grey,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 250,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: books.length,
-                    separatorBuilder: (context, index) => const SizedBox(width: 18),
-                    itemBuilder: (context, index) {
-                      final item = books[index];
-                      return SizedBox(
-                        width: 140,
-                        child: BookCard(
-                          book: item.book,
-                          progressPercentage: item.progress?.progressPercentage,
-                          onDetails: () => _openBookDetails(item.book),
-                        ),
-                      );
-                    },
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 250,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: remainingBooks.length,
+                      separatorBuilder: (context, index) => const SizedBox(width: 18),
+                      itemBuilder: (context, index) {
+                        final item = remainingBooks[index];
+                        return SizedBox(
+                          width: 140,
+                          child: BookCard(
+                            book: item.book,
+                            progressPercentage: item.progress?.progressPercentage,
+                            onDetails: () => _openBookDetails(item.book),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 32),
+                ],
               ],
             );
           },
-          loading: () => const SizedBox(),
-          error: (e, stack) => const SizedBox(),
+          loading: () => const SizedBox.shrink(),
+          error: (e, stack) => const SizedBox.shrink(),
         ),
 
         // Recently Added Shelf
@@ -870,6 +878,209 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroReadingCard(BookWithProgress heroItem, {bool isStarted = true}) {
+    final book = heroItem.book;
+    final progress = heroItem.progress;
+    final pct = progress?.progressPercentage ?? 0.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final coverFile = book.coverPath != null ? File(book.coverPath!) : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF232328), const Color(0xFF17171A)]
+              : [const Color(0xFFFFFFFF), const Color(0xFFF6F4EF)],
+        ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withAlpha(25)
+              : Colors.black.withAlpha(15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 80 : 20),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _openReader(book),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 3D Book Cover with Shadow
+                Container(
+                  width: 105,
+                  height: 155,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(isDark ? 160 : 60),
+                        blurRadius: 16,
+                        offset: const Offset(4, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: (coverFile != null && coverFile.existsSync())
+                        ? Image.file(coverFile, fit: BoxFit.cover)
+                        : Container(
+                            color: const Color(0xFF2A2A2E),
+                            child: const Center(
+                              child: Icon(Icons.book, size: 40, color: Color(0xFFD4AF37)),
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 22),
+
+                // Book Details & CTA
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Badge
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.auto_stories,
+                            size: 14,
+                            color: Color(0xFFD4AF37),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isStarted ? 'SEDANG DIBACA' : 'REKOMENDASI BACA',
+                            style: const TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Title
+                      Text(
+                        book.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          height: 1.25,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Author
+                      Text(
+                        book.author,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Progress Bar
+                      if (isStarted && pct > 0.0) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct.clamp(0.0, 1.0),
+                            backgroundColor: isDark
+                                ? Colors.white.withAlpha(20)
+                                : Colors.black.withAlpha(15),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFFD4AF37),
+                            ),
+                            minHeight: 5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${(pct * 100).toInt()}% Selesai • Halaman ${progress?.currentPosition ?? 1} dari ${book.totalPages}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ] else ...[
+                        const SizedBox(height: 6),
+                      ],
+
+                      // CTA Button
+                      FilledButton.icon(
+                        icon: const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 18,
+                          color: Colors.black,
+                        ),
+                        label: Text(
+                          isStarted ? 'Lanjutkan Membaca' : 'Mulai Membaca',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        onPressed: () => _openReader(book),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openReader(Book book) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReadingScreen(
+          book: book,
+          initialMode: book.isScanned
+              ? ReadingMode.originalPdf
+              : ReadingMode.reflowable,
         ),
       ),
     );

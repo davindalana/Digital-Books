@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -124,9 +125,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
             ),
             builder: (context, document) {
               if (document == null) {
-                return Center(
+                return const Center(
                   child: CircularProgressIndicator(
-                    color: const Color(0xFFD4AF37),
+                    color: Color(0xFFD4AF37),
                   ),
                 );
               }
@@ -147,61 +148,70 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
                 builder: (context, constraints) {
                   return Stack(
                     children: [
-                      // Horizontal PageView with snap physics
-                      PageView.builder(
-                        controller: _pageController,
-                        scrollDirection: Axis.horizontal,
-                        physics: const PageScrollPhysics(),
-                        itemCount: _totalPages,
-                        onPageChanged: (index) {
-                          final newPage = index + 1;
-                          setState(() => _currentPage = newPage);
-                          widget.onPageChanged(newPage, _totalPages);
-                        },
-                        itemBuilder: (context, index) {
-                          return _PdfPageItemView(
-                            key: ValueKey('pdf_page_${index + 1}'),
-                            document: document,
-                            pageNumber: index + 1,
-                            theme: widget.theme,
-                          );
-                        },
-                      ),
-
-                      // Touch navigation zones (Left 22% = Prev, Right 22% = Next, Center = Menu)
-                      Positioned.fill(
-                        child: Row(
-                          children: [
-                            // Left Tap Zone (Previous page)
-                            Expanded(
-                              flex: 22,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTap: previousPage,
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                            // Center Tap Zone (Toggle UI overlay)
-                            Expanded(
-                              flex: 56,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTap: widget.onTapContent,
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                            // Right Tap Zone (Next page)
-                            Expanded(
-                              flex: 22,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.translucent,
-                                onTap: nextPage,
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                          ],
+                      // Horizontal PageView with snap physics & multi-device drag support
+                      ScrollConfiguration(
+                        behavior: const ScrollBehavior().copyWith(
+                          dragDevices: {
+                            PointerDeviceKind.touch,
+                            PointerDeviceKind.mouse,
+                            PointerDeviceKind.trackpad,
+                            PointerDeviceKind.stylus,
+                          },
+                          scrollbars: false,
+                        ),
+                        child: PageView.builder(
+                          controller: _pageController,
+                          scrollDirection: Axis.horizontal,
+                          physics: const PageScrollPhysics(),
+                          itemCount: _totalPages,
+                          onPageChanged: (index) {
+                            final newPage = index + 1;
+                            setState(() => _currentPage = newPage);
+                            widget.onPageChanged(newPage, _totalPages);
+                          },
+                          itemBuilder: (context, index) {
+                            return _PdfPageItemView(
+                              key: ValueKey('pdf_page_${index + 1}'),
+                              document: document,
+                              pageNumber: index + 1,
+                              theme: widget.theme,
+                              onTapContent: widget.onTapContent,
+                              onNextPage: nextPage,
+                              onPreviousPage: previousPage,
+                            );
+                          },
                         ),
                       ),
+
+                      // Floating Previous Button on left edge
+                      if (_currentPage > 1)
+                        Positioned(
+                          left: 14,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: _FloatingNavArrow(
+                              icon: Icons.chevron_left,
+                              isDark: widget.theme.isDark,
+                              onPressed: previousPage,
+                            ),
+                          ),
+                        ),
+
+                      // Floating Next Button on right edge
+                      if (_currentPage < _totalPages)
+                        Positioned(
+                          right: 14,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: _FloatingNavArrow(
+                              icon: Icons.chevron_right,
+                              isDark: widget.theme.isDark,
+                              onPressed: nextPage,
+                            ),
+                          ),
+                        ),
                     ],
                   );
                 },
@@ -214,16 +224,84 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
   }
 }
 
+class _FloatingNavArrow extends StatefulWidget {
+  final IconData icon;
+  final bool isDark;
+  final VoidCallback onPressed;
+
+  const _FloatingNavArrow({
+    required this.icon,
+    required this.isDark,
+    required this.onPressed,
+  });
+
+  @override
+  State<_FloatingNavArrow> createState() => _FloatingNavArrowState();
+}
+
+class _FloatingNavArrowState extends State<_FloatingNavArrow> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bgAlpha = _isHovered ? (widget.isDark ? 210 : 190) : (widget.isDark ? 90 : 70);
+    final borderAlpha = _isHovered ? 80 : 35;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: widget.isDark
+                ? Color.fromARGB(bgAlpha, 25, 25, 28)
+                : Color.fromARGB(bgAlpha, 255, 255, 255),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.isDark
+                  ? Color.fromARGB(borderAlpha, 255, 255, 255)
+                  : Color.fromARGB(borderAlpha, 0, 0, 0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(widget.isDark ? 70 : 25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.icon,
+            size: 26,
+            color: widget.isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PdfPageItemView extends StatefulWidget {
   final PdfDocument document;
   final int pageNumber;
   final ReadingThemeType theme;
+  final VoidCallback onTapContent;
+  final VoidCallback? onNextPage;
+  final VoidCallback? onPreviousPage;
 
   const _PdfPageItemView({
     super.key,
     required this.document,
     required this.pageNumber,
     required this.theme,
+    required this.onTapContent,
+    this.onNextPage,
+    this.onPreviousPage,
   });
 
   @override
@@ -287,10 +365,28 @@ class _PdfPageItemViewState extends State<_PdfPageItemView>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onDoubleTapDown: _onDoubleTapDown,
-      onDoubleTap: () {},
-      child: InteractiveViewer(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTapUp: (details) {
+            if (_isZoomed) {
+              widget.onTapContent();
+              return;
+            }
+            final width = constraints.maxWidth;
+            final x = details.localPosition.dx;
+            if (x < width * 0.22) {
+              widget.onPreviousPage?.call();
+            } else if (x > width * 0.78) {
+              widget.onNextPage?.call();
+            } else {
+              widget.onTapContent();
+            }
+          },
+          onDoubleTapDown: _onDoubleTapDown,
+          onDoubleTap: () {},
+          child: InteractiveViewer(
         transformationController: _transformationController,
         minScale: 1.0,
         maxScale: 3.5,
@@ -327,6 +423,8 @@ class _PdfPageItemViewState extends State<_PdfPageItemView>
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

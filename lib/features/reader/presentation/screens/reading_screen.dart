@@ -10,8 +10,10 @@ import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/utils/file_storage_service.dart';
 import '../../models/book_document.dart';
+import '../../services/book_text_normalizer.dart';
 import '../../providers/reader_settings_provider.dart';
 import '../widgets/appearance_sheet.dart';
+import '../widgets/book_search_dialog.dart';
 import '../widgets/original_pdf_reader.dart';
 import '../widgets/reflowable_book_reader.dart';
 import '../widgets/toc_dialog.dart';
@@ -20,7 +22,11 @@ class ReadingScreen extends ConsumerStatefulWidget {
   final Book book;
   final ReadingMode? initialMode;
 
-  const ReadingScreen({super.key, required this.book, this.initialMode});
+  const ReadingScreen({
+    super.key,
+    required this.book,
+    this.initialMode,
+  });
 
   @override
   ConsumerState<ReadingScreen> createState() => _ReadingScreenState();
@@ -36,18 +42,24 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   int _totalPages = 1;
   int _currentChapter = 0;
   double _progressPercentage = 0.0;
+  String _currentChapterTitle = '';
+  int _estimatedMinutesLeftInChapter = 0;
 
-  final GlobalKey<ReflowableBookReaderState> _reflowableKey =
-      GlobalKey<ReflowableBookReaderState>();
-  final GlobalKey<OriginalPdfReaderState> _pdfKey =
-      GlobalKey<OriginalPdfReaderState>();
+  final GlobalKey<ReflowableBookReaderState> _reflowableKey = GlobalKey<ReflowableBookReaderState>();
+  final GlobalKey<OriginalPdfReaderState> _pdfKey = GlobalKey<OriginalPdfReaderState>();
 
   @override
   void initState() {
     super.initState();
-    final savedMode = ref.read(activeReadingModeProvider(widget.book.id));
-    _readingMode = widget.initialMode ?? savedMode;
+    final currentProviderMode = ref.read(activeReadingModeProvider(widget.book.id));
+    _readingMode = widget.initialMode ??
+        (widget.book.isScanned ? ReadingMode.originalPdf : currentProviderMode);
     _loadBookDocumentAndProgress();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(activeReadingModeProvider(widget.book.id).notifier).state = _readingMode;
+      }
+    });
   }
 
   void _setReadingMode(ReadingMode mode) {
@@ -64,9 +76,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     if (progress != null) {
       setState(() {
         _currentChapter = progress.currentChapter;
-        _currentPage = progress.currentPosition > 0
-            ? progress.currentPosition
-            : 1;
+        _currentPage = progress.currentPosition > 0 ? progress.currentPosition : 1;
         _progressPercentage = progress.progressPercentage;
       });
     }
@@ -74,11 +84,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     // 2. Load processed book document if available
     if (widget.book.processedBookPath != null) {
       try {
-        final jsonStr = await FileStorageService.readProcessedBook(
-          widget.book.processedBookPath!,
-        );
+        final jsonStr = await FileStorageService.readProcessedBook(widget.book.processedBookPath!);
         if (jsonStr != null) {
-          _document = BookDocument.fromJsonString(jsonStr);
+          final loadedDoc = BookDocument.fromJsonString(jsonStr);
+          _document = BookTextNormalizer.normalizeDocument(loadedDoc);
+          if (_currentChapter < _document!.chapters.length) {
+            _currentChapterTitle = _document!.chapters[_currentChapter].title;
+          }
         }
       } catch (_) {}
     }
@@ -87,6 +99,75 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       _isLoadingDoc = false;
       _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
     });
+  }
+
+  void _handleHighlightCreated(String text, String color, int pageNumber) async {
+    final highlight = HighlightsCompanion(
+      id: drift.Value(const Uuid().v4()),
+      bookId: drift.Value(widget.book.id),
+      chapterId: drift.Value(_currentChapter.toString()),
+      selectedText: drift.Value(text),
+      startPosition: drift.Value(pageNumber),
+      endPosition: drift.Value(pageNumber),
+      color: drift.Value(color),
+      createdAt: drift.Value(DateTime.now()),
+    );
+    await ref.read(databaseServiceProvider).addHighlight(highlight);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.bookmark_added_rounded,
+                color: color == 'gold' ? const Color(0xFFD4AF37) : Colors.amberAccent,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text('Teks berhasil disorot & disimpan ke Catatan'),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  void _updateChapterInfo(int chapterIndex) {
+    if (_document == null || _document!.chapters.isEmpty) return;
+    final clampedIdx = chapterIndex.clamp(0, _document!.chapters.length - 1);
+    final ch = _document!.chapters[clampedIdx];
+    final totalWords = ch.blocks
+        .where((b) => b.type == BlockType.paragraph)
+        .map((b) => b.text.split(RegExp(r'\s+')).length)
+        .fold(0, (a, b) => a + b);
+    final estMins = (totalWords / 200).ceil();
+
+    if (_currentChapterTitle != ch.title || _estimatedMinutesLeftInChapter != estMins) {
+      setState(() {
+        _currentChapter = clampedIdx;
+        _currentChapterTitle = ch.title;
+        _estimatedMinutesLeftInChapter = estMins > 0 ? estMins : 1;
+      });
+    }
+  }
+
+  void _openBookSearchDialog() {
+    if (_document == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => BookSearchDialog(
+        document: _document!,
+        theme: ref.read(readingThemeStateProvider),
+        onNavigateToResult: (targetChapter, pageNumber) {
+          _jumpToPosition(pageNumber, _readingMode);
+        },
+      ),
+    );
   }
 
   void _previousPage(ReadingMode mode) {
@@ -130,16 +211,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     });
 
     final dbService = ref.read(databaseServiceProvider);
-    dbService.upsertProgress(
-      ReadingProgressesCompanion(
-        id: drift.Value(const Uuid().v4()),
-        bookId: drift.Value(widget.book.id),
-        currentChapter: drift.Value(chapter),
-        currentPosition: drift.Value(position),
-        progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
-        lastReadAt: drift.Value(DateTime.now()),
-      ),
-    );
+    dbService.upsertProgress(ReadingProgressesCompanion(
+      id: drift.Value(const Uuid().v4()),
+      bookId: drift.Value(widget.book.id),
+      currentChapter: drift.Value(chapter),
+      currentPosition: drift.Value(position),
+      progressPercentage: drift.Value(percentage.clamp(0.0, 1.0)),
+      lastReadAt: drift.Value(DateTime.now()),
+    ));
   }
 
   void _toggleControls() {
@@ -210,15 +289,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         );
       }
     } else {
-      await dbService.addBookmark(
-        BookmarksCompanion(
-          id: drift.Value(const Uuid().v4()),
-          bookId: drift.Value(widget.book.id),
-          position: drift.Value(_currentPage),
-          label: drift.Value('Page $_currentPage'),
-          createdAt: drift.Value(DateTime.now()),
-        ),
-      );
+      await dbService.addBookmark(BookmarksCompanion(
+        id: drift.Value(const Uuid().v4()),
+        bookId: drift.Value(widget.book.id),
+        position: drift.Value(_currentPage),
+        label: drift.Value('Page $_currentPage'),
+        createdAt: drift.Value(DateTime.now()),
+      ));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -234,11 +311,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   Widget build(BuildContext context) {
     final activeTheme = ref.watch(readingThemeStateProvider);
     final typoSettings = ref.watch(typographySettingsStateProvider);
-    final bookmarksAsync = ref.watch(
-      bookBookmarksStreamProvider(widget.book.id),
-    );
-    final isBookmarked =
-        bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
+    final bookmarksAsync = ref.watch(bookBookmarksStreamProvider(widget.book.id));
+    final isBookmarked = bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
 
     return Focus(
       autofocus: true,
@@ -272,47 +346,60 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                         color: activeTheme.textColor,
                       ),
                     )
-                  : (_readingMode == ReadingMode.reflowable &&
-                        _document != null)
-                  ? ReflowableBookReader(
-                      key: _reflowableKey,
-                      document: _document!,
-                      theme: activeTheme,
-                      typography: typoSettings,
-                      initialChapterIndex: _currentChapter,
-                      initialPosition: _currentPage,
-                      onTapContent: _toggleControls,
-                      onSwitchToPdfMode: () =>
-                          _setReadingMode(ReadingMode.originalPdf),
-                      onProgressChanged: (ch, page, pct) {
-                        _saveProgress(
-                          chapter: ch,
-                          position: page,
-                          percentage: pct,
-                        );
-                      },
-                    )
-                  : OriginalPdfReader(
-                      key: _pdfKey,
-                      pdfPath: widget.book.originalPdfPath,
-                      initialPage: _currentPage,
-                      theme: activeTheme,
-                      onTapContent: _toggleControls,
-                      onPageChanged: (page, total) {
-                        setState(() {
-                          _currentPage = page;
-                          _totalPages = total;
-                          _progressPercentage = total > 0
-                              ? (page / total)
-                              : 0.0;
-                        });
-                        _saveProgress(
-                          chapter: 0,
-                          position: page,
-                          percentage: total > 0 ? (page / total) : 0.0,
-                        );
-                      },
+                  : (_readingMode == ReadingMode.reflowable && _document != null)
+                      ? ReflowableBookReader(
+                          key: _reflowableKey,
+                          document: _document!,
+                          theme: activeTheme,
+                          typography: typoSettings,
+                          initialChapterIndex: _currentChapter,
+                          initialPosition: _currentPage,
+                          onTapContent: _toggleControls,
+                          onSwitchToPdfMode: () => _setReadingMode(ReadingMode.originalPdf),
+                          onHighlightCreated: _handleHighlightCreated,
+                          onProgressChanged: (ch, page, pct) {
+                            _updateChapterInfo(ch);
+                            _saveProgress(
+                              chapter: ch,
+                              position: page,
+                              percentage: pct,
+                            );
+                          },
+                        )
+                      : OriginalPdfReader(
+                          key: _pdfKey,
+                          pdfPath: widget.book.originalPdfPath,
+                          initialPage: _currentPage,
+                          theme: activeTheme,
+                          onTapContent: _toggleControls,
+                          onPageChanged: (page, total) {
+                            setState(() {
+                              _currentPage = page;
+                              _totalPages = total;
+                              _progressPercentage = total > 0 ? (page / total) : 0.0;
+                            });
+                            _saveProgress(
+                              chapter: 0,
+                              position: page,
+                              percentage: total > 0 ? (page / total) : 0.0,
+                            );
+                          },
+                        ),
+            ),
+
+            // Ambient Night Reading Dimmer Layer
+            Consumer(
+              builder: (context, ref, _) {
+                final dimmer = ref.watch(readerBrightnessDimmerProvider);
+                if (dimmer <= 0.01) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      color: Colors.black.withAlpha((dimmer * 255).toInt()),
                     ),
+                  ),
+                );
+              },
             ),
 
             // 2. Minimalist Floating Apple Books Top Toolbar
@@ -322,11 +409,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
               top: _showControls ? 0 : -100,
               left: 0,
               right: 0,
-              child: _buildFloatingTopBar(
-                activeTheme,
-                _readingMode,
-                isBookmarked,
-              ),
+              child: _buildFloatingTopBar(activeTheme, _readingMode, isBookmarked),
             ),
 
             // 3. Minimalist Floating Bottom Bar with Slider & Steppers
@@ -371,7 +454,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(activeTheme.isDark ? 80 : 25),
+                    color: Colors.black.withAlpha( activeTheme.isDark ? 80 : 25),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -406,7 +489,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          widget.book.author,
+                          _currentChapterTitle.isNotEmpty
+                              ? '$_currentChapterTitle • ${widget.book.author}'
+                              : widget.book.author,
                           style: TextStyle(
                             color: activeTheme.secondaryTextColor,
                             fontSize: 11,
@@ -479,6 +564,18 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     onPressed: _openTocDialog,
                   ),
 
+                  // In-Book Search button
+                  if (_document != null)
+                    IconButton(
+                      tooltip: 'Cari dalam buku',
+                      icon: Icon(
+                        Icons.search,
+                        color: activeTheme.textColor,
+                        size: 20,
+                      ),
+                      onPressed: _openBookSearchDialog,
+                    ),
+
                   // Appearance Settings (aA)
                   IconButton(
                     icon: Text(
@@ -512,10 +609,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     );
   }
 
-  Widget _buildFloatingBottomBar(
-    ReadingThemeType activeTheme,
-    ReadingMode readingMode,
-  ) {
+  Widget _buildFloatingBottomBar(ReadingThemeType activeTheme, ReadingMode readingMode) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -550,7 +644,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Page $_currentPage of $_totalPages',
+                        _readingMode == ReadingMode.reflowable &&
+                                _estimatedMinutesLeftInChapter > 0
+                            ? 'Page $_currentPage of $_totalPages • ~$_estimatedMinutesLeftInChapter mnt tersisa'
+                            : 'Page $_currentPage of $_totalPages',
                         style: TextStyle(
                           color: activeTheme.secondaryTextColor,
                           fontSize: 12,
@@ -592,9 +689,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                                 : Colors.black.withAlpha(20),
                             thumbColor: Colors.white,
                             trackHeight: 3,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 6,
-                            ),
+                            thumbShape:
+                                const RoundSliderThumbShape(enabledThumbRadius: 6),
                           ),
                           child: Slider(
                             value: _progressPercentage.clamp(0.0, 1.0),
@@ -655,11 +751,18 @@ class _ModePillButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: isSelected
-              ? (activeTheme.isDark ? Colors.white.withAlpha(45) : Colors.white)
+              ? (activeTheme.isDark
+                  ? Colors.white.withAlpha(45)
+                  : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           boxShadow: isSelected && !activeTheme.isDark
-              ? [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 3)]
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(15),
+                    blurRadius: 3,
+                  ),
+                ]
               : null,
         ),
         child: Text(
@@ -676,3 +779,4 @@ class _ModePillButton extends StatelessWidget {
     );
   }
 }
+

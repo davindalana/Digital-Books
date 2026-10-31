@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/typography/typography_settings.dart';
@@ -31,6 +32,7 @@ class ReflowableBookReader extends StatefulWidget {
   onProgressChanged;
   final VoidCallback onTapContent;
   final VoidCallback? onSwitchToPdfMode;
+  final Function(String text, String color, int pageNumber)? onHighlightCreated;
 
   const ReflowableBookReader({
     super.key,
@@ -42,6 +44,7 @@ class ReflowableBookReader extends StatefulWidget {
     required this.onProgressChanged,
     required this.onTapContent,
     this.onSwitchToPdfMode,
+    this.onHighlightCreated,
   });
 
   @override
@@ -54,11 +57,14 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
   List<ReflowablePageContent> _pages = [];
   int _currentPageIndex = 0;
 
+  double _lastWidth = 0;
+  double _lastHeight = 0;
+  final Map<int, int> _chapterFirstPageMap = {};
+
   @override
   void initState() {
     super.initState();
-    _paginateContent();
-    _currentPageIndex = _calculateInitialPageIndex();
+    _currentPageIndex = 0;
   }
 
   @override
@@ -66,28 +72,20 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.typography.fontSize != widget.typography.fontSize ||
         oldWidget.typography.lineSpacing != widget.typography.lineSpacing ||
-        oldWidget.typography.horizontalMargin !=
-            widget.typography.horizontalMargin ||
+        oldWidget.typography.horizontalMargin != widget.typography.horizontalMargin ||
+        oldWidget.typography.twoPageSpread != widget.typography.twoPageSpread ||
         oldWidget.document != widget.document) {
-      final currentFraction = _pages.isNotEmpty
-          ? (_currentPageIndex / _pages.length)
-          : 0.0;
-      _paginateContent();
-      _currentPageIndex = (_pages.length * currentFraction).round().clamp(
-        0,
-        _pages.isNotEmpty ? _pages.length - 1 : 0,
-      );
-      _turnKey.currentState?.jumpTo(_currentPageIndex);
+      if (_lastWidth > 0 && _lastHeight > 0) {
+        _recomputePagination(_lastWidth, _lastHeight);
+      }
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   int _calculateInitialPageIndex() {
     if (_pages.isEmpty) return 0;
+    if (widget.initialPosition > 0 && widget.initialPosition <= _pages.length) {
+      return widget.initialPosition - 1;
+    }
     for (int i = 0; i < _pages.length; i++) {
       if (_pages[i].chapterIndex == widget.initialChapterIndex) {
         return i;
@@ -122,71 +120,156 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     _turnKey.currentState?.flipBackward();
   }
 
-  void _paginateContent() {
+  void _recomputePagination(double width, double height) {
+    final currentFraction = _pages.isNotEmpty
+        ? (_currentPageIndex / _pages.length)
+        : 0.0;
+
+    _lastWidth = width;
+    _lastHeight = height;
+    _paginateContent(width, height);
+
+    _currentPageIndex = (_pages.length * currentFraction).round().clamp(
+      0,
+      _pages.isNotEmpty ? _pages.length - 1 : 0,
+    );
+    _turnKey.currentState?.jumpTo(_currentPageIndex);
+  }
+
+  void _paginateContent(double width, double height) {
     final List<ReflowablePageContent> generated = [];
     final chapters = widget.document.chapters;
+    _chapterFirstPageMap.clear();
 
-    // Approximate words per page based on font size and line spacing
-    final int wordsPerPage = (260 * (18.0 / widget.typography.fontSize))
-        .round()
-        .clamp(120, 500);
+    final isTwoPageSpread = width >= 850 && widget.typography.twoPageSpread;
+    final double rawPageWidth = isTwoPageSpread ? ((width - 32) / 2) : width;
+    final double effectiveMargin = (rawPageWidth < 400)
+        ? 16.0
+        : (rawPageWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
+    final double contentWidth = (rawPageWidth - (effectiveMargin * 2))
+        .clamp(180.0, 1200.0);
+
+    // Height budget:
+    // Vertical container padding (40px) + Running header (30px) + Running footer (28px) + Safety buffer (26px)
+    final double availableHeight = (height - 124.0).clamp(160.0, 3000.0);
+    final textStyle = widget.typography.fontFamily.getTextStyle(
+      fontSize: widget.typography.fontSize,
+      fontWeight: widget.typography.fontWeight,
+      color: widget.theme.textColor,
+      height: widget.typography.lineSpacing,
+      letterSpacing: widget.typography.letterSpacing,
+    );
+    final double paragraphBottomMargin = widget.typography.fontSize * 0.7;
+
+    double measureBlock(BookBlock block, {bool isFirstPara = false}) {
+      if (block.type == BlockType.image) {
+        return 290.0;
+      }
+      if (block.type == BlockType.heading) {
+        final headingStyle = TextStyle(
+          fontSize: block.headingLevel == 1 ? 26.0 : 20.0,
+          fontWeight: FontWeight.bold,
+          height: 1.3,
+        );
+        final tp = TextPainter(
+          text: TextSpan(text: block.text, style: headingStyle),
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: contentWidth);
+        return tp.height + 26.0;
+      }
+      if (block.type == BlockType.quote) {
+        final tp = TextPainter(
+          text: TextSpan(
+            text: block.text,
+            style: textStyle.copyWith(fontStyle: FontStyle.italic),
+          ),
+          textDirection: TextDirection.ltr,
+          textAlign: widget.typography.textAlign,
+        )..layout(maxWidth: math.max(100.0, contentWidth - 32.0));
+        return tp.height + 24.0;
+      }
+
+      final tp = TextPainter(
+        text: TextSpan(text: block.text, style: textStyle),
+        textDirection: TextDirection.ltr,
+        textAlign: widget.typography.textAlign,
+      )..layout(maxWidth: contentWidth);
+
+      double h = tp.height + paragraphBottomMargin;
+      if (isFirstPara && block.text.length > 20) {
+        h = math.max(h, widget.typography.fontSize * 3.4);
+      }
+      return h;
+    }
 
     int runningPageIndex = 0;
 
     for (int chIdx = 0; chIdx < chapters.length; chIdx++) {
       final chapter = chapters[chIdx];
+      _chapterFirstPageMap[chIdx] = runningPageIndex;
+
       List<BookBlock> pageBlocks = [];
-      int currentWordCount = 0;
+      double currentHeightUsed = 0.0;
+
+      void pushPage() {
+        if (pageBlocks.isNotEmpty) {
+          generated.add(
+            ReflowablePageContent(
+              chapterIndex: chIdx,
+              chapterTitle: chapter.title,
+              blocks: List.from(pageBlocks),
+              pageIndexInBook: runningPageIndex++,
+              totalEstimatedPages: 0,
+            ),
+          );
+          pageBlocks.clear();
+          currentHeightUsed = 0.0;
+        }
+      }
 
       for (int blkIdx = 0; blkIdx < chapter.blocks.length; blkIdx++) {
         final block = chapter.blocks[blkIdx];
-        final words = block.text.split(RegExp(r'\s+')).length;
+        final text = block.text.trim();
+        if (block.type == BlockType.paragraph && text.isEmpty) continue;
 
-        // If block is a major heading and page is not empty, start a new page
-        if (block.type == BlockType.heading && pageBlocks.isNotEmpty) {
-          generated.add(
-            ReflowablePageContent(
-              chapterIndex: chIdx,
-              chapterTitle: chapter.title,
-              blocks: List.from(pageBlocks),
-              pageIndexInBook: runningPageIndex++,
-              totalEstimatedPages: 0,
-            ),
-          );
-          pageBlocks.clear();
-          currentWordCount = 0;
-        }
+        final bool isFirstPara = pageBlocks.isEmpty &&
+            currentHeightUsed == 0.0 &&
+            block.type == BlockType.paragraph &&
+            blkIdx == 0;
+        final double blockHeight = measureBlock(block, isFirstPara: isFirstPara);
 
-        pageBlocks.add(block);
-        currentWordCount += words;
+        if (currentHeightUsed + blockHeight <= availableHeight) {
+          pageBlocks.add(block);
+          currentHeightUsed += blockHeight;
+        } else {
+          if (pageBlocks.isNotEmpty) {
+            pushPage();
+          }
 
-        if (currentWordCount >= wordsPerPage) {
-          generated.add(
-            ReflowablePageContent(
-              chapterIndex: chIdx,
-              chapterTitle: chapter.title,
-              blocks: List.from(pageBlocks),
-              pageIndexInBook: runningPageIndex++,
-              totalEstimatedPages: 0,
-            ),
-          );
-          pageBlocks.clear();
-          currentWordCount = 0;
+          if (blockHeight <= availableHeight) {
+            pageBlocks.add(block);
+            currentHeightUsed += blockHeight;
+          } else {
+            // Block is taller than entire page height: split cleanly by sentences/words
+            _splitAndDistributeParagraph(
+              block: block,
+              contentWidth: contentWidth,
+              availableHeight: availableHeight,
+              textStyle: textStyle,
+              bottomMargin: paragraphBottomMargin,
+              onAddChunk: (chunkBlock, chunkHeight) {
+                if (currentHeightUsed + chunkHeight > availableHeight && pageBlocks.isNotEmpty) {
+                  pushPage();
+                }
+                pageBlocks.add(chunkBlock);
+                currentHeightUsed += chunkHeight;
+              },
+            );
+          }
         }
       }
 
-      // Trailing blocks of chapter
-      if (pageBlocks.isNotEmpty) {
-        generated.add(
-          ReflowablePageContent(
-            chapterIndex: chIdx,
-            chapterTitle: chapter.title,
-            blocks: List.from(pageBlocks),
-            pageIndexInBook: runningPageIndex++,
-            totalEstimatedPages: 0,
-          ),
-        );
-      }
+      pushPage();
     }
 
     if (generated.isEmpty) {
@@ -198,7 +281,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             BookBlock(
               id: 'default',
               type: BlockType.paragraph,
-              text: 'No content available.',
+              text: 'Tidak ada konten untuk ditampilkan.',
             ),
           ],
           pageIndexInBook: 0,
@@ -208,6 +291,72 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     }
 
     _pages = generated;
+  }
+
+  void _splitAndDistributeParagraph({
+    required BookBlock block,
+    required double contentWidth,
+    required double availableHeight,
+    required TextStyle textStyle,
+    required double bottomMargin,
+    required void Function(BookBlock chunkBlock, double chunkHeight) onAddChunk,
+  }) {
+    final text = block.text;
+    final sentenceMatches = RegExp(r'[^.!?]+[.!?]*(\s+|$)').allMatches(text);
+    List<String> pieces = sentenceMatches.map((m) => m.group(0)!).toList();
+    if (pieces.isEmpty) {
+      pieces = text.split(' ').map((w) => '$w ').toList();
+    }
+
+    String currentChunk = '';
+    double currentChunkHeight = 0.0;
+
+    for (final piece in pieces) {
+      final candidate = currentChunk.isEmpty ? piece : '$currentChunk$piece';
+      final tp = TextPainter(
+        text: TextSpan(text: candidate, style: textStyle),
+        textDirection: TextDirection.ltr,
+        textAlign: widget.typography.textAlign,
+      )..layout(maxWidth: contentWidth);
+
+      final candidateHeight = tp.height + bottomMargin;
+
+      if (candidateHeight <= availableHeight || currentChunk.isEmpty) {
+        currentChunk = candidate;
+        currentChunkHeight = candidateHeight;
+      } else {
+        // Emit accumulated chunk
+        onAddChunk(
+          BookBlock(
+            id: '${block.id}_${currentChunk.hashCode}',
+            type: BlockType.paragraph,
+            text: currentChunk.trim(),
+            originalPageNumber: block.originalPageNumber,
+          ),
+          currentChunkHeight,
+        );
+
+        currentChunk = piece;
+        final tpPiece = TextPainter(
+          text: TextSpan(text: piece, style: textStyle),
+          textDirection: TextDirection.ltr,
+          textAlign: widget.typography.textAlign,
+        )..layout(maxWidth: contentWidth);
+        currentChunkHeight = tpPiece.height + bottomMargin;
+      }
+    }
+
+    if (currentChunk.trim().isNotEmpty) {
+      onAddChunk(
+        BookBlock(
+          id: '${block.id}_${currentChunk.hashCode}',
+          type: BlockType.paragraph,
+          text: currentChunk.trim(),
+          originalPageNumber: block.originalPageNumber,
+        ),
+        currentChunkHeight,
+      );
+    }
   }
 
   @override
@@ -299,46 +448,91 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       );
     }
 
-    if (_pages.isEmpty) {
-      return Center(
-        child: Text(
-          'Preparing pages...',
-          style: TextStyle(color: widget.theme.secondaryTextColor),
-        ),
-      );
-    }
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktopWide =
-            constraints.maxWidth >= 900 && widget.typography.twoPageSpread;
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
 
-        return BookPageTurnView(
-          key: _turnKey,
-          pages: _pages,
-          initialPageIndex: _currentPageIndex,
-          isTwoPageSpread: isDesktopWide,
-          theme: widget.theme,
-          typography: widget.typography,
-          onPageChanged: (newIndex) {
-            setState(() {
-              _currentPageIndex = newIndex;
-            });
-            if (newIndex < _pages.length) {
-              final activePage = _pages[newIndex];
-              final progress = _pages.isNotEmpty
-                  ? (newIndex / _pages.length)
-                  : 0.0;
-              widget.onProgressChanged(
-                activePage.chapterIndex,
-                newIndex + 1,
-                progress,
-              );
-            }
-          },
-          onTapCenter: widget.onTapContent,
-          pageBuilder: (page, {isLeftPage}) =>
-              _buildBookPageView(page, isLeftPage: isLeftPage),
+        // Recalculate dynamic pagination if size changed significantly
+        if ((w - _lastWidth).abs() > 10 || (h - _lastHeight).abs() > 10 || _pages.isEmpty) {
+          final previousRatio = _pages.isNotEmpty ? (_currentPageIndex / _pages.length) : 0.0;
+          _lastWidth = w;
+          _lastHeight = h;
+          _paginateContent(w, h);
+          if (_currentPageIndex == 0) {
+            _currentPageIndex = _calculateInitialPageIndex();
+          } else {
+            _currentPageIndex = (_pages.length * previousRatio)
+                .round()
+                .clamp(0, math.max(0, _pages.length - 1));
+          }
+        }
+
+        final isDesktopWide = w >= 850 && widget.typography.twoPageSpread;
+        if (isDesktopWide && _currentPageIndex % 2 != 0) {
+          _currentPageIndex = math.max(0, _currentPageIndex - 1);
+        }
+
+        return Stack(
+          children: [
+            BookPageTurnView(
+              key: _turnKey,
+              pages: _pages,
+              initialPageIndex: _currentPageIndex,
+              isTwoPageSpread: isDesktopWide,
+              theme: widget.theme,
+              typography: widget.typography,
+              onPageChanged: (newIndex) {
+                setState(() {
+                  _currentPageIndex = newIndex;
+                });
+                if (newIndex < _pages.length) {
+                  final activePage = _pages[newIndex];
+                  final progress = _pages.isNotEmpty
+                      ? (newIndex / _pages.length)
+                      : 0.0;
+                  widget.onProgressChanged(
+                    activePage.chapterIndex,
+                    newIndex + 1,
+                    progress,
+                  );
+                }
+              },
+              onTapCenter: widget.onTapContent,
+              pageBuilder: (page, {isLeftPage}) =>
+                  _buildBookPageView(page, isLeftPage: isLeftPage),
+            ),
+
+            // Subtle Floating Previous Arrow on desktop/tablet
+            if (_currentPageIndex > 0)
+              Positioned(
+                left: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _FloatingReaderArrow(
+                    icon: Icons.chevron_left,
+                    isDark: widget.theme.isDark,
+                    onPressed: previousPage,
+                  ),
+                ),
+              ),
+
+            // Subtle Floating Next Arrow on desktop/tablet
+            if (_currentPageIndex < _pages.length - 1)
+              Positioned(
+                right: 12,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: _FloatingReaderArrow(
+                    icon: Icons.chevron_right,
+                    isDark: widget.theme.isDark,
+                    onPressed: nextPage,
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -346,18 +540,28 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
   // --- Book Page View with Running Header and Footer ---
   Widget _buildBookPageView(ReflowablePageContent page, {bool? isLeftPage}) {
+    final firstPageOfChapter = _chapterFirstPageMap[page.chapterIndex] ?? 0;
+    final isFirstPageOfChapter = page.pageIndexInBook == firstPageOfChapter;
+
+    final double rawPageWidth = (_lastWidth >= 850 && widget.typography.twoPageSpread)
+        ? ((_lastWidth - 32) / 2)
+        : (_lastWidth > 0 ? _lastWidth : 600);
+    final double effectiveMargin = (rawPageWidth < 400)
+        ? 16.0
+        : (rawPageWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
+
     return Container(
       color: widget.theme.backgroundColor,
       padding: EdgeInsets.symmetric(
-        horizontal: widget.typography.horizontalMargin,
-        vertical: 24,
+        horizontal: effectiveMargin,
+        vertical: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Running Header (Book title or chapter title)
           Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 14),
             child: Text(
               isLeftPage == true
                   ? widget.document.title.toUpperCase()
@@ -366,7 +570,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                   ? TextAlign.left
                   : (isLeftPage == false ? TextAlign.right : TextAlign.center),
               style: TextStyle(
-                color: widget.theme.secondaryTextColor.withAlpha(150),
+                color: widget.theme.secondaryTextColor.withAlpha(140),
                 fontSize: 10,
                 letterSpacing: 1.5,
                 fontWeight: FontWeight.w600,
@@ -376,10 +580,10 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             ),
           ),
 
-          // Main Text Content
+          // Main Text Content: Fits cleanly without cut off
           Expanded(
             child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -387,7 +591,9 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                     _renderBlock(
                       page.blocks[i],
                       isFirstParagraphOfChapter:
-                          i == 0 && page.blocks[i].type == BlockType.paragraph,
+                          isFirstPageOfChapter &&
+                          i == 0 &&
+                          page.blocks[i].type == BlockType.paragraph,
                     ),
                 ],
               ),
@@ -396,14 +602,14 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
 
           // Running Footer (Page Number)
           Padding(
-            padding: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.only(top: 10),
             child: Text(
               '${page.pageIndexInBook + 1}',
               textAlign: isLeftPage == true
                   ? TextAlign.left
                   : (isLeftPage == false ? TextAlign.right : TextAlign.center),
               style: TextStyle(
-                color: widget.theme.secondaryTextColor.withAlpha(160),
+                color: widget.theme.secondaryTextColor.withAlpha(150),
                 fontSize: 11,
                 fontFamily: 'serif',
               ),
@@ -426,14 +632,14 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       }
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14.0),
+        padding: const EdgeInsets.symmetric(vertical: 10.0),
         child: Center(
           child: GestureDetector(
             onTap: () => _openImageLightbox(context, file, block.text),
             child: Container(
-              constraints: const BoxConstraints(maxHeight: 320),
+              constraints: const BoxConstraints(maxHeight: 280),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: widget.theme.isDark
                       ? Colors.white.withAlpha(35)
@@ -442,22 +648,22 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withAlpha(
-                      widget.theme.isDark ? 140 : 40,
+                      widget.theme.isDark ? 130 : 35,
                     ),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
                 child: Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
                     Image.file(file, fit: BoxFit.contain),
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      top: 8,
+                      right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -490,7 +696,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
-                          vertical: 8,
+                          vertical: 6,
                         ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -498,7 +704,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withAlpha(210),
+                              Colors.black.withAlpha(200),
                             ],
                           ),
                         ),
@@ -538,14 +744,14 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       }
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
+        padding: const EdgeInsets.symmetric(vertical: 14.0),
         child: Column(
           children: [
             if (badgeText.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 5,
+                  horizontal: 14,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withAlpha(25),
@@ -561,24 +767,24 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                     color: Color(0xFFE5C058),
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 2.2,
+                    letterSpacing: 2.0,
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
             ],
             Text(
               titleText,
               textAlign: TextAlign.center,
               style: widget.typography.fontFamily.getTextStyle(
-                fontSize: widget.typography.fontSize * 1.35,
+                fontSize: widget.typography.fontSize * 1.32,
                 fontWeight: FontWeight.bold,
                 color: widget.theme.textColor,
-                height: 1.3,
-                letterSpacing: 0.6,
+                height: 1.25,
+                letterSpacing: 0.8,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
@@ -611,8 +817,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     // 3. Quote Block
     if (block.type == BlockType.quote) {
       return Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: widget.theme.isDark
               ? const Color(0xFF141416)
@@ -638,9 +844,9 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(widget.theme.isDark ? 60 : 15),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: Colors.black.withAlpha(widget.theme.isDark ? 50 : 12),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -651,7 +857,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               '“ ',
               style: TextStyle(
                 color: Color(0xFFD4AF37),
-                fontSize: 26,
+                fontSize: 24,
                 fontFamily: 'serif',
                 height: 1.0,
               ),
@@ -676,14 +882,49 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       );
     }
 
-    // 4. Regular Paragraph (with Drop Cap if opening chapter)
+    // 4. Regular Paragraph / Standalone Line Block
     final text = block.text;
-    if (isFirstParagraphOfChapter && text.length > 3) {
+
+    // Check if line is a standalone title / metadata line that should be centered
+    final isShortCentered = text.length <= 45 &&
+        !text.endsWith('.') &&
+        !text.endsWith(',') &&
+        !text.startsWith('(') &&
+        !text.startsWith('"') &&
+        !text.startsWith('“');
+
+    if (isShortCentered) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.7),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: widget.typography.fontFamily.getTextStyle(
+            fontSize: widget.typography.fontSize * 1.05,
+            fontWeight: FontWeight.w600,
+            color: widget.theme.textColor,
+            height: 1.4,
+            letterSpacing: 0.5,
+          ),
+        ),
+      );
+    }
+
+    // Drop Cap: ONLY for genuine opening paragraphs (> 80 chars, begins with valid letter)
+    final canHaveDropCap = isFirstParagraphOfChapter &&
+        text.length > 80 &&
+        RegExp(r'^[A-Za-z]').hasMatch(text) &&
+        !text.startsWith('"') &&
+        !text.startsWith('“') &&
+        !text.startsWith('-') &&
+        !text.startsWith('(');
+
+    if (canHaveDropCap) {
       final firstLetter = text[0];
       final remaining = text.substring(1);
 
       return Padding(
-        padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.75),
+        padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.7),
         child: RichText(
           textAlign: widget.typography.textAlign,
           text: TextSpan(
@@ -714,9 +955,10 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       );
     }
 
+    // Clean justified continuous narrative text with interactive highlighting
     return Padding(
-      padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.75),
-      child: Text(
+      padding: EdgeInsets.only(bottom: widget.typography.fontSize * 0.7),
+      child: SelectableText(
         text,
         textAlign: widget.typography.textAlign,
         style: widget.typography.fontFamily.getTextStyle(
@@ -726,6 +968,51 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
           height: widget.typography.lineSpacing,
           letterSpacing: widget.typography.letterSpacing,
         ),
+        contextMenuBuilder: (context, editableTextState) {
+          final buttonItems = editableTextState.contextMenuButtonItems;
+          if (widget.onHighlightCreated != null) {
+            buttonItems.insert(
+              0,
+              ContextMenuButtonItem(
+                label: '✦ Sorot Emas',
+                onPressed: () {
+                  final sel = editableTextState.textEditingValue.selection;
+                  final selectedText = sel.textInside(text).trim();
+                  editableTextState.hideToolbar();
+                  if (selectedText.isNotEmpty) {
+                    widget.onHighlightCreated!(
+                      selectedText,
+                      'gold',
+                      block.originalPageNumber,
+                    );
+                  }
+                },
+              ),
+            );
+            buttonItems.insert(
+              1,
+              ContextMenuButtonItem(
+                label: '✦ Sorot Kuning',
+                onPressed: () {
+                  final sel = editableTextState.textEditingValue.selection;
+                  final selectedText = sel.textInside(text).trim();
+                  editableTextState.hideToolbar();
+                  if (selectedText.isNotEmpty) {
+                    widget.onHighlightCreated!(
+                      selectedText,
+                      'yellow',
+                      block.originalPageNumber,
+                    );
+                  }
+                },
+              ),
+            );
+          }
+          return AdaptiveTextSelectionToolbar.buttonItems(
+            anchors: editableTextState.contextMenuAnchors,
+            buttonItems: buttonItems,
+          );
+        },
       ),
     );
   }
@@ -757,6 +1044,68 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingReaderArrow extends StatefulWidget {
+  final IconData icon;
+  final bool isDark;
+  final VoidCallback onPressed;
+
+  const _FloatingReaderArrow({
+    required this.icon,
+    required this.isDark,
+    required this.onPressed,
+  });
+
+  @override
+  State<_FloatingReaderArrow> createState() => _FloatingReaderArrowState();
+}
+
+class _FloatingReaderArrowState extends State<_FloatingReaderArrow> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bgAlpha = _isHovered ? (widget.isDark ? 210 : 190) : (widget.isDark ? 80 : 60);
+    final borderAlpha = _isHovered ? 80 : 30;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: widget.isDark
+                ? Color.fromARGB(bgAlpha, 25, 25, 28)
+                : Color.fromARGB(bgAlpha, 255, 255, 255),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.isDark
+                  ? Color.fromARGB(borderAlpha, 255, 255, 255)
+                  : Color.fromARGB(borderAlpha, 0, 0, 0),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(widget.isDark ? 60 : 20),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.icon,
+            size: 26,
+            color: widget.isDark ? Colors.white : Colors.black87,
+          ),
         ),
       ),
     );

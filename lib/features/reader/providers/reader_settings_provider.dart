@@ -16,3 +16,6 @@ final typographySettingsStateProvider =
 final activeReadingModeProvider =
     StateProvider.family<ReadingMode, String>((ref, bookId) => ReadingMode.reflowable);
 
+/// Screen brightness dimmer for comfortable night reading (0.0 = normal, up to 0.6 = dark ambient tint)
+final readerBrightnessDimmerProvider = StateProvider<double>((ref) => 0.0);
+
