@@ -222,6 +222,39 @@ class ReflowablePageRenderer extends StatelessWidget {
       );
     }
 
+    // Footnote Node
+    if (node.type == ContentNodeType.footnote) {
+      final style = typography.bodyStyle(
+        color: theme.secondaryTextColor,
+      ).copyWith(
+        fontSize: typography.fontSize * 0.85,
+        fontStyle: FontStyle.italic,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: EdgeInsets.only(
+          top: 4,
+          bottom: typography.paragraphSpacing * 0.6,
+        ),
+        child: SelectableText.rich(
+          richSpan,
+          textAlign: typography.textAlign,
+          contextMenuBuilder: (ctx, editableTextState) =>
+              _buildContextMenu(ctx, editableTextState, slice),
+        ),
+      );
+    }
+
     // Default Paragraph Node
     final style = typography.bodyStyle(color: theme.textColor);
     final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
@@ -250,17 +283,37 @@ class ReflowablePageRenderer extends StatelessWidget {
     if (node.imagePath != null && node.imagePath!.isNotEmpty) {
       final file = File(node.imagePath!);
       if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 220),
-            child: Image.file(
-              file,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildPlaceholderImage(),
+        final hasCaption = node.text.trim().isNotEmpty;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 220),
+                child: Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholderImage(),
+                ),
+              ),
             ),
-          ),
+            if (hasCaption) ...[
+              const SizedBox(height: 6),
+              Text(
+                node.text.trim(),
+                style: TextStyle(
+                  fontSize: typography.fontSize * 0.85,
+                  color: theme.secondaryTextColor,
+                  fontStyle: FontStyle.italic,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         );
       }
     }

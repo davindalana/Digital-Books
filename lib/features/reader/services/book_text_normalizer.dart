@@ -52,6 +52,10 @@ class BookTextNormalizer {
   /// it performs complete line-by-line reconstruction, de-hyphenation, header stripping,
   /// and chapter division.
   static BookDocument normalizeDocument(BookDocument document) {
+    if (document.metadata.containsKey('reconstructionQuality')) {
+      return document;
+    }
+
     final title = document.title.trim();
     final author = document.author.trim();
 

@@ -76,6 +76,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   int _currentSearchMatchIndex = 0;
   String _activeSearchQuery = '';
   bool _showSearchTraversal = false;
+  bool _dismissedQualityBanner = false;
   Timer? _periodicProgressTimer;
 
   final GlobalKey<ReflowableReaderContainerState> _reflowableKey =
@@ -251,7 +252,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         );
         if (jsonStr != null) {
           final loadedDoc = BookDocument.fromJsonString(jsonStr);
-          _document = BookTextNormalizer.normalizeDocument(loadedDoc);
+          _document = loadedDoc.metadata.containsKey('reconstructionQuality')
+              ? loadedDoc
+              : BookTextNormalizer.normalizeDocument(loadedDoc);
           _readerDocument = ReflowableEngine.normalizeDocument(_document!);
           if (_currentChapter < _document!.chapters.length) {
             _currentChapterTitle = _document!.chapters[_currentChapter].title;
@@ -1103,6 +1106,134 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                     ),
                   ),
                 ),
+
+              // 2.6 Automatic Reader Recommendation Banner (shown when Reflowable is active for low-fidelity/scanned books)
+              if (_readingMode == ReadingMode.reflowable &&
+                  !_dismissedQualityBanner &&
+                  !_showSearchTraversal) ...[
+                Builder(
+                  builder: (context) {
+                    final quality = _document?.metadata['reconstructionQuality']
+                        as Map<String, dynamic>?;
+                    final isPoor =
+                        widget.book.isScanned || quality?['status'] == 'poor';
+                    final isPartial = quality?['status'] == 'partial';
+
+                    if (!isPoor && !isPartial) return const SizedBox.shrink();
+
+                    return Positioned(
+                      top: _showControls ? 76 : 18,
+                      left: 20,
+                      right: 20,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 680),
+                          child: Material(
+                            elevation: 6,
+                            borderRadius: BorderRadius.circular(12),
+                            color: isPoor
+                                ? (activeTheme.isDark
+                                    ? const Color(0xFF381A1A)
+                                    : const Color(0xFFFEE2E2))
+                                : (activeTheme.isDark
+                                    ? const Color(0xFF302B18)
+                                    : const Color(0xFFFEF3C7)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isPoor
+                                        ? Icons.warning_amber_rounded
+                                        : Icons.info_outline,
+                                    size: 18,
+                                    color: isPoor
+                                        ? (activeTheme.isDark
+                                            ? const Color(0xFFFCA5A5)
+                                            : const Color(0xFFDC2626))
+                                        : (activeTheme.isDark
+                                            ? const Color(0xFFFDE68A)
+                                            : const Color(0xFFD97706)),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      isPoor
+                                          ? 'Dokumen ini hasil pindaian (scan) tanpa lapisan teks lengkap. Mode PDF Asli direkomendasikan untuk kenyamanan membaca.'
+                                          : 'Tata letak dokumen ini memiliki kompleksitas visual. Mode PDF Asli tersedia untuk tata letak lengkap.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: isPoor
+                                            ? (activeTheme.isDark
+                                                ? Colors.white
+                                                : const Color(0xFF7F1D1D))
+                                            : (activeTheme.isDark
+                                                ? Colors.white
+                                                : const Color(0xFF78350F)),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (isPoor)
+                                    TextButton(
+                                      key: const ValueKey('quality_banner_switch_button'),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      onPressed: () {
+                                        _setReadingMode(ReadingMode.originalPdf);
+                                      },
+                                      child: Text(
+                                        'Buka PDF Asli',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: isPoor
+                                              ? (activeTheme.isDark
+                                                  ? const Color(0xFFF87171)
+                                                  : const Color(0xFFB91C1C))
+                                              : (activeTheme.isDark
+                                                  ? const Color(0xFFFBBF24)
+                                                  : const Color(0xFFB45309)),
+                                        ),
+                                      ),
+                                    ),
+                                  IconButton(
+                                    key: const ValueKey('quality_banner_close_button'),
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: activeTheme.secondaryTextColor,
+                                    ),
+                                    tooltip: 'Tutup',
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      setState(() {
+                                        _dismissedQualityBanner = true;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
 
               // 3. Minimalist Floating Bottom Bar with Slider & Steppers
               AnimatedPositioned(

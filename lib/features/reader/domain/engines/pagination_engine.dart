@@ -184,19 +184,21 @@ class PaginationEngine {
       // Images
       if (node.type == ContentNodeType.image) {
         const double estimatedImageHeight = 220.0;
-        if (currentUsedHeight + estimatedImageHeight > availableHeight &&
+        final hasCaption = node.text.trim().isNotEmpty;
+        final totalImageHeight = estimatedImageHeight + (hasCaption ? 28.0 : 0.0);
+        if (currentUsedHeight + totalImageHeight > availableHeight &&
             currentPageSlices.isNotEmpty) {
           pushCurrentPage();
         }
         currentPageSlices.add(
           PaginatedNodeSlice(
             node: node,
-            textSlice: '',
+            textSlice: node.text,
             startCharOffset: 0,
-            endCharOffset: 0,
+            endCharOffset: node.text.length,
           ),
         );
-        currentUsedHeight += estimatedImageHeight + typography.paragraphSpacing;
+        currentUsedHeight += totalImageHeight + typography.paragraphSpacing;
         continue;
       }
 
@@ -208,7 +210,12 @@ class PaginationEngine {
           ? typography.headingStyle(level: node.level)
           : (node.type == ContentNodeType.quote
                 ? typography.quoteStyle()
-                : typography.bodyStyle());
+                : (node.type == ContentNodeType.footnote
+                    ? typography.bodyStyle().copyWith(
+                        fontSize: typography.fontSize * 0.85,
+                        fontStyle: FontStyle.italic,
+                      )
+                    : typography.bodyStyle()));
 
       // Orphan heading prevention:
       // If block is a heading, verify that the heading AND at least 2 lines of following text fit.

@@ -4,6 +4,21 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.3] - Real-World Reconstruction Validation & Reader Integration (Phase 2.7E)
+
+### Added
+- **End-to-End Modernized Pipeline**: Integrated `GeometryAwarePdfExtractor` and `SemanticDocumentReconstructor` into `PdfProcessingPipeline.processAndImportPdf()`, retiring legacy plain-text splitting.
+- **Natural Paragraph Integrity Protection**: Added `reconstructionQuality` guards in `BookTextNormalizer` and `ReflowableEngine` to preserve natural paragraph bounds (>280 chars) without artificial regex slicing.
+- **Footnote Semantic Rendering**: Added `ContentNodeType.footnote` across `ReaderDocument`, `PaginationEngine`, `ReflowablePageRenderer`, and `ScrollingReflowableReader` with 85% typography scale, italic styling, and secondary text contrast.
+- **Image & Caption In-Stream Presentation**: Updated `PaginationEngine` and page renderers to compute dynamic vertical overhead for captions (+28 pt) and display captions beneath illustrations.
+- **Intelligent Reader Tier Recommendation Banner**: Added dismissible `QualityRecommendationBanner` in `ReadingScreen` for scanned or partial documents, including an immediate `[Buka PDF Asli]` switch action.
+- **Real-World Document Benchmarking Suite (`test/phase_2_7e_real_world_validation_test.dart`)**:
+  - Validated *The Let Them Theory* (265 pages, native vector text): geometry extracted in 2,782 ms (10.5 ms/page), semantic reconstruction in 52 ms, 0.97 quality score.
+  - Validated scanned fallback (*Laut Bercerita*, 394 pages, JBIG2): detected as scanned, triggering the original PDF recommendation banner without layout disruption.
+  - 167/167 automated tests passing with 0 `flutter analyze` issues.
+
+---
+
 ## [1.1.0-alpha.2] - Semantic Reconstruction Engine (Phase 2.7D)
 
 ### Added

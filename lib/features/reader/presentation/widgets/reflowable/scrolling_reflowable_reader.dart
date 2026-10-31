@@ -504,6 +504,39 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       );
     }
 
+    // Footnote Node
+    if (node.type == ContentNodeType.footnote) {
+      final style = widget.typography.bodyStyle(
+        color: widget.theme.secondaryTextColor,
+      ).copyWith(
+        fontSize: widget.typography.fontSize * 0.85,
+        fontStyle: FontStyle.italic,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: node.text,
+        sliceStartOffset: 0,
+        sliceEndOffset: node.text.length,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: widget.theme,
+        onHighlightTap: widget.onHighlightTap,
+      );
+
+      return Padding(
+        padding: EdgeInsets.only(
+          top: 4,
+          bottom: widget.typography.paragraphSpacing * 0.6,
+        ),
+        child: SelectableText.rich(
+          richSpan,
+          textAlign: widget.typography.textAlign,
+          contextMenuBuilder: (ctx, state) =>
+              _buildContextMenu(ctx, state, node),
+        ),
+      );
+    }
+
     // Default Paragraph
     final style = widget.typography.bodyStyle(color: widget.theme.textColor);
     final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
@@ -531,17 +564,37 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     if (node.imagePath != null && node.imagePath!.isNotEmpty) {
       final file = File(node.imagePath!);
       if (file.existsSync()) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 280),
-            child: Image.file(
-              file,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildPlaceholderImage(),
+        final hasCaption = node.text.trim().isNotEmpty;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: Image.file(
+                  file,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholderImage(),
+                ),
+              ),
             ),
-          ),
+            if (hasCaption) ...[
+              const SizedBox(height: 8),
+              Text(
+                node.text.trim(),
+                style: TextStyle(
+                  fontSize: widget.typography.fontSize * 0.85,
+                  color: widget.theme.secondaryTextColor,
+                  fontStyle: FontStyle.italic,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         );
       }
     }

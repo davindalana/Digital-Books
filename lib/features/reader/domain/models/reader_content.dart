@@ -1,7 +1,15 @@
 import 'dart:convert';
 import '../../models/book_document.dart';
 
-enum ContentNodeType { heading, paragraph, quote, image, pageBreak, divider }
+enum ContentNodeType {
+  heading,
+  paragraph,
+  quote,
+  image,
+  pageBreak,
+  divider,
+  footnote,
+}
 
 class ContentNode {
   final String id;
@@ -64,6 +72,9 @@ class ContentNode {
       case BlockType.pageBreak:
         nodeType = ContentNodeType.pageBreak;
         break;
+      case BlockType.footnote:
+        nodeType = ContentNodeType.footnote;
+        break;
       default:
         nodeType = ContentNodeType.paragraph;
         break;
@@ -97,6 +108,9 @@ class ContentNode {
         break;
       case ContentNodeType.pageBreak:
         bType = BlockType.pageBreak;
+        break;
+      case ContentNodeType.footnote:
+        bType = BlockType.footnote;
         break;
       default:
         bType = BlockType.paragraph;
@@ -171,6 +185,19 @@ class ReaderDocument {
   final int totalPages;
   final List<ReaderChapter> chapters;
   final Map<String, dynamic> metadata;
+
+  int get totalParagraphCount => chapters.fold(
+        0,
+        (sum, c) =>
+            sum +
+            c.nodes
+                .where(
+                  (n) =>
+                      n.type == ContentNodeType.paragraph ||
+                      n.type == ContentNodeType.footnote,
+                )
+                .length,
+      );
 
   const ReaderDocument({
     required this.bookId,

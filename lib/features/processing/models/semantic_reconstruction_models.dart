@@ -110,7 +110,7 @@ class SemanticReconstructedBlock {
       text: text,
       headingLevel: level,
       imagePath: image?.imagePath,
-      originalPageNumber: sourcePageIndex,
+      originalPageNumber: sourcePageIndex + 1,
     );
   }
 
@@ -185,7 +185,7 @@ class ReconstructedDocument {
   });
 
   /// Converts this reconstructed document into a domain BookDocument for reader playback.
-  BookDocument toBookDocument() {
+  BookDocument toBookDocument({Map<String, dynamic>? extraMetadata}) {
     return BookDocument(
       id: bookId,
       title: title,
@@ -196,6 +196,7 @@ class ReconstructedDocument {
       metadata: {
         'reconstructionQuality': quality.toJson(),
         'reconstructionDurationMs': durationMs,
+        if (extraMetadata != null) ...extraMetadata,
       },
     );
   }

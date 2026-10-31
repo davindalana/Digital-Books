@@ -8,12 +8,13 @@ class ReflowableEngine {
   static ReaderDocument normalizeDocument(BookDocument doc) {
     // Check if the document already has explicitly structured blocks (e.g. non-default IDs or diverse block types).
     // If it does, preserve the user/engine-defined block hierarchy rather than destroying it via raw line-stitching.
+    final isReconstructed = doc.metadata.containsKey('reconstructionQuality');
     final hasStructuredBlocks = doc.chapters.any(
       (c) =>
           c.blocks.any((b) => b.type != BlockType.paragraph || b.id.isNotEmpty),
     );
 
-    final sourceDoc = hasStructuredBlocks
+    final sourceDoc = (isReconstructed || hasStructuredBlocks)
         ? doc
         : BookTextNormalizer.normalizeDocument(doc);
     final List<ReaderChapter> chapters = [];
@@ -46,6 +47,9 @@ class ReflowableEngine {
             break;
           case BlockType.pageBreak:
             nodeType = ContentNodeType.pageBreak;
+            break;
+          case BlockType.footnote:
+            nodeType = ContentNodeType.footnote;
             break;
           default:
             nodeType = ContentNodeType.paragraph;
