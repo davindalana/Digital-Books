@@ -49,3 +49,4 @@ When importing scanned or image-dense PDF files exceeding 500 pages:
 
 ### Recommendation
 - Users reading complex multi-column scientific journals or mathematical textbooks can toggle **Native PDF Mode** from the reader toolbar to view the original unaltered publication layout.
+

@@ -4,6 +4,17 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.1] - Representative PDF Corpus & Geometry-Aware Extraction (Phase 2.7B & 2.7C)
+
+### Added
+- **Representative PDF Corpus & Generator**: Programmatic corpus generator (`test/helpers/corpus_pdf_generator.dart`) creating 10 test PDF categories (single column novel, illustrated novel, diagrams/maps, two-column academic, headers/footers, footnotes, tables/figures, scanned image, hybrid, and multi-heading styles) plus corpus manifest (`test/fixtures/pdf_corpus_manifest.md`).
+- **Intermediate Geometry Extraction Models**: Introduced `ExtractedPageGeometry`, `ExtractedTextLine`, `ExtractedTextWord`, `ExtractedImage`, and `PageLayerType` (`nativeText`, `scannedImage`, `hybrid`, `emptyOrUnsupported`) in `lib/features/processing/models/extracted_page_geometry.dart`.
+- **Geometry-Aware PDF Extractor**: Implemented `GeometryAwarePdfExtractor` (`lib/features/processing/services/geometry_aware_pdf_extractor.dart`) utilizing `extractTextLines()` for precise 2D line and word bounding boxes, font attributes, and direct `/XObject /Image` DCTDecode stream harvesting directly to disk without lossy re-encoding.
+- **Page-Level Layer Classifier**: Per-page classification distinguishing native vector text, scanned pure-image pages, and hybrid pages to route documents intelligently.
+- **Automated Regression & Benchmark Suite**: 9 unit tests (`test/phase_2_7_extraction_test.dart`), corpus baseline report (`test/corpus_baseline_extraction_test.dart`), performance benchmarking (12.07 ms/page, +31.14 MB RSS in `test/phase_2_7_extraction_performance_test.dart`), and real-book verification on 394-page *Laut Bercerita* (`test/real_book_extraction_test.dart`).
+
+---
+
 ## [1.0.0] - Version 1.0.0 Release (Phase 2.6)
 
 ### Added
@@ -88,3 +99,4 @@ All notable changes to the **Digital Books** application are documented in this 
 - **Metadata Editing**: In-app editing for title, author, and description metadata.
 - **Many-to-Many Collections**: Flexible tag and folder organization for user libraries.
 - **PDFium Integration**: Native PDF rendering and automated high-DPI cover thumbnail extraction.
+

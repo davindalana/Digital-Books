@@ -115,3 +115,4 @@ Digital Books stores user data in standard macOS Application Support directories
 - **SQLite Database**: `~/Library/Application Support/com.davindalana.digitalBooks/app_database.sqlite`
 - **Extracted Text & Covers**: `~/Library/Application Support/com.davindalana.digitalBooks/`
 - **User Backups**: Prompted via native macOS file picker (`.json` or `.bundle`).
+

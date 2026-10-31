@@ -74,3 +74,4 @@ If a source PDF file was moved, renamed, or restored onto a machine with a diffe
    - Digital Books calculates the **SHA-256 checksum** of the candidate file.
    - **Matching Checksum**: The path is instantly updated, and all existing highlights, bookmarks, and reading progress align with 100% precision.
    - **Mismatched Checksum**: If the content does not match (different edition or modified PDF), an informative alert is displayed warning the user that annotations may need anchor re-alignment.
+

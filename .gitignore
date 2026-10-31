@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Test PDF binaries & Corpus fixtures
+test/fixtures/*.pdf
+test/fixtures/corpus/*.pdf
+
