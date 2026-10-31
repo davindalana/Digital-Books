@@ -30,6 +30,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
   int _currentPage = 1;
   int _totalPages = 1;
   bool _hasReportedTotal = false;
+  bool _isJumping = false;
 
   @override
   void initState() {
@@ -57,11 +58,13 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
   void jumpToPage(int pageNumber) {
     final target = pageNumber.clamp(1, _totalPages > 0 ? _totalPages : 1);
     if (_currentPage != target) {
+      _isJumping = true;
       setState(() => _currentPage = target);
       if (_pageController.hasClients) {
         _pageController.jumpToPage(target - 1);
       }
       widget.onPageChanged(target, _totalPages);
+      Future.microtask(() => _isJumping = false);
     }
   }
 
@@ -165,6 +168,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader> {
                           physics: const PageScrollPhysics(),
                           itemCount: _totalPages,
                           onPageChanged: (index) {
+                            if (_isJumping) return;
                             final newPage = index + 1;
                             setState(() => _currentPage = newPage);
                             widget.onPageChanged(newPage, _totalPages);
@@ -367,40 +371,7 @@ class _PdfPageItemViewState extends State<_PdfPageItemView>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTapUp: (details) {
-            if (_isZoomed) {
-              widget.onTapContent();
-              return;
-            }
-            final width = constraints.maxWidth;
-            final x = details.localPosition.dx;
-            if (x < width * 0.22) {
-              widget.onPreviousPage?.call();
-            } else if (x > width * 0.78) {
-              widget.onNextPage?.call();
-            } else {
-              widget.onTapContent();
-            }
-          },
-          onDoubleTapDown: _onDoubleTapDown,
-          onDoubleTap: () {},
-          child: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: 1.0,
-        maxScale: 3.5,
-        panEnabled: _isZoomed,
-        scaleEnabled: true,
-        onInteractionEnd: (details) {
-          final scale = _transformationController.value.getMaxScaleOnAxis();
-          if (scale > 1.08 && !_isZoomed) {
-            setState(() => _isZoomed = true);
-          } else if (scale <= 1.08 && _isZoomed) {
-            setState(() => _isZoomed = false);
-          }
-        },
-        child: Center(
+        Widget pageContent = Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 14.0),
             child: Container(
@@ -421,9 +392,46 @@ class _PdfPageItemViewState extends State<_PdfPageItemView>
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
+
+        // When zoomed, wrap in InteractiveViewer for panning
+        if (_isZoomed) {
+          pageContent = InteractiveViewer(
+            transformationController: _transformationController,
+            minScale: 1.0,
+            maxScale: 3.5,
+            panEnabled: true,
+            scaleEnabled: true,
+            onInteractionEnd: (details) {
+              final scale = _transformationController.value.getMaxScaleOnAxis();
+              if (scale <= 1.05 && _isZoomed) {
+                setState(() => _isZoomed = false);
+              }
+            },
+            child: pageContent,
+          );
+        }
+
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTapUp: (details) {
+            if (_isZoomed) {
+              widget.onTapContent();
+              return;
+            }
+            final width = constraints.maxWidth;
+            final x = details.localPosition.dx;
+            if (x < width * 0.22) {
+              widget.onPreviousPage?.call();
+            } else if (x > width * 0.78) {
+              widget.onNextPage?.call();
+            } else {
+              widget.onTapContent();
+            }
+          },
+          onDoubleTapDown: _onDoubleTapDown,
+          child: pageContent,
+        );
       },
     );
   }

@@ -42,6 +42,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   int _totalPages = 1;
   int _currentChapter = 0;
   double _progressPercentage = 0.0;
+  double? _sliderDragValue;
   String _currentChapterTitle = '';
   int _estimatedMinutesLeftInChapter = 0;
 
@@ -610,6 +611,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   }
 
   Widget _buildFloatingBottomBar(ReadingThemeType activeTheme, ReadingMode readingMode) {
+    final currentProgress = (_sliderDragValue ?? _progressPercentage).clamp(0.0, 1.0);
+    final displayPage = _sliderDragValue != null
+        ? (_sliderDragValue! * _totalPages).round().clamp(1, _totalPages > 0 ? _totalPages : 1)
+        : _currentPage;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -646,8 +652,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       Text(
                         _readingMode == ReadingMode.reflowable &&
                                 _estimatedMinutesLeftInChapter > 0
-                            ? 'Page $_currentPage of $_totalPages • ~$_estimatedMinutesLeftInChapter mnt tersisa'
-                            : 'Page $_currentPage of $_totalPages',
+                            ? 'Page $displayPage of $_totalPages • ~$_estimatedMinutesLeftInChapter mnt tersisa'
+                            : 'Page $displayPage of $_totalPages',
                         style: TextStyle(
                           color: activeTheme.secondaryTextColor,
                           fontSize: 12,
@@ -655,7 +661,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                         ),
                       ),
                       Text(
-                        '${(_progressPercentage * 100).toInt()}%',
+                        '${(currentProgress * 100).toInt()}%',
                         style: TextStyle(
                           color: activeTheme.textColor,
                           fontSize: 12,
@@ -693,8 +699,21 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                                 const RoundSliderThumbShape(enabledThumbRadius: 6),
                           ),
                           child: Slider(
-                            value: _progressPercentage.clamp(0.0, 1.0),
+                            value: currentProgress,
+                            onChangeStart: (val) {
+                              setState(() {
+                                _sliderDragValue = val;
+                              });
+                            },
                             onChanged: (val) {
+                              setState(() {
+                                _sliderDragValue = val;
+                              });
+                            },
+                            onChangeEnd: (val) {
+                              setState(() {
+                                _sliderDragValue = null;
+                              });
                               final targetPage = (val * _totalPages)
                                   .round()
                                   .clamp(1, _totalPages > 0 ? _totalPages : 1);
