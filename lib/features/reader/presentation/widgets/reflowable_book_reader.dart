@@ -659,6 +659,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             Expanded(
               child: Text(
                 block.text,
+                textAlign: widget.typography.textAlign,
                 style: widget.typography.fontFamily
                     .getTextStyle(
                       fontSize: widget.typography.fontSize * 0.95,

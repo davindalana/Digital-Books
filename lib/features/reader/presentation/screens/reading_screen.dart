@@ -46,8 +46,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   void initState() {
     super.initState();
     final savedMode = ref.read(activeReadingModeProvider(widget.book.id));
-    _readingMode = widget.initialMode ??
-        (widget.book.isScanned ? ReadingMode.originalPdf : savedMode);
+    _readingMode = widget.initialMode ?? savedMode;
     _loadBookDocumentAndProgress();
   }
 
