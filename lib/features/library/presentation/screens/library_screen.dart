@@ -741,7 +741,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('Failed to load sample book: $e\n$stack');
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(

@@ -8,7 +8,7 @@ enum ReadingMode {
 }
 
 final readingThemeStateProvider =
-    StateProvider<ReadingThemeType>((ref) => ReadingThemeType.dark);
+    StateProvider<ReadingThemeType>((ref) => ReadingThemeType.black);
 
 final typographySettingsStateProvider =
     StateProvider<TypographySettings>((ref) => const TypographySettings());

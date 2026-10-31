@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -17,8 +18,13 @@ import '../widgets/toc_dialog.dart';
 
 class ReadingScreen extends ConsumerStatefulWidget {
   final Book book;
+  final ReadingMode? initialMode;
 
-  const ReadingScreen({super.key, required this.book});
+  const ReadingScreen({
+    super.key,
+    required this.book,
+    this.initialMode,
+  });
 
   @override
   ConsumerState<ReadingScreen> createState() => _ReadingScreenState();
@@ -29,17 +35,33 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   BookDocument? _document;
   bool _isLoadingDoc = true;
 
+  late ReadingMode _readingMode;
   int _currentPage = 1;
   int _totalPages = 1;
   int _currentChapter = 0;
   double _progressPercentage = 0.0;
 
-  final GlobalKey<State<ReflowableBookReader>> _reflowableKey = GlobalKey();
+  final GlobalKey<ReflowableBookReaderState> _reflowableKey = GlobalKey<ReflowableBookReaderState>();
+  final GlobalKey<OriginalPdfReaderState> _pdfKey = GlobalKey<OriginalPdfReaderState>();
 
   @override
   void initState() {
     super.initState();
+    _readingMode = widget.initialMode ??
+        (widget.book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable);
     _loadBookDocumentAndProgress();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(activeReadingModeProvider(widget.book.id).notifier).state = _readingMode;
+      }
+    });
+  }
+
+  void _setReadingMode(ReadingMode mode) {
+    setState(() {
+      _readingMode = mode;
+    });
+    ref.read(activeReadingModeProvider(widget.book.id).notifier).state = mode;
   }
 
   Future<void> _loadBookDocumentAndProgress() async {
@@ -64,16 +86,39 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
       } catch (_) {}
     }
 
-    // If document is empty or book is scanned, default to Original PDF mode if preferred
-    if (widget.book.isScanned && _document == null) {
-      ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
-          ReadingMode.originalPdf;
-    }
-
     setState(() {
       _isLoadingDoc = false;
       _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
     });
+  }
+
+  void _previousPage(ReadingMode mode) {
+    if (mode == ReadingMode.originalPdf) {
+      _pdfKey.currentState?.previousPage();
+    } else {
+      _reflowableKey.currentState?.previousPage();
+    }
+  }
+
+  void _nextPage(ReadingMode mode) {
+    if (mode == ReadingMode.originalPdf) {
+      _pdfKey.currentState?.nextPage();
+    } else {
+      _reflowableKey.currentState?.nextPage();
+    }
+  }
+
+  void _jumpToPosition(int page, ReadingMode mode) {
+    if (mode == ReadingMode.originalPdf) {
+      _pdfKey.currentState?.jumpToPage(page);
+    } else {
+      _reflowableKey.currentState?.jumpToPage(page);
+    }
+    _saveProgress(
+      chapter: _currentChapter,
+      position: page,
+      percentage: _totalPages > 0 ? (page / _totalPages) : 0.0,
+    );
   }
 
   void _saveProgress({
@@ -121,6 +166,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
         bookId: widget.book.id,
         bookDocument: _document,
         onNavigateToChapter: (chIndex, pageNum) {
+          if (_readingMode == ReadingMode.originalPdf) {
+            _pdfKey.currentState?.jumpToPage(pageNum);
+          } else {
+            _reflowableKey.currentState?.jumpToChapter(chIndex);
+          }
           _saveProgress(
             chapter: chIndex,
             position: pageNum,
@@ -128,6 +178,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           );
         },
         onNavigateToPosition: (pos) {
+          if (_readingMode == ReadingMode.originalPdf) {
+            _pdfKey.currentState?.jumpToPage(pos);
+          } else {
+            _reflowableKey.currentState?.jumpToPage(pos);
+          }
           _saveProgress(
             chapter: _currentChapter,
             position: pos,
@@ -178,76 +233,101 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
   Widget build(BuildContext context) {
     final activeTheme = ref.watch(readingThemeStateProvider);
     final typoSettings = ref.watch(typographySettingsStateProvider);
-    final readingMode = ref.watch(activeReadingModeProvider(widget.book.id));
     final bookmarksAsync = ref.watch(bookBookmarksStreamProvider(widget.book.id));
     final isBookmarked = bookmarksAsync.value?.any((b) => b.position == _currentPage) ?? false;
 
-    return Scaffold(
-      backgroundColor: activeTheme.backgroundColor,
-      body: Stack(
-        children: [
-          // 1. Reading Body Engine
-          Positioned.fill(
-            child: _isLoadingDoc
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: activeTheme.textColor,
-                    ),
-                  )
-                : (readingMode == ReadingMode.reflowable && _document != null)
-                    ? ReflowableBookReader(
-                        key: _reflowableKey,
-                        document: _document!,
-                        theme: activeTheme,
-                        typography: typoSettings,
-                        initialChapterIndex: _currentChapter,
-                        initialPosition: _currentPage,
-                        onTapContent: _toggleControls,
-                        onProgressChanged: (ch, page, pct) {
-                          _saveProgress(
-                            chapter: ch,
-                            position: page,
-                            percentage: pct,
-                          );
-                        },
-                      )
-                    : OriginalPdfReader(
-                        pdfPath: widget.book.originalPdfPath,
-                        initialPage: _currentPage,
-                        theme: activeTheme,
-                        onPageChanged: (page, total) {
-                          setState(() {
-                            _totalPages = total;
-                          });
-                          _saveProgress(
-                            chapter: 0,
-                            position: page,
-                            percentage: total > 0 ? (page / total) : 0.0,
-                          );
-                        },
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+              event.logicalKey == LogicalKeyboardKey.pageUp) {
+            _previousPage(_readingMode);
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+              event.logicalKey == LogicalKeyboardKey.pageDown ||
+              event.logicalKey == LogicalKeyboardKey.space) {
+            _nextPage(_readingMode);
+            return KeyEventResult.handled;
+          } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+            Navigator.of(context).pop();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+        backgroundColor: activeTheme.backgroundColor,
+        body: Stack(
+          children: [
+            // 1. Reading Body Engine
+            Positioned.fill(
+              child: _isLoadingDoc
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: activeTheme.textColor,
                       ),
-          ),
+                    )
+                  : (_readingMode == ReadingMode.reflowable && _document != null && !widget.book.isScanned)
+                      ? ReflowableBookReader(
+                          key: _reflowableKey,
+                          document: _document!,
+                          theme: activeTheme,
+                          typography: typoSettings,
+                          initialChapterIndex: _currentChapter,
+                          initialPosition: _currentPage,
+                          onTapContent: _toggleControls,
+                          onSwitchToPdfMode: () => _setReadingMode(ReadingMode.originalPdf),
+                          onProgressChanged: (ch, page, pct) {
+                            _saveProgress(
+                              chapter: ch,
+                              position: page,
+                              percentage: pct,
+                            );
+                          },
+                        )
+                      : OriginalPdfReader(
+                          key: _pdfKey,
+                          pdfPath: widget.book.originalPdfPath,
+                          initialPage: _currentPage,
+                          theme: activeTheme,
+                          onTapContent: _toggleControls,
+                          onPageChanged: (page, total) {
+                            setState(() {
+                              _currentPage = page;
+                              _totalPages = total;
+                              _progressPercentage = total > 0 ? (page / total) : 0.0;
+                            });
+                            _saveProgress(
+                              chapter: 0,
+                              position: page,
+                              percentage: total > 0 ? (page / total) : 0.0,
+                            );
+                          },
+                        ),
+            ),
 
-          // 2. Minimalist Floating Apple Books Top Toolbar
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            top: _showControls ? 0 : -100,
-            left: 0,
-            right: 0,
-            child: _buildFloatingTopBar(activeTheme, readingMode, isBookmarked),
-          ),
+            // 2. Minimalist Floating Apple Books Top Toolbar
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              top: _showControls ? 0 : -100,
+              left: 0,
+              right: 0,
+              child: _buildFloatingTopBar(activeTheme, _readingMode, isBookmarked),
+            ),
 
-          // 3. Minimalist Floating Bottom Bar with Slider
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            bottom: _showControls ? 0 : -100,
-            left: 0,
-            right: 0,
-            child: _buildFloatingBottomBar(activeTheme),
-          ),
-        ],
+            // 3. Minimalist Floating Bottom Bar with Slider & Steppers
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              bottom: _showControls ? 0 : -100,
+              left: 0,
+              right: 0,
+              child: _buildFloatingBottomBar(activeTheme, _readingMode),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -342,26 +422,40 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                           label: 'Book',
                           isSelected: readingMode == ReadingMode.reflowable,
                           activeTheme: activeTheme,
-                          onTap: () {
-                            ref
-                                .read(activeReadingModeProvider(widget.book.id).notifier)
-                                .state = ReadingMode.reflowable;
-                          },
+                          onTap: () => _setReadingMode(ReadingMode.reflowable),
                         ),
                         _ModePillButton(
                           label: 'PDF',
                           isSelected: readingMode == ReadingMode.originalPdf,
                           activeTheme: activeTheme,
-                          onTap: () {
-                            ref
-                                .read(activeReadingModeProvider(widget.book.id).notifier)
-                                .state = ReadingMode.originalPdf;
-                          },
+                          onTap: () => _setReadingMode(ReadingMode.originalPdf),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
+
+                  // Zoom controls in Original PDF Mode
+                  if (readingMode == ReadingMode.originalPdf) ...[
+                    IconButton(
+                      tooltip: 'Zoom Out',
+                      icon: Icon(
+                        Icons.zoom_out,
+                        color: activeTheme.textColor,
+                        size: 20,
+                      ),
+                      onPressed: () => _pdfKey.currentState?.zoomOut(),
+                    ),
+                    IconButton(
+                      tooltip: 'Zoom In',
+                      icon: Icon(
+                        Icons.zoom_in,
+                        color: activeTheme.textColor,
+                        size: 20,
+                      ),
+                      onPressed: () => _pdfKey.currentState?.zoomIn(),
+                    ),
+                  ],
 
                   // Table of Contents
                   IconButton(
@@ -406,7 +500,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
     );
   }
 
-  Widget _buildFloatingBottomBar(ReadingThemeType activeTheme) {
+  Widget _buildFloatingBottomBar(ReadingThemeType activeTheme, ReadingMode readingMode) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -415,7 +509,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: activeTheme.isDark
                     ? const Color(0xFF1E1E22).withAlpha(200)
@@ -458,27 +552,60 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen> {
                       ),
                     ],
                   ),
-                  SliderTheme(
-                    data: SliderThemeData(
-                      activeTrackColor: const Color(0xFF007AFF),
-                      inactiveTrackColor: activeTheme.isDark
-                          ? Colors.white.withAlpha(30)
-                          : Colors.black.withAlpha(20),
-                      thumbColor: Colors.white,
-                      trackHeight: 3,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    ),
-                    child: Slider(
-                      value: _progressPercentage.clamp(0.0, 1.0),
-                      onChanged: (val) {
-                        final targetPage = (val * _totalPages).round().clamp(1, _totalPages);
-                        _saveProgress(
-                          chapter: _currentChapter,
-                          position: targetPage,
-                          percentage: val,
-                        );
-                      },
-                    ),
+                  Row(
+                    children: [
+                      // Previous Page Stepper
+                      IconButton(
+                        tooltip: 'Previous Page',
+                        icon: Icon(
+                          Icons.chevron_left,
+                          color: _currentPage > 1
+                              ? activeTheme.textColor
+                              : activeTheme.secondaryTextColor.withAlpha(80),
+                          size: 22,
+                        ),
+                        onPressed: _currentPage > 1
+                            ? () => _previousPage(readingMode)
+                            : null,
+                      ),
+                      Expanded(
+                        child: SliderTheme(
+                          data: SliderThemeData(
+                            activeTrackColor: const Color(0xFF007AFF),
+                            inactiveTrackColor: activeTheme.isDark
+                                ? Colors.white.withAlpha(30)
+                                : Colors.black.withAlpha(20),
+                            thumbColor: Colors.white,
+                            trackHeight: 3,
+                            thumbShape:
+                                const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          ),
+                          child: Slider(
+                            value: _progressPercentage.clamp(0.0, 1.0),
+                            onChanged: (val) {
+                              final targetPage = (val * _totalPages)
+                                  .round()
+                                  .clamp(1, _totalPages > 0 ? _totalPages : 1);
+                              _jumpToPosition(targetPage, readingMode);
+                            },
+                          ),
+                        ),
+                      ),
+                      // Next Page Stepper
+                      IconButton(
+                        tooltip: 'Next Page',
+                        icon: Icon(
+                          Icons.chevron_right,
+                          color: _currentPage < _totalPages
+                              ? activeTheme.textColor
+                              : activeTheme.secondaryTextColor.withAlpha(80),
+                          size: 22,
+                        ),
+                        onPressed: _currentPage < _totalPages
+                            ? () => _nextPage(readingMode)
+                            : null,
+                      ),
+                    ],
                   ),
                 ],
               ),

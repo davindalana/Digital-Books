@@ -69,6 +69,7 @@ class BookDetailsDialog extends ConsumerWidget {
                             ? Image.file(
                                 File(book.coverPath!),
                                 fit: BoxFit.cover,
+                                filterQuality: FilterQuality.medium,
                               )
                             : Container(
                                 color: const Color(0xFF2C2C2E),
@@ -204,7 +205,7 @@ class BookDetailsDialog extends ConsumerWidget {
                         Navigator.of(context).pop();
                         ref
                             .read(activeReadingModeProvider(book.id).notifier)
-                            .state = ReadingMode.reflowable;
+                            .state = book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable;
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => ReadingScreen(book: book),

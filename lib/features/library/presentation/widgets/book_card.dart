@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
+import '../../../reader/providers/reader_settings_provider.dart';
 
 class BookCard extends StatelessWidget {
   final Book book;
@@ -23,7 +24,10 @@ class BookCard extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ReadingScreen(book: book),
+            builder: (_) => ReadingScreen(
+              book: book,
+              initialMode: book.isScanned ? ReadingMode.originalPdf : ReadingMode.reflowable,
+            ),
           ),
         );
       },
@@ -63,6 +67,7 @@ class BookCard extends StatelessWidget {
                         ? Image.file(
                             File(book.coverPath!),
                             fit: BoxFit.cover,
+                            filterQuality: FilterQuality.medium,
                             width: double.infinity,
                             height: double.infinity,
                           )

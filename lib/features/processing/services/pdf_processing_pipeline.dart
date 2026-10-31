@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
@@ -129,7 +130,18 @@ class PdfProcessingPipeline {
       }
 
       final avgCharsPerPage = totalPages > 0 ? (totalChars / totalPages) : 0;
-      final bool isScanned = avgCharsPerPage < 35 && totalPages > 0;
+      bool isScanned = avgCharsPerPage < 35 && totalPages > 0;
+
+      // Automatic Neural OCR fallback on macOS Vision Framework
+      if (isScanned && Platform.isMacOS) {
+        notify(ProcessingStage.extractingText, 0.55, 'Running Apple Vision OCR on scanned pages...');
+        final ocrTexts = await _runVisionOcrOnMac(pdfFile.path, totalPages);
+        if (ocrTexts.isNotEmpty && ocrTexts.any((t) => t.trim().isNotEmpty)) {
+          pageTexts.clear();
+          pageTexts.addAll(ocrTexts);
+          isScanned = false; // Successfully converted to digital text
+        }
+      }
 
       if (_isCancelled) {
         document.dispose();
@@ -145,10 +157,11 @@ class PdfProcessingPipeline {
         isScanned: isScanned,
       );
 
-      // 5. Procedural Cover Generation
-      notify(ProcessingStage.generatingCover, 0.80, 'Creating Apple Books style cover...');
-      final coverFile = await CoverGenerator.generateProceduralCover(
+      // 5. High-Resolution Page 1 Cover Generation (Upscaled with Sharpening)
+      notify(ProcessingStage.generatingCover, 0.80, 'Creating crisp high-resolution cover from Page 1...');
+      final coverFile = await CoverGenerator.generateCover(
         bookId: bookId,
+        pdfPath: pdfFile.path,
         title: title,
         author: author,
       );
@@ -257,28 +270,42 @@ class PdfProcessingPipeline {
     required bool isScanned,
   }) {
     if (isScanned || pageTexts.isEmpty) {
-      // For scanned books, map each page as a block for reflowable mode preview
+      // For scanned books, check if any real text was extracted
+      final List<BookBlock> realBlocks = [];
+      for (int i = 0; i < pageTexts.length; i++) {
+        final text = pageTexts[i].trim();
+        if (text.isNotEmpty) {
+          realBlocks.add(BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.paragraph,
+            text: text,
+            originalPageNumber: i + 1,
+          ));
+        }
+      }
+
+      if (realBlocks.isEmpty) {
+        realBlocks.add(BookBlock(
+          id: const Uuid().v4(),
+          type: BlockType.paragraph,
+          text: 'This document contains visual scanned pages. Read in Original PDF Mode for full layout and illustrations.',
+          originalPageNumber: 1,
+        ));
+      }
+
       return [
         BookChapter(
           id: const Uuid().v4(),
           index: 0,
-          title: 'Document (Scanned PDF)',
-          blocks: List.generate(
-            pageTexts.length,
-            (index) => BookBlock(
-              id: const Uuid().v4(),
-              type: BlockType.paragraph,
-              text: '[Scanned Page ${index + 1} - Switch to Original PDF Mode for full graphical fidelity or OCR]',
-              originalPageNumber: index + 1,
-            ),
-          ),
+          title: bookTitle,
+          blocks: realBlocks,
         ),
       ];
     }
 
     final List<BookChapter> chapters = [];
     final chapterRegex = RegExp(
-      r'^(chapter|bab|part|bagian|book|act|section)\s+([0-9ivxlcdm]+|[a-z]+)(:|\.|\s-|\s–)?\s*(.*)$',
+      r'^(chapter|bab|hukum|law|part|bagian|book|act|section)\s+([0-9ivxlcdm]+|[a-z]+)(:|\.|\s-|\s–)?\s*(.*)$',
       caseSensitive: false,
     );
     final standaloneHeadingRegex = RegExp(
@@ -365,5 +392,51 @@ class PdfProcessingPipeline {
     }
 
     return chapters;
+  }
+
+  static Future<List<String>> _runVisionOcrOnMac(String pdfPath, int totalPages) async {
+    try {
+      final script = '''
+import Foundation
+import PDFKit
+import Vision
+import AppKit
+
+let pdfPath = "$pdfPath"
+guard let doc = PDFDocument(url: URL(fileURLWithPath: pdfPath)) else { exit(1) }
+
+var results: [String] = []
+for pageIndex in 0..<doc.pageCount {
+    autoreleasepool {
+        guard let page = doc.page(at: pageIndex) else { results.append(""); return }
+        let thumb = page.thumbnail(of: CGSize(width: 1400, height: 1900), for: .mediaBox)
+        var proposedRect = CGRect(origin: .zero, size: thumb.size)
+        guard let cgImage = thumb.cgImage(forProposedRect: &proposedRect, context: nil, hints: nil) else { results.append(""); return }
+        
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["id", "en"]
+        request.usesLanguageCorrection = true
+        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        try? handler.perform([request])
+        
+        let observations = request.results ?? []
+        let sorted = observations.sorted { \$0.boundingBox.origin.y > \$1.boundingBox.origin.y }
+        let lines = sorted.compactMap { \$0.topCandidates(1).first?.string }
+        results.append(lines.joined(separator: "\\n"))
+    }
+}
+let encoder = JSONEncoder()
+if let data = try? encoder.encode(results), let s = String(data: data, encoding: .utf8) {
+    print(s)
+}
+''';
+      final res = await Process.run('swift', ['-e', script]);
+      if (res.exitCode == 0 && res.stdout.toString().trim().isNotEmpty) {
+        final List<dynamic> list = jsonDecode(res.stdout.toString().trim());
+        return list.map((e) => e.toString()).toList();
+      }
+    } catch (_) {}
+    return [];
   }
 }

@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../../../processing/models/processing_status.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
@@ -15,11 +17,29 @@ class ImportPdfHelper {
         allowedExtensions: ['pdf'],
       );
 
-      if (files.isEmpty || files.first.path == null) {
+      if (files.isEmpty) {
         return;
       }
 
-      final selectedFile = File(files.first.path!);
+      final platformFile = files.first;
+      File selectedFile;
+
+      try {
+        if (platformFile.path != null) {
+          final testFile = File(platformFile.path!);
+          await testFile.length();
+          selectedFile = testFile;
+        } else {
+          throw Exception('No path');
+        }
+      } catch (_) {
+        // Fallback: Read bytes via security-scoped PlatformFile
+        final bytes = await platformFile.readAsBytes();
+        final tempDir = await getTemporaryDirectory();
+        final tempFile = File(p.join(tempDir.path, platformFile.name));
+        await tempFile.writeAsBytes(bytes);
+        selectedFile = tempFile;
+      }
 
       if (!context.mounted) return;
 

@@ -119,12 +119,12 @@ class TypographySettings {
   final bool twoPageSpread;
 
   const TypographySettings({
-    this.fontFamily = ReadingFontFamily.georgia,
+    this.fontFamily = ReadingFontFamily.palatino,
     this.fontSize = 18.0,
     this.fontWeight = FontWeight.normal,
-    this.lineSpacing = 1.6,
-    this.letterSpacing = 0.0,
-    this.textAlign = TextAlign.justify,
+    this.lineSpacing = 1.65,
+    this.letterSpacing = 0.2,
+    this.textAlign = TextAlign.start,
     this.horizontalMargin = 32.0,
     this.twoPageSpread = true,
   });
