@@ -1,0 +1,86 @@
+[
+  {
+    "metrics" : [
+      {
+        "processedWidth" : 1064,
+        "processedHeight" : 1575,
+        "originalWidth" : 1064,
+        "durationMs" : 0,
+        "notes" : "Raw PDF raster bitmap without enhancement",
+        "filterName" : "Baseline (Raw Image)",
+        "originalHeight" : 1575
+      },
+      {
+        "processedWidth" : 1064,
+        "processedHeight" : 1575,
+        "originalWidth" : 1064,
+        "durationMs" : 118.56496334075928,
+        "notes" : "High-level adaptive thresholding; increases contrast and removes page tint",
+        "filterName" : "CIDocumentEnhancer (Native Apple)",
+        "originalHeight" : 1575
+      },
+      {
+        "processedWidth" : 1064,
+        "processedHeight" : 1575,
+        "originalWidth" : 1064,
+        "durationMs" : 6.049990653991699,
+        "notes" : "Ultra-fast GPU-accelerated enhancement; darkens text, whitens yellowed paper, and sharpens strokes",
+        "filterName" : "Multi-Stage Metal Pipeline (Grayscale + Contrast + Unsharp)",
+        "originalHeight" : 1575
+      },
+      {
+        "processedWidth" : 1064,
+        "processedHeight" : 1575,
+        "originalWidth" : 1064,
+        "durationMs" : 11.947989463806152,
+        "notes" : "Compensates for curvature shadow in book crease \/ spine",
+        "filterName" : "Spine Gutter Shadow Suppression",
+        "originalHeight" : 1575
+      }
+    ],
+    "documentName" : "8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf",
+    "pageTested" : 15
+  },
+  {
+    "metrics" : [
+      {
+        "processedWidth" : 1559,
+        "processedHeight" : 2338,
+        "originalWidth" : 1559,
+        "durationMs" : 0,
+        "notes" : "Raw PDF raster bitmap without enhancement",
+        "filterName" : "Baseline (Raw Image)",
+        "originalHeight" : 2338
+      },
+      {
+        "processedWidth" : 1559,
+        "processedHeight" : 2338,
+        "originalWidth" : 1559,
+        "durationMs" : 145.04611492156982,
+        "notes" : "High-level adaptive thresholding; increases contrast and removes page tint",
+        "filterName" : "CIDocumentEnhancer (Native Apple)",
+        "originalHeight" : 2338
+      },
+      {
+        "processedWidth" : 1559,
+        "processedHeight" : 2338,
+        "originalWidth" : 1559,
+        "durationMs" : 10.622024536132812,
+        "notes" : "Ultra-fast GPU-accelerated enhancement; darkens text, whitens yellowed paper, and sharpens strokes",
+        "filterName" : "Multi-Stage Metal Pipeline (Grayscale + Contrast + Unsharp)",
+        "originalHeight" : 2338
+      },
+      {
+        "processedWidth" : 1559,
+        "processedHeight" : 2338,
+        "originalWidth" : 1559,
+        "durationMs" : 9.070992469787598,
+        "notes" : "Compensates for curvature shadow in book crease \/ spine",
+        "filterName" : "Spine Gutter Shadow Suppression",
+        "originalHeight" : 2338
+      }
+    ],
+    "documentName" : "d25fb8e8-c1a6-431f-822f-ce78f2b756e3.pdf",
+    "pageTested" : 33
+  }
+]

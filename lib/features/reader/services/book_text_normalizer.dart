@@ -45,6 +45,22 @@ class BookTextNormalizer {
     caseSensitive: false,
   );
 
+  static final RegExp _orderedListRegex =
+      RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+');
+
+  static final RegExp _unorderedListRegex =
+      RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+');
+
+  static final RegExp _copyrightMetaRegex = RegExp(
+    r'^(hak cipta|all rights reserved|dilarang|katalog dalam terbitan|kdt|isbn|diterbitkan|penerbit|cetakan|desain sampul|penata letak|penerjemah|editor:|pemeriksa aksara|ilustrasi:|sanksi pelanggaran|undang-undang)\b',
+    caseSensitive: false,
+  );
+
+  static final RegExp _captionRegex = RegExp(
+    r'^(figure|fig\.|gambar|diagram|tabel|table|photo|foto|denah)\s+([0-9ivxlcdm\.]+)?:?',
+    caseSensitive: false,
+  );
+
   /// Normalizes and structures a BookDocument.
   /// If the document has already been nicely partitioned into multiple chapters with
   /// clean paragraphs, it still ensures headers/footers and hyphens are cleaned.
@@ -188,13 +204,49 @@ class BookTextNormalizer {
       if (currentParagraphText.trim().isEmpty) return;
       final text = currentParagraphText.trim();
 
-      // Classify if it's a short centered subhead or regular paragraph
-      if (_isStandaloneSubtitle(text)) {
+      if (_copyrightMetaRegex.hasMatch(text) ||
+          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(text)) {
         currentBlocks.add(
           BookBlock(
             id: const Uuid().v4(),
-            type: BlockType.heading,
+            type: BlockType.copyrightBlock,
+            text: text,
+            originalPageNumber: currentParagraphPage,
+          ),
+        );
+      } else if (_isStandaloneSubtitle(text)) {
+        currentBlocks.add(
+          BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.sectionHeading,
             headingLevel: 2,
+            text: text,
+            originalPageNumber: currentParagraphPage,
+          ),
+        );
+      } else if (_orderedListRegex.hasMatch(text)) {
+        currentBlocks.add(
+          BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.orderedList,
+            text: text,
+            originalPageNumber: currentParagraphPage,
+          ),
+        );
+      } else if (_unorderedListRegex.hasMatch(text)) {
+        currentBlocks.add(
+          BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.unorderedList,
+            text: text,
+            originalPageNumber: currentParagraphPage,
+          ),
+        );
+      } else if (_captionRegex.hasMatch(text)) {
+        currentBlocks.add(
+          BookBlock(
+            id: const Uuid().v4(),
+            type: BlockType.caption,
             text: text,
             originalPageNumber: currentParagraphPage,
           ),
@@ -261,6 +313,43 @@ class BookTextNormalizer {
         continue;
       }
 
+      // Check semantic structure elements (ordered lists, bullets, copyright, captions, subtitles)
+      final isCopyrightLine = _copyrightMetaRegex.hasMatch(line);
+      final isOrderedItem = _orderedListRegex.hasMatch(line);
+      final isUnorderedItem = _unorderedListRegex.hasMatch(line);
+      final isCaptionLine = _captionRegex.hasMatch(line);
+      final isSubtitleLine = !isCopyrightLine && _isStandaloneSubtitle(line);
+
+      // If we are currently holding a copyright block and the current line is NOT copyright,
+      // seal and flush the copyright block immediately!
+      if (!isCopyrightLine &&
+          (_copyrightMetaRegex.hasMatch(currentParagraphText) ||
+              RegExp(r'\b(isbn|kdt|hak cipta|penerbit)\b', caseSensitive: false).hasMatch(currentParagraphText))) {
+        flushParagraph();
+      }
+
+      // If line is copyright/imprint information, accumulate all copyright lines together
+      if (isCopyrightLine) {
+        if (_copyrightMetaRegex.hasMatch(currentParagraphText) ||
+            RegExp(r'\b(isbn|kdt|hak cipta|penerbit|katalog)\b', caseSensitive: false).hasMatch(currentParagraphText)) {
+          currentParagraphText = '$currentParagraphText\n$line';
+        } else {
+          flushParagraph();
+          currentParagraphText = line;
+          currentParagraphPage = item.originalPage;
+        }
+        continue;
+      }
+
+      // If line is an explicit list item, caption, or section title, flush preceding text immediately
+      if (isOrderedItem || isUnorderedItem || isCaptionLine || isSubtitleLine) {
+        flushParagraph();
+        currentParagraphText = line;
+        currentParagraphPage = item.originalPage;
+        flushParagraph();
+        continue;
+      }
+
       // Check legal or disclaimer clauses: e.g. "(1). Setiap orang..."
       final isLegalClause = RegExp(r'^\(\d+\)\.?').hasMatch(line);
       if (isLegalClause) {
@@ -315,14 +404,14 @@ class BookTextNormalizer {
 
           // Natural paragraph boundary:
           // 1. Dialogue start after a terminal
-          // 2. Previous sentence ended and accumulated paragraph is substantial (> 280 chars) and new line starts with a Capital letter
-          // 3. Accumulated text is very long (> 700 chars) and previous sentence ended
+          // 2. Previous sentence ended and accumulated paragraph is substantial (> 140 chars) and new line starts with a Capital letter
+          // 3. Accumulated text is very long (> 650 chars) and previous sentence ended
           final isNewParagraph =
               prevEndsTerminal &&
               (startsDialogue ||
-                  (currentParagraphText.length > 280 &&
+                  (currentParagraphText.length > 140 &&
                       RegExp(r'^[A-Z]').hasMatch(line)) ||
-                  currentParagraphText.length > 700);
+                  currentParagraphText.length > 650);
 
           if (isNewParagraph) {
             flushParagraph();

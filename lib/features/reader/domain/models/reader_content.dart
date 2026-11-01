@@ -9,6 +9,15 @@ enum ContentNodeType {
   pageBreak,
   divider,
   footnote,
+  documentTitle,
+  sectionHeading,
+  orderedList,
+  unorderedList,
+  listItem,
+  caption,
+  table,
+  copyrightBlock,
+  metadataBlock,
 }
 
 class ContentNode {
@@ -60,8 +69,14 @@ class ContentNode {
   ) {
     ContentNodeType nodeType;
     switch (block.type) {
+      case BlockType.documentTitle:
+        nodeType = ContentNodeType.documentTitle;
+        break;
       case BlockType.heading:
         nodeType = ContentNodeType.heading;
+        break;
+      case BlockType.sectionHeading:
+        nodeType = ContentNodeType.sectionHeading;
         break;
       case BlockType.quote:
         nodeType = ContentNodeType.quote;
@@ -74,6 +89,27 @@ class ContentNode {
         break;
       case BlockType.footnote:
         nodeType = ContentNodeType.footnote;
+        break;
+      case BlockType.orderedList:
+        nodeType = ContentNodeType.orderedList;
+        break;
+      case BlockType.unorderedList:
+        nodeType = ContentNodeType.unorderedList;
+        break;
+      case BlockType.listItem:
+        nodeType = ContentNodeType.listItem;
+        break;
+      case BlockType.caption:
+        nodeType = ContentNodeType.caption;
+        break;
+      case BlockType.table:
+        nodeType = ContentNodeType.table;
+        break;
+      case BlockType.copyrightBlock:
+        nodeType = ContentNodeType.copyrightBlock;
+        break;
+      case BlockType.metadataBlock:
+        nodeType = ContentNodeType.metadataBlock;
         break;
       default:
         nodeType = ContentNodeType.paragraph;
@@ -91,14 +127,21 @@ class ContentNode {
       level: block.headingLevel,
       imagePath: block.imagePath,
       sourcePdfPage: block.originalPageNumber,
+      attributes: block.metadata,
     );
   }
 
   BookBlock toBookBlock() {
     BlockType bType;
     switch (type) {
+      case ContentNodeType.documentTitle:
+        bType = BlockType.documentTitle;
+        break;
       case ContentNodeType.heading:
         bType = BlockType.heading;
+        break;
+      case ContentNodeType.sectionHeading:
+        bType = BlockType.sectionHeading;
         break;
       case ContentNodeType.quote:
         bType = BlockType.quote;
@@ -112,6 +155,27 @@ class ContentNode {
       case ContentNodeType.footnote:
         bType = BlockType.footnote;
         break;
+      case ContentNodeType.orderedList:
+        bType = BlockType.orderedList;
+        break;
+      case ContentNodeType.unorderedList:
+        bType = BlockType.unorderedList;
+        break;
+      case ContentNodeType.listItem:
+        bType = BlockType.listItem;
+        break;
+      case ContentNodeType.caption:
+        bType = BlockType.caption;
+        break;
+      case ContentNodeType.table:
+        bType = BlockType.table;
+        break;
+      case ContentNodeType.copyrightBlock:
+        bType = BlockType.copyrightBlock;
+        break;
+      case ContentNodeType.metadataBlock:
+        bType = BlockType.metadataBlock;
+        break;
       default:
         bType = BlockType.paragraph;
         break;
@@ -124,6 +188,7 @@ class ContentNode {
       headingLevel: level,
       imagePath: imagePath,
       originalPageNumber: sourcePdfPage,
+      metadata: attributes,
     );
   }
 }

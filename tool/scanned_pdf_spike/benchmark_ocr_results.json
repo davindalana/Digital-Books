@@ -1,0 +1,259 @@
+[
+  {
+    "totalLinesDetected" : 29,
+    "totalDurationSeconds" : 1.2393109798431396,
+    "meanConfidence" : 0.9827586206896551,
+    "documentName" : "8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf",
+    "pages" : [
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "KPG",
+          "LAUT BERCERITA",
+          "SEBUAH NOVEL OLEH LEILA S. CHUDORI"
+        ],
+        "pageNumber" : 1,
+        "detectedCategories" : [
+          "header_page_num"
+        ],
+        "durationSeconds" : 0.2066260576248169,
+        "linesCount" : 3
+      },
+      {
+        "meanConfidence" : 0,
+        "sampleLines" : [
+
+        ],
+        "pageNumber" : 2,
+        "detectedCategories" : [
+
+        ],
+        "durationSeconds" : 0.03472900390625,
+        "linesCount" : 0
+      },
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "LAUT BERCERITA"
+        ],
+        "pageNumber" : 3,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.10673999786376953,
+        "linesCount" : 1
+      },
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "Undang-Undang Republik Indonesia",
+          "Nomor 28 Tahun 2014 tentang Hak Cipta",
+          "Lingkup Hak Cipta"
+        ],
+        "pageNumber" : 4,
+        "detectedCategories" : [
+          "columns_or_tables"
+        ],
+        "durationSeconds" : 0.19536292552947998,
+        "linesCount" : 20
+      },
+      {
+        "meanConfidence" : 0.9,
+        "sampleLines" : [
+          "LAUT BERCERITA",
+          "LEILA S. CHUDORI",
+          "KPG"
+        ],
+        "pageNumber" : 5,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.10029804706573486,
+        "linesCount" : 5
+      }
+    ],
+    "peakMemoryMB" : 382.125,
+    "totalPagesTested" : 5,
+    "meanTimePerPageMs" : 247.86219596862793
+  },
+  {
+    "totalLinesDetected" : 67,
+    "totalDurationSeconds" : 0.7655359506607056,
+    "meanConfidence" : 0.9791044779677889,
+    "documentName" : "d25fb8e8-c1a6-431f-822f-ce78f2b756e3.pdf",
+    "pages" : [
+      {
+        "meanConfidence" : 0.9416666676600774,
+        "sampleLines" : [
+          "BIP",
+          "KELOMPOK",
+          "GRAMEDIA"
+        ],
+        "pageNumber" : 1,
+        "detectedCategories" : [
+          "header_page_num",
+          "columns_or_tables"
+        ],
+        "durationSeconds" : 0.14735496044158936,
+        "linesCount" : 12
+      },
+      {
+        "meanConfidence" : 0,
+        "sampleLines" : [
+
+        ],
+        "pageNumber" : 2,
+        "detectedCategories" : [
+
+        ],
+        "durationSeconds" : 0.03402400016784668,
+        "linesCount" : 0
+      },
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "Passion for Knowledge"
+        ],
+        "pageNumber" : 3,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.08883106708526611,
+        "linesCount" : 1
+      },
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING",
+          "By Oh Su Hyang",
+          "Copyright @ 2016 Oh Su Hyang"
+        ],
+        "pageNumber" : 4,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.191614031791687,
+        "linesCount" : 44
+      },
+      {
+        "meanConfidence" : 0.9300000011920929,
+        "sampleLines" : [
+          "THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING",
+          "BICARA ITU",
+          "ADA SENINYA"
+        ],
+        "pageNumber" : 5,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.1530139446258545,
+        "linesCount" : 10
+      }
+    ],
+    "peakMemoryMB" : 516.21875,
+    "totalPagesTested" : 5,
+    "meanTimePerPageMs" : 153.1071901321411
+  },
+  {
+    "totalLinesDetected" : 18,
+    "totalDurationSeconds" : 0.20718204975128174,
+    "meanConfidence" : 1,
+    "documentName" : "04_two_column_academic.pdf",
+    "pages" : [
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "A Comparative Study of Document Layout Models",
+          "AbstractThis paper evaluates text extraction algorithms",
+          "applied to fixed-layout documents. We examine spatial"
+        ],
+        "pageNumber" : 1,
+        "detectedCategories" : [
+          "columns_or_tables",
+          "heading"
+        ],
+        "durationSeconds" : 0.2012169361114502,
+        "linesCount" : 18
+      }
+    ],
+    "peakMemoryMB" : 536.484375,
+    "totalPagesTested" : 1,
+    "meanTimePerPageMs" : 207.18204975128174
+  },
+  {
+    "totalLinesDetected" : 4,
+    "totalDurationSeconds" : 0.3733220100402832,
+    "meanConfidence" : 1,
+    "documentName" : "09_hybrid_mixed.pdf",
+    "pages" : [
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "Hybrid Document - Page 1 Native Text",
+          "This page contains regular vector text."
+        ],
+        "pageNumber" : 1,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.15687406063079834,
+        "linesCount" : 2
+      },
+      {
+        "meanConfidence" : 0,
+        "sampleLines" : [
+
+        ],
+        "pageNumber" : 2,
+        "detectedCategories" : [
+
+        ],
+        "durationSeconds" : 0.051622986793518066,
+        "linesCount" : 0
+      },
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "Page 3: Text and Embedded Chart",
+          "Caption for the chart above."
+        ],
+        "pageNumber" : 3,
+        "detectedCategories" : [
+          "body_paragraph"
+        ],
+        "durationSeconds" : 0.15334606170654297,
+        "linesCount" : 2
+      }
+    ],
+    "peakMemoryMB" : 582.296875,
+    "totalPagesTested" : 3,
+    "meanTimePerPageMs" : 124.44067001342773
+  },
+  {
+    "totalLinesDetected" : 7,
+    "totalDurationSeconds" : 0.21375703811645508,
+    "meanConfidence" : 1,
+    "documentName" : "01_single_column_novel.pdf",
+    "pages" : [
+      {
+        "meanConfidence" : 1,
+        "sampleLines" : [
+          "Chapter 1: The Beginning",
+          "It was a dark and stormy night when the messenger finally arrived at the gates of the ancient es",
+          "He carried news that would change the destiny of the kingdom forever."
+        ],
+        "pageNumber" : 1,
+        "detectedCategories" : [
+          "heading",
+          "dialogue",
+          "columns_or_tables"
+        ],
+        "durationSeconds" : 0.21002602577209473,
+        "linesCount" : 7
+      }
+    ],
+    "peakMemoryMB" : 598.984375,
+    "totalPagesTested" : 1,
+    "meanTimePerPageMs" : 213.75703811645508
+  }
+]

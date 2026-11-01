@@ -19,6 +19,10 @@ class ReconstructedParagraph {
   final bool startsWithIndent;
   final bool isDialogue;
   final bool isIsolated; // e.g. single line surrounded by large gaps
+  final bool isOrderedList;
+  final bool isUnorderedList;
+  final bool isCopyright;
+  final bool isCaption;
 
   const ReconstructedParagraph({
     required this.text,
@@ -34,6 +38,10 @@ class ReconstructedParagraph {
     this.startsWithIndent = false,
     this.isDialogue = false,
     this.isIsolated = false,
+    this.isOrderedList = false,
+    this.isUnorderedList = false,
+    this.isCopyright = false,
+    this.isCaption = false,
   });
 }
 
@@ -45,6 +53,32 @@ class ParagraphReconstructor {
 
   /// Dialogue openers: quotation marks, em-dash, guillemets.
   static final RegExp _dialogueOpeners = RegExp(r'^(["“‘«—\-]|--\s)');
+
+  /// Ordered list items: "1.", "1)", "(1)", "a.", "i.", etc.
+  static final RegExp _orderedListRegex =
+      RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+');
+
+  /// Unordered list items: bullet, dash, asterisk, en/em-dash
+  static final RegExp _unorderedListRegex =
+      RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+');
+
+  /// Copyright, imprint, and bibliographic metadata prefixes
+  static final RegExp _copyrightMetaRegex = RegExp(
+    r'^(hak cipta|all rights reserved|dilarang memfotokopi|katalog dalam terbitan|kdt|isbn|diterbitkan oleh|cetakan ke|desain sampul|penata letak|penerjemah|editor:|pemeriksa aksara|ilustrasi:)\b',
+    caseSensitive: false,
+  );
+
+  /// Captions (figure, image, diagram, table)
+  static final RegExp _captionRegex = RegExp(
+    r'^(figure|fig\.|gambar|diagram|tabel|table|photo|foto|denah)\s+([0-9ivxlcdm\.]+)?:?',
+    caseSensitive: false,
+  );
+
+  /// Chapter header markers
+  static final RegExp _chapterHeaderRegex = RegExp(
+    r'^(chapter|bab|bagian|part|act|hukum)\s+([0-9ivxlcdm]+|[a-z]+)',
+    caseSensitive: false,
+  );
 
   /// Reconstructs paragraphs across all pages of a document.
   static List<ReconstructedParagraph> reconstructDocument(
@@ -131,59 +165,106 @@ class ParagraphReconstructor {
     required double modalLineGap,
     required double modalLineHeight,
   }) {
-    // 1. Font size change: Headings or captions with distinct font sizes never merge into body text
+    final currentTrimmed = currentLine.text.trim();
+    final prevTrimmed = prevLine.text.trim();
+
+    // 1. List Item checks (Ordered and Unordered):
+    // A line starting with 1., 2., a., •, -, * always begins a distinct list item!
+    if (_orderedListRegex.hasMatch(currentTrimmed) ||
+        _unorderedListRegex.hasMatch(currentTrimmed)) {
+      return true;
+    }
+    // If previous line was a list item and either finished or has vertical separation
+    if (_orderedListRegex.hasMatch(prevTrimmed) ||
+        _unorderedListRegex.hasMatch(prevTrimmed)) {
+      if (_sentenceTerminators.hasMatch(prevTrimmed) ||
+          currentLine.bounds.top - prevLine.bounds.bottom >= modalLineGap * 0.9) {
+        return true;
+      }
+    }
+
+    // 2. Copyright, Publishing & Bibliographic Metadata isolation:
+    if (_copyrightMetaRegex.hasMatch(currentTrimmed) ||
+        _copyrightMetaRegex.hasMatch(prevTrimmed)) {
+      return true;
+    }
+
+    // 3. Caption isolation (Figure, Gambar, Tabel, Diagram):
+    if (_captionRegex.hasMatch(currentTrimmed) ||
+        _captionRegex.hasMatch(prevTrimmed)) {
+      return true;
+    }
+
+    // 4. Chapter markers and prominent standalone title headings:
+    if (_chapterHeaderRegex.hasMatch(currentTrimmed) ||
+        _chapterHeaderRegex.hasMatch(prevTrimmed)) {
+      return true;
+    }
+
+    final isPrevAllCapTitle = prevTrimmed.length <= 60 &&
+        prevTrimmed == prevTrimmed.toUpperCase() &&
+        RegExp(r'[A-Z]').hasMatch(prevTrimmed) &&
+        !RegExp(r'^\d+$').hasMatch(prevTrimmed);
+    final isCurrAllCapTitle = currentTrimmed.length <= 60 &&
+        currentTrimmed == currentTrimmed.toUpperCase() &&
+        RegExp(r'[A-Z]').hasMatch(currentTrimmed) &&
+        !RegExp(r'^\d+$').hasMatch(currentTrimmed);
+    if (isPrevAllCapTitle || isCurrAllCapTitle) {
+      return true;
+    }
+
+    // 5. Significant Left Margin Indentation or Block Quote offset:
+    final leftDiff = (currentLine.bounds.left - prevLine.bounds.left).abs();
+    if (leftDiff >= 16.0) {
+      return true;
+    }
+
+    // 6. Font size change: Headings or captions with distinct font sizes never merge into body text
     final fontDiff = (currentLine.fontSize - prevLine.fontSize).abs();
     if (fontDiff >= 1.5) {
       return true;
     }
 
-    // 2. Bold / Italic transition: e.g. bold heading above plain text body
+    // 7. Bold / Italic transition: e.g. bold heading above plain text body
     if (prevLine.isBold != currentLine.isBold && fontDiff >= 0.8) {
       return true;
     }
 
-    // 3. Dialogue check: If current line starts with dialogue quotation, start new paragraph
-    final currentTrimmed = currentLine.text.trim();
+    // 8. Dialogue check: If current line starts with dialogue quotation, start new paragraph
     if (_dialogueOpeners.hasMatch(currentTrimmed)) {
-      // If previous line completed a thought, definitely break
-      if (_sentenceTerminators.hasMatch(prevLine.text.trim())) {
+      if (_sentenceTerminators.hasMatch(prevTrimmed)) {
         return true;
       }
     }
 
-    // 4. Same page vertical gap analysis
+    // 9. Same page vertical gap analysis
     if (prevPage == currentPage) {
       final verticalGap = currentLine.bounds.top - prevLine.bounds.bottom;
 
-      // If gap is negative or very small, lines are overlapping or same baseline (handled by reading order)
-      // If gap is noticeably larger than modal line spacing (e.g. > 1.4x), it's a paragraph break
-      final threshold = math.max(modalLineGap * 1.45, 6.0);
+      // If gap is noticeably larger than modal line spacing (e.g. > 1.35x), it's a paragraph break
+      final threshold = math.max(modalLineGap * 1.35, 5.5);
       if (verticalGap > threshold) {
         return true;
       }
 
-      // 5. First-line Indentation signal:
-      // If current line starts noticeably further right than previous line (first-line indent)
+      // First-line Indentation signal:
       final indentDiff = currentLine.bounds.left - prevLine.bounds.left;
-      if (indentDiff >= 9.0 && _sentenceTerminators.hasMatch(prevLine.text.trim())) {
+      if (indentDiff >= 8.0 && _sentenceTerminators.hasMatch(prevTrimmed)) {
         return true;
       }
 
-      // 6. Right margin termination signal:
-      // If previous line ended short (right edge is far from column width) and ended with punctuation
-      final prevLineEndedPunctuation = _sentenceTerminators.hasMatch(prevLine.text.trim());
+      // Right margin termination signal:
+      final prevLineEndedPunctuation = _sentenceTerminators.hasMatch(prevTrimmed);
       final widthRatio = prevLine.bounds.width / math.max(currentLine.bounds.width, 1.0);
-      if (prevLineEndedPunctuation && widthRatio < 0.75 && verticalGap >= modalLineGap * 0.9) {
+      if (prevLineEndedPunctuation && widthRatio < 0.80 && verticalGap >= modalLineGap * 0.85) {
         return true;
       }
     } else {
-      // 7. Across page boundary:
-      // If previous line was a short heading or title, break immediately
+      // 10. Across page boundary:
       if (prevLine.fontSize > 13.0 || prevLine.isBold) {
         return true;
       }
 
-      // Dialogue opener or first-line indentation signals a distinct new paragraph
       final isDialogue = _dialogueOpeners.hasMatch(currentTrimmed);
       final indentDiff = currentLine.bounds.left - prevLine.bounds.left;
       final hasFirstLineIndent = indentDiff >= 8.0;
@@ -192,8 +273,7 @@ class ParagraphReconstructor {
         return true;
       }
 
-      // If previous page ended with sentence-ending punctuation AND current page starts far down (new section)
-      final prevEndsSentence = _sentenceTerminators.hasMatch(prevLine.text.trim());
+      final prevEndsSentence = _sentenceTerminators.hasMatch(prevTrimmed);
       final startsFarDown = currentLine.bounds.top > 120.0;
       if (prevEndsSentence && startsFarDown) {
         return true;
@@ -322,8 +402,10 @@ class ReconstructedParagraphBuilder {
     final isItalic = lines.every((l) => l.isItalic);
     final fontStyles = firstLine.fontStyle;
 
+    final fullText = buffer.toString().trim();
+
     return ReconstructedParagraph(
-      text: buffer.toString(),
+      text: fullText,
       startPageIndex: firstLine.pageIndex,
       endPageIndex: lines.last.pageIndex,
       boundingBox: Rect.fromLTRB(minLeft, minTop, maxRight, maxBottom),
@@ -333,8 +415,13 @@ class ReconstructedParagraphBuilder {
       isItalic: isItalic,
       lineCount: lines.length,
       sourceLines: List.unmodifiable(lines),
-      isDialogue: RegExp(r'^(["“‘«—\-]|--\s)').hasMatch(buffer.toString()),
+      isDialogue: RegExp(r'^(["“‘«—\-]|--\s)').hasMatch(fullText),
       isIsolated: lines.length == 1,
+      isOrderedList: ParagraphReconstructor._orderedListRegex.hasMatch(fullText),
+      isUnorderedList: ParagraphReconstructor._unorderedListRegex.hasMatch(fullText),
+      isCopyright: ParagraphReconstructor._copyrightMetaRegex.hasMatch(fullText) ||
+          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(fullText),
+      isCaption: ParagraphReconstructor._captionRegex.hasMatch(fullText),
     );
   }
 }

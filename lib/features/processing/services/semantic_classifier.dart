@@ -114,11 +114,11 @@ class SemanticClassifier {
 
     // D. Captions (proximity text starting with figure/diagram keywords or small italic)
     final isCaptionKeyword = RegExp(
-      r'^(figure|fig\.|gambar|diagram|tabel|table|photo|denah)\s+([0-9ivxlcdm\.]+)?:?',
+      r'^(figure|fig\.|gambar|diagram|tabel|table|photo|foto|denah)\s+([0-9ivxlcdm\.]+)?:?',
       caseSensitive: false,
     ).hasMatch(text);
 
-    if (isCaptionKeyword && lineCount <= 3) {
+    if ((para.isCaption || isCaptionKeyword) && lineCount <= 3) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.caption,
         text: text,
@@ -139,7 +139,48 @@ class SemanticClassifier {
       );
     }
 
-    // E. Block Quotes (significant left indent or italicized long quotation)
+    // E. Ordered and Unordered Lists
+    final orderedMatch = RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+').firstMatch(text);
+    if (para.isOrderedList || orderedMatch != null) {
+      final marker = orderedMatch?.group(1) ?? '';
+      return SemanticReconstructedBlock(
+        type: SemanticBlockType.orderedListItem,
+        text: text,
+        sourcePageIndex: para.startPageIndex,
+        sourceBounds: para.boundingBox,
+        metadata: {'listMarker': marker},
+        confidence: 0.95,
+      );
+    }
+
+    final unorderedMatch = RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+').firstMatch(text);
+    if (para.isUnorderedList || unorderedMatch != null) {
+      return SemanticReconstructedBlock(
+        type: SemanticBlockType.unorderedListItem,
+        text: text,
+        sourcePageIndex: para.startPageIndex,
+        sourceBounds: para.boundingBox,
+        metadata: {'listMarker': '•'},
+        confidence: 0.95,
+      );
+    }
+
+    // F. Copyright, Imprint, and Publishing Information
+    if (para.isCopyright ||
+        RegExp(
+          r'(hak cipta|all rights reserved|dilarang memfotokopi|katalog dalam terbitan|kdt|isbn\b|cetakan ke-|desain sampul|penata letak|penerjemah|editor:|diterbitkan oleh|penerbit\b)',
+          caseSensitive: false,
+        ).hasMatch(text)) {
+      return SemanticReconstructedBlock(
+        type: SemanticBlockType.copyrightBlock,
+        text: text,
+        sourcePageIndex: para.startPageIndex,
+        sourceBounds: para.boundingBox,
+        confidence: 0.96,
+      );
+    }
+
+    // G. Block Quotes (significant left indent or italicized long quotation)
     final hasIndent = left >= bodyLeftMargin + 16.0;
     if (hasIndent && (isItalic || para.isDialogue || text.startsWith('"'))) {
       return SemanticReconstructedBlock(
@@ -151,19 +192,18 @@ class SemanticClassifier {
       );
     }
 
-    // F. Headings (H1, H2, H3)
-    // Only short, prominent paragraphs qualify as headings (not long text blocks)
+    // H. Headings (H1, H2, H3, Document Title)
+    // Supports both font-metric scaling in digital PDFs and casing/spatial patterns in scanned OCR
     if (lineCount <= 3 && text.length < 160) {
       final fontRatio = fontSize / bodyFontSize;
 
-      // H1: Prominent font (>= 1.45x body size), or Chapter pattern + bold
       final isChapterPattern = RegExp(
-        r'^(chapter|bab|bagian|part|book|act)\s+([0-9ivxlcdm]+|[a-z]+)',
+        r'^(chapter|bab|bagian|part|book|act|hukum)\s+([0-9ivxlcdm]+|[a-z]+)',
         caseSensitive: false,
       ).hasMatch(text);
 
       final isNamedChapter = RegExp(
-        r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion)\b',
+        r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|ucapan terima kasih|tentang penulis)\b',
         caseSensitive: false,
       ).hasMatch(text);
 
@@ -173,11 +213,41 @@ class SemanticClassifier {
             r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
           ).hasMatch(text);
 
+      final isAllCapTitle = lineCount <= 2 &&
+          text.length <= 60 &&
+          text == text.toUpperCase() &&
+          RegExp(r'[A-Z]').hasMatch(text) &&
+          !RegExp(r'^\d+$').hasMatch(text);
+
       final isProminentTitle = fontRatio >= 1.25 &&
           isBold &&
           text.length < 60 &&
           text == text.toUpperCase() &&
           !RegExp(r'^\d+$').hasMatch(text);
+
+      // Prioritize explicit Chapter headings over Document Title
+      if (isChapterPattern || isNamedChapter || isRomanChapter) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.heading1,
+          headingLevel: 1,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.95,
+        );
+      }
+
+      // Book / Document Title on leading pages
+      if (para.startPageIndex <= 2 && isAllCapTitle && top < pageHeight * 0.40) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.documentTitle,
+          headingLevel: 1,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.95,
+        );
+      }
 
       if (fontRatio >= 1.45 ||
           (fontRatio >= 1.18 && isBold && (isChapterPattern || isNamedChapter || isRomanChapter)) ||
@@ -192,13 +262,16 @@ class SemanticClassifier {
         );
       }
 
-      // H2: Section heading (1.2x - 1.45x body size, or bold with Roman/Section numbering)
+      // H2: Section heading (1.2x - 1.45x body size, or bold with Roman/Section numbering or isolated uppercase)
       final isSectionPattern = RegExp(
         r'^([0-9ivxlcdm]+\.|\bsection\b|\bhukum\b)',
         caseSensitive: false,
       ).hasMatch(text);
 
-      if ((fontRatio >= 1.22 && isBold) || (isBold && isSectionPattern)) {
+      if ((fontRatio >= 1.22 && isBold) ||
+          (isBold && isSectionPattern) ||
+          isSectionPattern ||
+          (isAllCapTitle && top < pageHeight * 0.65)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading2,
           headingLevel: 2,

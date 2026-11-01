@@ -17,6 +17,11 @@ enum SemanticBlockType {
   pageNumber,
   image,
   table,
+  documentTitle,
+  orderedListItem,
+  unorderedListItem,
+  copyrightBlock,
+  metadataBlock,
   unknown,
 }
 
@@ -74,12 +79,16 @@ class SemanticReconstructedBlock {
     int level = headingLevel;
 
     switch (type) {
+      case SemanticBlockType.documentTitle:
+        blockType = BlockType.documentTitle;
+        level = 1;
+        break;
       case SemanticBlockType.heading1:
         blockType = BlockType.heading;
         level = 1;
         break;
       case SemanticBlockType.heading2:
-        blockType = BlockType.heading;
+        blockType = BlockType.sectionHeading;
         level = 2;
         break;
       case SemanticBlockType.heading3:
@@ -95,9 +104,25 @@ class SemanticReconstructedBlock {
       case SemanticBlockType.image:
         blockType = BlockType.image;
         break;
-      case SemanticBlockType.bodyParagraph:
       case SemanticBlockType.caption:
+        blockType = BlockType.caption;
+        break;
       case SemanticBlockType.table:
+        blockType = BlockType.table;
+        break;
+      case SemanticBlockType.orderedListItem:
+        blockType = BlockType.orderedList;
+        break;
+      case SemanticBlockType.unorderedListItem:
+        blockType = BlockType.unorderedList;
+        break;
+      case SemanticBlockType.copyrightBlock:
+        blockType = BlockType.copyrightBlock;
+        break;
+      case SemanticBlockType.metadataBlock:
+        blockType = BlockType.metadataBlock;
+        break;
+      case SemanticBlockType.bodyParagraph:
       case SemanticBlockType.unknown:
       default:
         blockType = BlockType.paragraph;
@@ -111,6 +136,7 @@ class SemanticReconstructedBlock {
       headingLevel: level,
       imagePath: image?.imagePath,
       originalPageNumber: sourcePageIndex + 1,
+      metadata: metadata,
     );
   }
 

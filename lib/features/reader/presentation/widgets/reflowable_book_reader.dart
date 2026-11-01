@@ -205,10 +205,20 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         int lines = 1;
         if (block.type == BlockType.image) {
           lines = 13;
-        } else if (block.type == BlockType.heading) {
+        } else if (block.type == BlockType.heading || block.type == BlockType.documentTitle) {
           lines = 4;
+        } else if (block.type == BlockType.sectionHeading) {
+          lines = 3;
         } else if (block.type == BlockType.quote) {
           lines = math.max(1, (text.length / (charsPerLine * 0.85)).ceil()) + 2;
+        } else if (block.type == BlockType.copyrightBlock || block.type == BlockType.metadataBlock) {
+          lines = math.max(1, (text.length / (charsPerLine * 0.90)).ceil()) + 3;
+        } else if (block.type == BlockType.orderedList ||
+            block.type == BlockType.unorderedList ||
+            block.type == BlockType.listItem) {
+          lines = math.max(1, (text.length / (charsPerLine * 0.88)).ceil()) + 1;
+        } else if (block.type == BlockType.caption || block.type == BlockType.footnote) {
+          lines = math.max(1, (text.length / (charsPerLine * 0.90)).ceil()) + 1;
         } else {
           // Paragraph: calculate lines with word wrap buffer + paragraph margin
           lines = math.max(1, (text.length / charsPerLine).ceil()) + 1;
@@ -852,7 +862,279 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
       );
     }
 
-    // 4. Regular Paragraph / Standalone Line Block
+    // 4. Document Title Block
+    if (block.type == BlockType.documentTitle) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0),
+        child: Column(
+          children: [
+            Text(
+              block.text.trim(),
+              textAlign: TextAlign.center,
+              style: widget.typography.fontFamily.getTextStyle(
+                fontSize: widget.typography.fontSize * 1.5,
+                fontWeight: FontWeight.bold,
+                color: widget.theme.textColor,
+                height: 1.25,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: 50,
+              height: 2,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 5. Section Heading Block (H2 / Subheadings)
+    if (block.type == BlockType.sectionHeading) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 3.5,
+              height: widget.typography.fontSize * 1.15,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                block.text.trim(),
+                style: widget.typography.fontFamily.getTextStyle(
+                  fontSize: widget.typography.fontSize * 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: widget.theme.textColor,
+                  height: 1.3,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 6. Ordered List Item Block
+    if (block.type == BlockType.orderedList || block.type == BlockType.listItem) {
+      final itemText = block.text.trim();
+      final match = RegExp(
+        r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s*(.*)$',
+        dotAll: true,
+      ).firstMatch(itemText);
+      final marker = match?.group(1) ?? '•';
+      final content = match?.group(2) ?? itemText;
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 12.0,
+          right: 8.0,
+          bottom: widget.typography.fontSize * 0.45,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              constraints: const BoxConstraints(minWidth: 28),
+              margin: const EdgeInsets.only(right: 8, top: 1),
+              child: Text(
+                marker,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFD4AF37),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SelectableText(
+                content,
+                textAlign: widget.typography.textAlign,
+                style: widget.typography.fontFamily.getTextStyle(
+                  fontSize: widget.typography.fontSize,
+                  fontWeight: widget.typography.fontWeight,
+                  color: widget.theme.textColor,
+                  height: widget.typography.lineSpacing,
+                  letterSpacing: widget.typography.letterSpacing,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 7. Unordered List Item Block
+    if (block.type == BlockType.unorderedList) {
+      final itemText = block.text.trim();
+      final match = RegExp(
+        r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s*(.*)$',
+        dotAll: true,
+      ).firstMatch(itemText);
+      final content = match?.group(2) ?? itemText;
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 14.0,
+          right: 8.0,
+          bottom: widget.typography.fontSize * 0.45,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10.0, top: 7.0),
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFD4AF37),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SelectableText(
+                content,
+                textAlign: widget.typography.textAlign,
+                style: widget.typography.fontFamily.getTextStyle(
+                  fontSize: widget.typography.fontSize,
+                  fontWeight: widget.typography.fontWeight,
+                  color: widget.theme.textColor,
+                  height: widget.typography.lineSpacing,
+                  letterSpacing: widget.typography.letterSpacing,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 8. Copyright & Publishing Metadata Block
+    if (block.type == BlockType.copyrightBlock ||
+        block.type == BlockType.metadataBlock) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 12.0),
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: widget.theme.isDark
+              ? Colors.white.withAlpha(8)
+              : Colors.black.withAlpha(6),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: widget.theme.secondaryTextColor.withAlpha(35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 13,
+                  color: widget.theme.secondaryTextColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'INFORMASI PENERBITAN & HAK CIPTA',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    color: widget.theme.secondaryTextColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              block.text.trim(),
+              style: widget.typography.fontFamily.getTextStyle(
+                fontSize: widget.typography.fontSize * 0.85,
+                fontWeight: FontWeight.normal,
+                height: 1.5,
+                color: widget.theme.secondaryTextColor.withAlpha(220),
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 9. Caption Block
+    if (block.type == BlockType.caption) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_outlined,
+              size: 13,
+              color: widget.theme.secondaryTextColor.withAlpha(160),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                block.text.trim(),
+                textAlign: TextAlign.center,
+                style: widget.typography.fontFamily
+                    .getTextStyle(
+                      fontSize: widget.typography.fontSize * 0.88,
+                      fontWeight: FontWeight.normal,
+                      height: 1.4,
+                      color: widget.theme.secondaryTextColor,
+                      letterSpacing: 0.2,
+                    )
+                    .copyWith(fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 10. Footnote Block
+    if (block.type == BlockType.footnote) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Divider(
+              color: widget.theme.secondaryTextColor.withAlpha(40),
+              thickness: 0.8,
+            ),
+            const SizedBox(height: 4),
+            SelectableText(
+              block.text.trim(),
+              style: widget.typography.fontFamily.getTextStyle(
+                fontSize: widget.typography.fontSize * 0.82,
+                fontWeight: FontWeight.normal,
+                height: 1.4,
+                color: widget.theme.secondaryTextColor,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 11. Regular Paragraph / Standalone Line Block
     final text = block.text;
 
     // Check if line is a standalone title / subtitle / disclaimer header that should be centered

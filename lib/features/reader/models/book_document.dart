@@ -1,6 +1,22 @@
 import 'dart:convert';
 
-enum BlockType { heading, paragraph, image, pageBreak, quote, footnote }
+enum BlockType {
+  heading,
+  paragraph,
+  image,
+  pageBreak,
+  quote,
+  footnote,
+  documentTitle,
+  sectionHeading,
+  orderedList,
+  unorderedList,
+  listItem,
+  caption,
+  table,
+  copyrightBlock,
+  metadataBlock,
+}
 
 class BookBlock {
   final String id;
@@ -9,6 +25,7 @@ class BookBlock {
   final int headingLevel; // 1 for chapter title, 2 for section, 3 for sub
   final String? imagePath;
   final int originalPageNumber;
+  final Map<String, dynamic> metadata;
 
   const BookBlock({
     required this.id,
@@ -17,6 +34,7 @@ class BookBlock {
     this.headingLevel = 1,
     this.imagePath,
     this.originalPageNumber = 1,
+    this.metadata = const {},
   });
 
   Map<String, dynamic> toJson() => {
@@ -26,6 +44,7 @@ class BookBlock {
     'headingLevel': headingLevel,
     'imagePath': imagePath,
     'originalPageNumber': originalPageNumber,
+    if (metadata.isNotEmpty) 'metadata': metadata,
   };
 
   factory BookBlock.fromJson(Map<String, dynamic> json) => BookBlock(
@@ -38,6 +57,7 @@ class BookBlock {
     headingLevel: json['headingLevel'] as int? ?? 1,
     imagePath: json['imagePath'] as String?,
     originalPageNumber: json['originalPageNumber'] as int? ?? 1,
+    metadata: (json['metadata'] as Map<String, dynamic>?) ?? const {},
   );
 }
 
