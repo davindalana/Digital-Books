@@ -1146,6 +1146,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         initialPage: _currentPage,
                         theme: activeTheme,
                         viewMode: ref.watch(pdfViewModeProvider),
+                        enhancementConfig: ref.watch(
+                          scanEnhancementConfigProvider(widget.book.id),
+                        ),
                         showControls: _showControls,
                         onTapContent: _toggleControls,
                         onSwitchToReflowable: _document != null
@@ -1705,6 +1708,42 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         size: 20,
                       ),
                       onPressed: _openBookSearchDialog,
+                    ),
+
+                  // Quick Scan Enhancement Toggle for Original PDF Reader
+                  if (readingMode == ReadingMode.originalPdf)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final config = ref.watch(
+                          scanEnhancementConfigProvider(widget.book.id),
+                        );
+                        return IconButton(
+                          key: const ValueKey('reader_enhancement_toggle'),
+                          tooltip: config.isEnabled
+                              ? 'Enhance Aktif (Klik untuk Mode Asli)'
+                              : 'Tingkatkan Kualitas Scan (Enhance)',
+                          icon: Icon(
+                            config.isEnabled
+                                ? Icons.auto_fix_high
+                                : Icons.auto_fix_normal_outlined,
+                            color: config.isEnabled
+                                ? const Color(0xFFD4AF37)
+                                : activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(
+                                  scanEnhancementConfigProvider(
+                                    widget.book.id,
+                                  ).notifier,
+                                )
+                                .state = config.copyWith(
+                              isEnabled: !config.isEnabled,
+                            );
+                          },
+                        );
+                      },
                     ),
 
                   // Appearance Settings (aA)

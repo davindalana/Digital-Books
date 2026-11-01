@@ -3,7 +3,11 @@ import '../../../core/theme/reading_theme.dart';
 import '../../../core/typography/typography_settings.dart';
 import '../domain/models/reading_location.dart';
 
+import '../../processing/services/scanned_image_enhancer.dart';
+
 export '../domain/models/reading_location.dart' show ReflowableLayoutMode;
+export '../../processing/services/scanned_image_enhancer.dart'
+    show ScanEnhancementConfig, ScanEnhancementIntensity;
 
 enum ReadingMode { reflowable, originalPdf }
 
@@ -38,3 +42,9 @@ final pdfViewModeProvider = StateProvider<PdfViewMode>(
 
 /// Screen brightness dimmer for comfortable night reading (0.0 = normal, up to 0.6 = dark ambient tint)
 final readerBrightnessDimmerProvider = StateProvider<double>((ref) => 0.0);
+
+/// Scanned PDF image enhancement settings per book
+final scanEnhancementConfigProvider =
+    StateProvider.family<ScanEnhancementConfig, String>(
+  (ref, bookId) => const ScanEnhancementConfig(),
+);

@@ -365,6 +365,217 @@ class AppearanceSheet extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   if (isPdf) ...[
+                    // Scanned PDF Enhancement Settings
+                    Text(
+                      'PENINGKATAN KUALITAS PINDAIAN',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                        color: activeTheme.secondaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        if (bookId == null) return const SizedBox.shrink();
+                        final config = ref.watch(
+                          scanEnhancementConfigProvider(bookId!),
+                        );
+                        final notifier = ref.read(
+                          scanEnhancementConfigProvider(bookId!).notifier,
+                        );
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: activeTheme.isDark
+                                ? Colors.white.withAlpha(18)
+                                : Colors.black.withAlpha(10),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SwitchListTile.adaptive(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 2,
+                                ),
+                                title: Text(
+                                  'Tingkatkan Kualitas Pindaian',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: activeTheme.textColor,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Mempertajam teks, memutihkan latar kertas, dan meratakan kontras.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: activeTheme.secondaryTextColor,
+                                  ),
+                                ),
+                                value: config.isEnabled,
+                                activeTrackColor: const Color(0xFF007AFF),
+                                onChanged: (val) {
+                                  notifier.state = config.copyWith(
+                                    isEnabled: val,
+                                  );
+                                },
+                              ),
+                              if (config.isEnabled) ...[
+                                const Divider(
+                                  height: 1,
+                                  indent: 14,
+                                  endIndent: 14,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    14,
+                                    12,
+                                    14,
+                                    6,
+                                  ),
+                                  child: Text(
+                                    'TINGKAT PENINGKATAN',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.1,
+                                      color: activeTheme.secondaryTextColor,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 4,
+                                  ),
+                                  child: Row(
+                                    children:
+                                        ScanEnhancementIntensity.values.map((
+                                          intensity,
+                                        ) {
+                                          final isSelected =
+                                              config.intensity == intensity;
+                                          return Expanded(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 3,
+                                                  ),
+                                              child: InkWell(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                onTap: () {
+                                                  notifier.state =
+                                                      config.copyWith(
+                                                        intensity: intensity,
+                                                      );
+                                                },
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? const Color(
+                                                            0xFF007AFF,
+                                                          )
+                                                        : (activeTheme.isDark
+                                                                ? Colors.white
+                                                                : Colors.black)
+                                                            .withAlpha(12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                  ),
+                                                  alignment: Alignment.center,
+                                                  child: Text(
+                                                    intensity.label,
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: isSelected
+                                                          ? Colors.white
+                                                          : activeTheme
+                                                              .textColor,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                SwitchListTile.adaptive(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
+                                  title: Text(
+                                    'Reduksi Bayangan Lipatan (Gutter)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: activeTheme.textColor,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Meringankan bayangan gelap di area punggung buku.',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: activeTheme.secondaryTextColor,
+                                    ),
+                                  ),
+                                  value: config.removeGutterShadow,
+                                  activeTrackColor: const Color(0xFF007AFF),
+                                  onChanged: (val) {
+                                    notifier.state = config.copyWith(
+                                      removeGutterShadow: val,
+                                    );
+                                  },
+                                ),
+                                SwitchListTile.adaptive(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                  ),
+                                  title: Text(
+                                    'Mode Hitam Putih (Grayscale)',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: activeTheme.textColor,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Mengubah halaman ke hitam putih untuk kontras maksimal.',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: activeTheme.secondaryTextColor,
+                                    ),
+                                  ),
+                                  value: config.toGrayscale,
+                                  activeTrackColor: const Color(0xFF007AFF),
+                                  onChanged: (val) {
+                                    notifier.state = config.copyWith(
+                                      toGrayscale: val,
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 6),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 14),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
