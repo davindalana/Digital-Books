@@ -129,7 +129,7 @@ class PaginationEngine {
     // 1. Check cache
     final isTwoPageSpread = viewportWidth >= 850 && typography.twoPageSpread;
     final double rawPageWidth = isTwoPageSpread
-        ? ((viewportWidth - 32) / 2)
+        ? ((viewportWidth - 16.0) / 2)
         : viewportWidth;
     final double effectiveMargin = (rawPageWidth < 400)
         ? 16.0
@@ -246,7 +246,10 @@ class PaginationEngine {
         continue;
       }
 
-      // Paragraph / Quote text
+      // Paragraph / Quote / Footnote text
+      final isAtomicNode = node.type == ContentNodeType.footnote ||
+          (node.type == ContentNodeType.quote && text.length < 250);
+
       int charStart = 0;
       while (charStart < text.length) {
         final remainingText = text.substring(charStart);
@@ -272,7 +275,9 @@ class PaginationEngine {
                 ? (8.0 + typography.paragraphSpacing)
                 : typography.paragraphSpacing);
 
-        if (fullHeight <= remainingHeightBudget) {
+        final requiredBudget = fullHeight + nodePadding;
+        if (requiredBudget <= remainingHeightBudget ||
+            (currentPageSlices.isEmpty && fullHeight <= remainingHeightBudget)) {
           // Entire remaining paragraph fits
           currentPageSlices.add(
             PaginatedNodeSlice(
@@ -284,19 +289,25 @@ class PaginationEngine {
               hasMore: false,
             ),
           );
-          currentUsedHeight += fullHeight + nodePadding;
+          currentUsedHeight += requiredBudget;
           charStart = text.length;
         } else {
-          // Paragraph must be split at clean word boundary within availableHeight
+          // Paragraph must be split adaptively at clean word boundary within availableHeight
+          final availableTextBudget = math.max(
+            0.0,
+            remainingHeightBudget - nodePadding,
+          );
           final splitIndex = _findBestWordBreak(
             text: remainingText,
             style: textStyle,
             maxWidth: contentWidth,
-            maxHeight: remainingHeightBudget,
+            maxHeight: availableTextBudget,
+            isFreshPage: currentPageSlices.isEmpty,
+            isAtomic: isAtomicNode,
           );
 
           if (splitIndex <= 0 || splitIndex >= remainingText.length) {
-            // Cannot split or no room, push page and try on fresh page
+            // Cannot split cleanly or block is atomic, push page and retry on fresh page
             if (currentPageSlices.isNotEmpty) {
               pushCurrentPage();
               continue;
@@ -413,14 +424,24 @@ class PaginationEngine {
   }
 
   /// Finds the character boundary where text cleanly breaks before exceeding maxHeight.
-  /// Guarantees that words are NEVER split in half.
+  /// Guarantees that:
+  /// 1. Words are NEVER split in half (snaps backward to clean whitespace boundary).
+  /// 2. Rendered height is strictly <= maxHeight (zero vertical overflow/clipping).
+  /// 3. Orphan prevention: Requires at least [minLinesAtBottom] (2) lines on the current page.
+  /// 4. Widow prevention: Ensures the remainder on the next page has at least [minLinesAtTop] (2) lines.
+  /// 5. Atomic preservation: If [isAtomic] is true or paragraph has fewer than 4 lines on a non-fresh page,
+  ///    returns 0 so the block is kept intact on the next page.
   static int _findBestWordBreak({
     required String text,
     required TextStyle style,
     required double maxWidth,
     required double maxHeight,
+    bool isFreshPage = false,
+    bool isAtomic = false,
+    int minLinesAtBottom = 2,
+    int minLinesAtTop = 2,
   }) {
-    if (text.isEmpty) return 0;
+    if (text.isEmpty || maxHeight <= 0) return 0;
 
     final textPainter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -428,34 +449,98 @@ class PaginationEngine {
     )..layout(maxWidth: maxWidth);
 
     try {
-      final textPosition = textPainter.getPositionForOffset(
-        Offset(maxWidth, maxHeight),
-      );
-      int candidateOffset = textPosition.offset.clamp(0, text.length);
+      final lineMetrics = textPainter.computeLineMetrics();
+      final totalLines = lineMetrics.length;
 
-      if (candidateOffset >= text.length) {
-        if (textPainter.height > maxHeight) {
-          candidateOffset = text.length - 1;
-        } else {
-          return text.length;
+      // If text fits entirely within maxHeight, return text.length
+      if (textPainter.height <= maxHeight) {
+        return text.length;
+      }
+
+      // If block is atomic or too short to split into two multi-line fragments,
+      // reject split on non-fresh pages so the block stays whole on next page.
+      if (!isFreshPage) {
+        if (isAtomic || totalLines < (minLinesAtBottom + minLinesAtTop)) {
+          return 0;
         }
       }
 
-      // Walk backward to find the nearest whitespace boundary
+      // Determine how many lines fit strictly within maxHeight
+      int fittingLines = 0;
+      for (int i = 0; i < totalLines; i++) {
+        final lineBottom = lineMetrics[i].baseline + lineMetrics[i].descent;
+        if (lineBottom <= maxHeight) {
+          fittingLines = i + 1;
+        } else {
+          break;
+        }
+      }
+
+      // Orphan check: on non-fresh page, must fit at least minLinesAtBottom
+      if (!isFreshPage && fittingLines < minLinesAtBottom) {
+        return 0;
+      }
+
+      // On a fresh page, must fit at least 1 line
+      if (isFreshPage && fittingLines == 0) {
+        fittingLines = 1;
+      }
+
+      int targetLines = fittingLines;
+      int remainingLines = totalLines - targetLines;
+
+      // Widow check: if remaining lines would be 1 line, back up targetLines by 1
+      if (remainingLines == 1) {
+        if (targetLines > minLinesAtBottom) {
+          targetLines--;
+          remainingLines++;
+        } else if (!isFreshPage) {
+          // Cannot satisfy widow constraint without violating orphan constraint
+          return 0;
+        }
+      }
+
+      if (targetLines <= 0) return 0;
+
+      // Sample position at the baseline of the target line
+      final targetLineIndex = (targetLines - 1).clamp(0, totalLines - 1);
+      final targetLineMid = lineMetrics[targetLineIndex].baseline;
+
+      final textPos = textPainter.getPositionForOffset(Offset(maxWidth, targetLineMid));
+      int candidateOffset = textPos.offset.clamp(0, text.length);
+
+      // Snap backward to whitespace boundary
       while (candidateOffset > 0 &&
           candidateOffset < text.length &&
           text[candidateOffset].trim().isNotEmpty) {
         candidateOffset--;
       }
 
-      // If candidateOffset is at a space, return that boundary
-      if (candidateOffset > 0) {
-        return candidateOffset;
+      // Verify with sub-TextPainter that candidate slice does not exceed targetLines or maxHeight
+      while (candidateOffset > 0) {
+        final subTp = TextPainter(
+          text: TextSpan(text: text.substring(0, candidateOffset).trimRight(), style: style),
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: maxWidth);
+        final subLines = subTp.computeLineMetrics().length;
+        final subHeight = subTp.height;
+        subTp.dispose();
+
+        if (subLines <= targetLines && (subHeight <= maxHeight || isFreshPage)) {
+          return candidateOffset;
+        }
+        candidateOffset--;
+        while (candidateOffset > 0 && text[candidateOffset].trim().isNotEmpty) {
+          candidateOffset--;
+        }
       }
 
-      // If candidateOffset walked all the way back to 0:
-      // That means even the very first word in remainingText exceeds the height budget!
-      // DO NOT split the first word in half! Return 0 so caller pushes to fresh page!
+      // Fallback for fresh page if single word exceeds line
+      if (isFreshPage) {
+        final nextSpace = text.indexOf(' ');
+        return nextSpace > 0 ? nextSpace : text.length;
+      }
+
       return 0;
     } finally {
       textPainter.dispose();

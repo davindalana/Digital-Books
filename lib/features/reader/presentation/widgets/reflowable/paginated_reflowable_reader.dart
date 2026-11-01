@@ -392,7 +392,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final leftPage = _pages[leftIndex];
     final rightPage = rightIndex < _pages.length ? _pages[rightIndex] : null;
 
-    final double halfWidth = (width - 32) / 2;
+    final double halfWidth = (width - 16.0) / 2;
     final effectiveMargin = (halfWidth < 400)
         ? 16.0
         : (halfWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
@@ -406,24 +406,23 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
       children: [
         // Left Page
         Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: effectiveMargin,
-              right: effectiveMargin * 0.75,
-            ),
-            child: ReflowablePageRenderer(
-              page: leftPage,
-              totalPagesInBook: _pages.length,
-              theme: widget.theme,
-              typography: widget.typography,
-              contentWidth: contentWidth,
-              showHeader: true,
-              showFooter: true,
-              isLeftPage: true,
-              highlights: widget.highlights,
-              searchMatches: widget.searchMatches,
-              onHighlightCreated: widget.onHighlightCreated,
-              onHighlightTap: widget.onHighlightTap,
+          child: Center(
+            child: SizedBox(
+              width: contentWidth,
+              child: ReflowablePageRenderer(
+                page: leftPage,
+                totalPagesInBook: _pages.length,
+                theme: widget.theme,
+                typography: widget.typography,
+                contentWidth: contentWidth,
+                showHeader: true,
+                showFooter: true,
+                isLeftPage: true,
+                highlights: widget.highlights,
+                searchMatches: widget.searchMatches,
+                onHighlightCreated: widget.onHighlightCreated,
+                onHighlightTap: widget.onHighlightTap,
+              ),
             ),
           ),
         ),
@@ -445,24 +444,23 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
         // Right Page
         Expanded(
           child: rightPage != null
-              ? Padding(
-                  padding: EdgeInsets.only(
-                    left: effectiveMargin * 0.75,
-                    right: effectiveMargin,
-                  ),
-                  child: ReflowablePageRenderer(
-                    page: rightPage,
-                    totalPagesInBook: _pages.length,
-                    theme: widget.theme,
-                    typography: widget.typography,
-                    contentWidth: contentWidth,
-                    showHeader: true,
-                    showFooter: true,
-                    isLeftPage: false,
-                    highlights: widget.highlights,
-                    searchMatches: widget.searchMatches,
-                    onHighlightCreated: widget.onHighlightCreated,
-                    onHighlightTap: widget.onHighlightTap,
+              ? Center(
+                  child: SizedBox(
+                    width: contentWidth,
+                    child: ReflowablePageRenderer(
+                      page: rightPage,
+                      totalPagesInBook: _pages.length,
+                      theme: widget.theme,
+                      typography: widget.typography,
+                      contentWidth: contentWidth,
+                      showHeader: true,
+                      showFooter: true,
+                      isLeftPage: false,
+                      highlights: widget.highlights,
+                      searchMatches: widget.searchMatches,
+                      onHighlightCreated: widget.onHighlightCreated,
+                      onHighlightTap: widget.onHighlightTap,
+                    ),
                   ),
                 )
               : const SizedBox.shrink(),
