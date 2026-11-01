@@ -44,8 +44,12 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 300));
-        await tester.pump();
+        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
+        for (var i = 0; i < 30; i++) {
+          if (!state.isLoading) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+        }
       });
 
       final state =
@@ -91,8 +95,12 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 300));
-        await tester.pump();
+        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
+        for (var i = 0; i < 30; i++) {
+          if (!state.isLoading) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+        }
       });
 
       final state =
@@ -142,8 +150,12 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 300));
-        await tester.pump();
+        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
+        for (var i = 0; i < 30; i++) {
+          if (!state.isLoading) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+        }
       });
 
       final state =
@@ -188,8 +200,12 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 300));
-        await tester.pump();
+        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
+        for (var i = 0; i < 30; i++) {
+          if (!state.isLoading) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+        }
       });
 
       final state =
@@ -278,8 +294,12 @@ void main() {
           ),
         );
 
-        await Future.delayed(const Duration(milliseconds: 300));
-        await tester.pump();
+        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
+        for (var i = 0; i < 30; i++) {
+          if (!state.isLoading) break;
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+        }
       });
 
       final state =

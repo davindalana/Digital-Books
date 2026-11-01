@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import '../../../../core/theme/reading_theme.dart';
+import '../../../processing/services/scanned_image_enhancer.dart';
 import '../../providers/reader_settings_provider.dart';
 
 enum FlipDirection { forward, backward }
@@ -40,12 +42,14 @@ class _CachedPageBitmap {
   final ui.Image image;
   final double width;
   final double height;
+  final String configKey;
 
   _CachedPageBitmap({
     required this.pageNumber,
     required this.image,
     required this.width,
     required this.height,
+    this.configKey = 'raw',
   });
 }
 
@@ -55,6 +59,7 @@ class OriginalPdfReader extends StatefulWidget {
   final ReadingThemeType theme;
   final PdfViewMode viewMode;
   final bool showControls;
+  final ScanEnhancementConfig? enhancementConfig;
   final Function(int pageNumber, int totalPages) onPageChanged;
   final VoidCallback onTapContent;
   final VoidCallback? onSwitchToReflowable;
@@ -70,6 +75,7 @@ class OriginalPdfReader extends StatefulWidget {
     required this.theme,
     this.viewMode = PdfViewMode.paginated,
     this.showControls = true,
+    this.enhancementConfig = const ScanEnhancementConfig(),
     required this.onPageChanged,
     required this.onTapContent,
     this.onSwitchToReflowable,
@@ -328,6 +334,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           _scrollController.jumpTo(targetOffset);
         }
       });
+    } else if (oldWidget.enhancementConfig != widget.enhancementConfig) {
+      final isSpread = _effectiveTwoPage;
+      _warmCacheAroundSpread(_currentSpreadIndex, isSpread, forceRefresh: true);
     }
   }
 
@@ -380,7 +389,13 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     return active;
   }
 
-  void _putBitmapToCache(int pageNumber, ui.Image image, double w, double h) {
+  void _putBitmapToCache(
+    int pageNumber,
+    ui.Image image,
+    double w,
+    double h, {
+    String configKey = 'raw',
+  }) {
     if (_bitmapCache.containsKey(pageNumber)) {
       final old = _bitmapCache.remove(pageNumber);
       if (old?.image != image) {
@@ -406,6 +421,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       image: image,
       width: w,
       height: h,
+      configKey: configKey,
     );
     _cacheLruOrder.add(pageNumber);
   }
@@ -413,8 +429,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   Future<void> _renderPageToCache(
     int pageNumber,
     double targetWidth,
-    double targetHeight,
-  ) async {
+    double targetHeight, {
+    bool forceRefresh = false,
+  }) async {
     final doc = _document;
     if (doc == null || pageNumber < 1 || pageNumber > doc.pages.length) return;
     if (targetWidth <= 0 || targetHeight <= 0 || targetWidth.isNaN || targetHeight.isNaN) {
@@ -422,10 +439,16 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       targetHeight = 850.0;
     }
 
-    if (_bitmapCache.containsKey(pageNumber)) {
-      _cacheLruOrder.remove(pageNumber);
-      _cacheLruOrder.add(pageNumber);
-      return;
+    final config = widget.enhancementConfig ?? const ScanEnhancementConfig();
+    final expectedConfigKey = config.cacheKeySuffix;
+
+    if (!forceRefresh && _bitmapCache.containsKey(pageNumber)) {
+      final cached = _bitmapCache[pageNumber]!;
+      if (cached.configKey == expectedConfigKey) {
+        _cacheLruOrder.remove(pageNumber);
+        _cacheLruOrder.add(pageNumber);
+        return;
+      }
     }
 
     if (_inFlightRenders.containsKey(pageNumber)) {
@@ -454,15 +477,44 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           cancellationToken: token,
         );
         if (pdfImage == null) return;
-        final uiImage = await pdfImage.createImage();
-        pdfImage.dispose();
+
+        ui.Image uiImage;
+        if (config.isEnabled) {
+          final isLeft = (pageNumber % 2 == 0);
+          final pageConfig = config.copyWith(isLeftPage: isLeft);
+          final enhancedBytes = ScannedImageEnhancer.enhanceBgra(
+            srcPixels: pdfImage.pixels,
+            width: pdfImage.width,
+            height: pdfImage.height,
+            config: pageConfig,
+          );
+          final comp = Completer<ui.Image>();
+          ui.decodeImageFromPixels(
+            enhancedBytes,
+            pdfImage.width,
+            pdfImage.height,
+            ui.PixelFormat.bgra8888,
+            (img) => comp.complete(img),
+          );
+          uiImage = await comp.future;
+          pdfImage.dispose();
+        } else {
+          uiImage = await pdfImage.createImage();
+          pdfImage.dispose();
+        }
 
         if (!mounted) {
           uiImage.dispose();
           return;
         }
 
-        _putBitmapToCache(pageNumber, uiImage, renderW, renderH);
+        _putBitmapToCache(
+          pageNumber,
+          uiImage,
+          renderW,
+          renderH,
+          configKey: expectedConfigKey,
+        );
 
         if (mounted) {
           setState(() {});
@@ -479,7 +531,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     await renderFuture;
   }
 
-  void _warmCacheAroundSpread(int spreadIndex, bool isSpread) {
+  void _warmCacheAroundSpread(
+    int spreadIndex,
+    bool isSpread, {
+    bool forceRefresh = false,
+  }) {
     if (_document == null) return;
     final spreads = _getSpreads(isSpread);
     if (spreadIndex < 0 || spreadIndex >= spreads.length) return;
@@ -498,9 +554,18 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     addSpread(spreadIndex - 1);
     addSpread(spreadIndex + 2);
 
+    final config = widget.enhancementConfig ?? const ScanEnhancementConfig();
+    final expectedConfigKey = config.cacheKeySuffix;
+
     for (final p in pagesToWarm) {
-      if (!_bitmapCache.containsKey(p)) {
-        _renderPageToCache(p, _lastKnownPageW, _lastKnownPageH);
+      final cached = _bitmapCache[p];
+      if (forceRefresh || cached == null || cached.configKey != expectedConfigKey) {
+        _renderPageToCache(
+          p,
+          _lastKnownPageW,
+          _lastKnownPageH,
+          forceRefresh: forceRefresh,
+        );
       }
     }
   }
@@ -1374,11 +1439,13 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     _lastKnownPageW = width;
     _lastKnownPageH = height;
 
-    if (!_bitmapCache.containsKey(pageNumber)) {
+    final config = widget.enhancementConfig ?? const ScanEnhancementConfig();
+    final expectedKey = config.cacheKeySuffix;
+    final cached = _bitmapCache[pageNumber];
+
+    if (cached == null || cached.configKey != expectedKey) {
       _renderPageToCache(pageNumber, width, height);
     }
-
-    final cached = _bitmapCache[pageNumber];
 
     return RepaintBoundary(
       child: Container(
