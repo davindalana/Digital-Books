@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -32,6 +32,21 @@ class PdfSpread {
 
   /// Check whether a page number is inside this spread
   bool containsPage(int page) => leftPage == page || rightPage == page;
+}
+
+/// Retained decoded page bitmap for zero-latency, double-buffered page transitions.
+class _CachedPageBitmap {
+  final int pageNumber;
+  final ui.Image image;
+  final double width;
+  final double height;
+
+  _CachedPageBitmap({
+    required this.pageNumber,
+    required this.image,
+    required this.width,
+    required this.height,
+  });
 }
 
 class OriginalPdfReader extends StatefulWidget {
@@ -98,6 +113,16 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   // Gentle perspective factor to prevent glyph clipping artifacts
   static const double _kPerspective = 0.00010;
 
+  // Retained bitmap cache and in-flight request tracking
+  final Map<int, _CachedPageBitmap> _bitmapCache = {};
+  final List<int> _cacheLruOrder = [];
+  final Map<int, Future<void>> _inFlightRenders = {};
+  final Map<int, PdfPageRenderCancellationToken> _cancellationTokens = {};
+  static const int _maxCacheEntries = 14;
+
+  double _lastKnownPageW = 600.0;
+  double _lastKnownPageH = 850.0;
+
   int get currentPage => _currentPage;
   int get totalPages => _totalPages;
   bool get isLoading => _isLoading;
@@ -110,6 +135,21 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         : 800.0;
     return _isEffectiveSpread(width);
   }
+
+  @visibleForTesting
+  int get cachedBitmapCount => _bitmapCache.length;
+
+  @visibleForTesting
+  bool isPageCached(int pageNumber) => _bitmapCache.containsKey(pageNumber);
+
+  @visibleForTesting
+  bool get isFlipping => _isFlipping;
+
+  @visibleForTesting
+  int? get targetSpreadIndex => _targetSpreadIndex;
+
+  @visibleForTesting
+  int get currentSpreadIndex => _currentSpreadIndex;
 
   int? get currentSecondaryPage {
     if (!_effectiveTwoPage) return null;
@@ -152,6 +192,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
             _isDragging = false;
           });
           widget.onPageChanged(newPage, _totalPages);
+          _warmCacheAroundSpread(newIndex, isSpread);
         }
         _turnController.reset();
       } else if (status == AnimationStatus.dismissed) {
@@ -234,6 +275,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           _isLoading = false;
         });
         widget.onPageChanged(targetPage, total);
+        _warmCacheAroundSpread(spreadIdx, isSpread);
       }
     } catch (e) {
       if (mounted) {
@@ -297,9 +339,170 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     _zoomController.dispose();
     _scrollController.removeListener(_onContinuousScroll);
     _scrollController.dispose();
+
+    for (final token in _cancellationTokens.values) {
+      token.cancel();
+    }
+    _cancellationTokens.clear();
+    _inFlightRenders.clear();
+
+    for (final cached in _bitmapCache.values) {
+      cached.image.dispose();
+    }
+    _bitmapCache.clear();
+    _cacheLruOrder.clear();
+
     _document?.dispose();
     _document = null;
     super.dispose();
+  }
+
+  // ==========================================
+  // Retained Double-Buffered Bitmap Cache Engine
+  // ==========================================
+
+  Set<int> _getActivePages() {
+    final active = <int>{};
+    final isSpread = _effectiveTwoPage;
+    final spreads = _getSpreads(isSpread);
+    if (_currentSpreadIndex >= 0 && _currentSpreadIndex < spreads.length) {
+      final cur = spreads[_currentSpreadIndex];
+      if (cur.leftPage != null) active.add(cur.leftPage!);
+      if (cur.rightPage != null) active.add(cur.rightPage!);
+    }
+    if (_targetSpreadIndex != null &&
+        _targetSpreadIndex! >= 0 &&
+        _targetSpreadIndex! < spreads.length) {
+      final tgt = spreads[_targetSpreadIndex!];
+      if (tgt.leftPage != null) active.add(tgt.leftPage!);
+      if (tgt.rightPage != null) active.add(tgt.rightPage!);
+    }
+    return active;
+  }
+
+  void _putBitmapToCache(int pageNumber, ui.Image image, double w, double h) {
+    if (_bitmapCache.containsKey(pageNumber)) {
+      final old = _bitmapCache.remove(pageNumber);
+      if (old?.image != image) {
+        old?.image.dispose();
+      }
+      _cacheLruOrder.remove(pageNumber);
+    }
+
+    final activePages = _getActivePages();
+    while (_bitmapCache.length >= _maxCacheEntries && _cacheLruOrder.isNotEmpty) {
+      final evictCandidateIdx =
+          _cacheLruOrder.indexWhere((p) => !activePages.contains(p));
+      if (evictCandidateIdx != -1) {
+        final evictPage = _cacheLruOrder.removeAt(evictCandidateIdx);
+        _bitmapCache.remove(evictPage)?.image.dispose();
+      } else {
+        break;
+      }
+    }
+
+    _bitmapCache[pageNumber] = _CachedPageBitmap(
+      pageNumber: pageNumber,
+      image: image,
+      width: w,
+      height: h,
+    );
+    _cacheLruOrder.add(pageNumber);
+  }
+
+  Future<void> _renderPageToCache(
+    int pageNumber,
+    double targetWidth,
+    double targetHeight,
+  ) async {
+    final doc = _document;
+    if (doc == null || pageNumber < 1 || pageNumber > doc.pages.length) return;
+    if (targetWidth <= 0 || targetHeight <= 0 || targetWidth.isNaN || targetHeight.isNaN) {
+      targetWidth = 600.0;
+      targetHeight = 850.0;
+    }
+
+    if (_bitmapCache.containsKey(pageNumber)) {
+      _cacheLruOrder.remove(pageNumber);
+      _cacheLruOrder.add(pageNumber);
+      return;
+    }
+
+    if (_inFlightRenders.containsKey(pageNumber)) {
+      await _inFlightRenders[pageNumber];
+      return;
+    }
+
+    final page = doc.pages[pageNumber - 1];
+    final swapWH = ((page.rotation.index) & 1) == 1;
+    final w = swapWH ? page.height : page.width;
+    final h = swapWH ? page.width : page.height;
+
+    final scale = math.min(180 / 72.0, math.min(targetWidth / w, targetHeight / h));
+    final renderW = (w * scale).roundToDouble();
+    final renderH = (h * scale).roundToDouble();
+
+    _cancellationTokens[pageNumber]?.cancel();
+    final token = page.createCancellationToken();
+    _cancellationTokens[pageNumber] = token;
+
+    final renderFuture = () async {
+      try {
+        final pdfImage = await page.render(
+          fullWidth: renderW,
+          fullHeight: renderH,
+          cancellationToken: token,
+        );
+        if (pdfImage == null) return;
+        final uiImage = await pdfImage.createImage();
+        pdfImage.dispose();
+
+        if (!mounted) {
+          uiImage.dispose();
+          return;
+        }
+
+        _putBitmapToCache(pageNumber, uiImage, renderW, renderH);
+
+        if (mounted) {
+          setState(() {});
+        }
+      } catch (e) {
+        // Ignored if cancelled or disposed
+      } finally {
+        _inFlightRenders.remove(pageNumber);
+        _cancellationTokens.remove(pageNumber);
+      }
+    }();
+
+    _inFlightRenders[pageNumber] = renderFuture;
+    await renderFuture;
+  }
+
+  void _warmCacheAroundSpread(int spreadIndex, bool isSpread) {
+    if (_document == null) return;
+    final spreads = _getSpreads(isSpread);
+    if (spreadIndex < 0 || spreadIndex >= spreads.length) return;
+
+    final pagesToWarm = <int>{};
+    void addSpread(int idx) {
+      if (idx >= 0 && idx < spreads.length) {
+        final s = spreads[idx];
+        if (s.leftPage != null) pagesToWarm.add(s.leftPage!);
+        if (s.rightPage != null) pagesToWarm.add(s.rightPage!);
+      }
+    }
+
+    addSpread(spreadIndex);
+    addSpread(spreadIndex + 1);
+    addSpread(spreadIndex - 1);
+    addSpread(spreadIndex + 2);
+
+    for (final p in pagesToWarm) {
+      if (!_bitmapCache.containsKey(p)) {
+        _renderPageToCache(p, _lastKnownPageW, _lastKnownPageH);
+      }
+    }
   }
 
   // --- Spread Calculation & Mapping ---
@@ -397,6 +600,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     });
     _turnController.reset();
 
+    _warmCacheAroundSpread(targetSpreadIdx, isSpread);
+
     if (widget.viewMode == PdfViewMode.continuous &&
         _scrollController.hasClients) {
       final maxScroll = _scrollController.position.maxScrollExtent;
@@ -411,7 +616,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   }
 
   void nextPage() {
-    if (_document == null || _isFlipping) return;
+    if (_document == null) return;
     if (widget.viewMode == PdfViewMode.continuous) {
       jumpToPage(_currentPage + 1);
       return;
@@ -419,6 +624,46 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
     final isSpread = _effectiveTwoPage;
     final spreads = _getSpreads(isSpread);
+
+    if (_isFlipping) {
+      if (_direction == FlipDirection.forward) {
+        // Fast-forward commit current transition immediately
+        if (_targetSpreadIndex != null) {
+          final committedIndex =
+              _targetSpreadIndex!.clamp(0, spreads.length - 1);
+          final committedSpread = spreads[committedIndex];
+          final committedPage = committedSpread.primaryPage;
+          _currentSpreadIndex = committedIndex;
+          _currentPage = committedPage;
+          widget.onPageChanged(committedPage, _totalPages);
+        }
+        _turnController.stop();
+        _turnController.reset();
+
+        // Start next forward turn if not at the end
+        if (_currentSpreadIndex < spreads.length - 1) {
+          resetZoom();
+          final nextTarget = _currentSpreadIndex + 1;
+          setState(() {
+            _direction = FlipDirection.forward;
+            _targetSpreadIndex = nextTarget;
+            _isFlipping = true;
+          });
+          _warmCacheAroundSpread(nextTarget, isSpread);
+          _turnController.forward(from: 0.0);
+        } else {
+          setState(() {
+            _targetSpreadIndex = null;
+            _isFlipping = false;
+          });
+        }
+        return;
+      } else {
+        // Was turning backward, user requested next -> reverse back smoothly!
+        _turnController.reverse();
+        return;
+      }
+    }
 
     if (_currentSpreadIndex < spreads.length - 1) {
       resetZoom();
@@ -428,15 +673,59 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         _targetSpreadIndex = target;
         _isFlipping = true;
       });
+      _warmCacheAroundSpread(target, isSpread);
       _turnController.forward(from: 0.0);
     }
   }
 
   void previousPage() {
-    if (_document == null || _isFlipping) return;
+    if (_document == null) return;
     if (widget.viewMode == PdfViewMode.continuous) {
       jumpToPage(_currentPage - 1);
       return;
+    }
+
+    final isSpread = _effectiveTwoPage;
+    final spreads = _getSpreads(isSpread);
+
+    if (_isFlipping) {
+      if (_direction == FlipDirection.backward) {
+        // Fast-forward commit current backward transition immediately
+        if (_targetSpreadIndex != null) {
+          final committedIndex =
+              _targetSpreadIndex!.clamp(0, spreads.length - 1);
+          final committedSpread = spreads[committedIndex];
+          final committedPage = committedSpread.primaryPage;
+          _currentSpreadIndex = committedIndex;
+          _currentPage = committedPage;
+          widget.onPageChanged(committedPage, _totalPages);
+        }
+        _turnController.stop();
+        _turnController.reset();
+
+        // Start next backward turn if not at beginning
+        if (_currentSpreadIndex > 0) {
+          resetZoom();
+          final prevTarget = _currentSpreadIndex - 1;
+          setState(() {
+            _direction = FlipDirection.backward;
+            _targetSpreadIndex = prevTarget;
+            _isFlipping = true;
+          });
+          _warmCacheAroundSpread(prevTarget, isSpread);
+          _turnController.forward(from: 0.0);
+        } else {
+          setState(() {
+            _targetSpreadIndex = null;
+            _isFlipping = false;
+          });
+        }
+        return;
+      } else {
+        // Was turning forward, user requested previous -> reverse back smoothly!
+        _turnController.reverse();
+        return;
+      }
     }
 
     if (_currentSpreadIndex > 0) {
@@ -447,6 +736,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         _targetSpreadIndex = target;
         _isFlipping = true;
       });
+      _warmCacheAroundSpread(target, isSpread);
       _turnController.forward(from: 0.0);
     }
   }
@@ -519,9 +809,21 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     DragStartDetails details,
     BoxConstraints constraints,
   ) {
-    if (_isZoomed || (_isFlipping && !_isDragging)) return;
+    if (_isZoomed) return;
+    if (_isFlipping && !_isDragging) {
+      _turnController.stop();
+      if (_targetSpreadIndex != null && _turnController.value > 0.5) {
+        final isSpread = _effectiveTwoPage;
+        final spreads = _getSpreads(isSpread);
+        _currentSpreadIndex = _targetSpreadIndex!.clamp(0, spreads.length - 1);
+        _currentPage = spreads[_currentSpreadIndex].primaryPage;
+        widget.onPageChanged(_currentPage, _totalPages);
+      }
+      _turnController.reset();
+      _isFlipping = false;
+      _targetSpreadIndex = null;
+    }
     _dragStartX = details.localPosition.dx;
-    _turnController.stop();
   }
 
   void _onHorizontalDragUpdate(
@@ -716,10 +1018,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                     child: ScrollConfiguration(
                       behavior: const ScrollBehavior().copyWith(
                         dragDevices: {
-                          PointerDeviceKind.touch,
-                          PointerDeviceKind.mouse,
-                          PointerDeviceKind.trackpad,
-                          PointerDeviceKind.stylus,
+                          ui.PointerDeviceKind.touch,
+                          ui.PointerDeviceKind.mouse,
+                          ui.PointerDeviceKind.trackpad,
+                          ui.PointerDeviceKind.stylus,
                         },
                         scrollbars: isContinuous,
                       ),
@@ -926,188 +1228,132 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       isTwoPage,
       spread.isCover,
     );
+    _lastKnownPageW = geo.pageW;
+    _lastKnownPageH = geo.pageH;
+
+    final paperColor = widget.theme.isDark
+        ? const Color(0xFF232325)
+        : (widget.theme == ReadingThemeType.sepia
+            ? const Color(0xFFF4ECD8)
+            : const Color(0xFFFAF9F6));
 
     if (!isTwoPage || spread.isCover) {
       // Single Page / Cover card
       final curPageNum = spread.rightPage ?? spread.leftPage ?? 1;
-      final nextPageNum = curPageNum + 1;
-      final hasNextPage = nextPageNum <= _totalPages;
 
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Container(
-              width: geo.pageW,
-              height: geo.pageH,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
-                    blurRadius: widget.theme.isDark ? 30 : 20,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withAlpha(widget.theme.isDark ? 90 : 20),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+      return Center(
+        child: Container(
+          width: geo.pageW,
+          height: geo.pageH,
+          decoration: BoxDecoration(
+            color: paperColor,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
+                blurRadius: widget.theme.isDark ? 30 : 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildPageSurface(
-                    doc: doc,
-                    pageNumber: curPageNum,
-                    isLeft: null,
-                    width: geo.pageW,
-                    height: geo.pageH,
-                  ),
-                  // Subtle spine fold on left edge for closed cover
-                  if (spread.isCover)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      width: 14,
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Colors.black.withAlpha(
-                                  widget.theme.isDark ? 90 : 45,
-                                ),
-                                Colors.transparent,
-                              ],
+              BoxShadow(
+                color: Colors.black.withAlpha(widget.theme.isDark ? 90 : 20),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildPageSurface(
+                doc: doc,
+                pageNumber: curPageNum,
+                isLeft: null,
+                width: geo.pageW,
+                height: geo.pageH,
+              ),
+              // Subtle spine fold on left edge for closed cover
+              if (spread.isCover)
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  width: 14,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            Colors.black.withAlpha(
+                              widget.theme.isDark ? 90 : 45,
                             ),
-                          ),
+                            Colors.transparent,
+                          ],
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
-          if (hasNextPage)
-            Offstage(
-              offstage: true,
-              child: SizedBox(
-                width: geo.pageW,
-                height: geo.pageH,
-                child: _buildPageSurface(
-                  doc: doc,
-                  pageNumber: nextPageNum,
-                  isLeft: null,
-                  width: geo.pageW,
-                  height: geo.pageH,
+                  ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       );
     }
 
     // Two-Page Open Book Spread
-    final nextSpreadIdx = _currentSpreadIndex + 1;
-    final allSpreads = _getSpreads(true);
-    final hasNextSpread = nextSpreadIdx < allSpreads.length;
-    final nextSpread = hasNextSpread ? allSpreads[nextSpreadIdx] : null;
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Center(
-          child: Container(
-            width: geo.bookW,
-            height: geo.bookH,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
-                  blurRadius: widget.theme.isDark ? 32 : 22,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 8),
-                ),
-                BoxShadow(
-                  color: Colors.black.withAlpha(widget.theme.isDark ? 85 : 20),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return Center(
+      child: Container(
+        width: geo.bookW,
+        height: geo.bookH,
+        decoration: BoxDecoration(
+          color: paperColor,
+          borderRadius: BorderRadius.circular(4),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
+              blurRadius: widget.theme.isDark ? 32 : 22,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildPageSurface(
-                    doc: doc,
-                    pageNumber: spread.leftPage,
-                    isLeft: true,
-                    width: geo.pageW,
-                    height: geo.pageH,
-                  ),
-                ),
-                _buildCenterSpineCrease(),
-                Expanded(
-                  child: _buildPageSurface(
-                    doc: doc,
-                    pageNumber: spread.rightPage,
-                    isLeft: false,
-                    width: geo.pageW,
-                    height: geo.pageH,
-                  ),
-                ),
-              ],
+            BoxShadow(
+              color: Colors.black.withAlpha(widget.theme.isDark ? 85 : 20),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          ),
+          ],
         ),
-        if (nextSpread != null)
-          Offstage(
-            offstage: true,
-            child: SizedBox(
-              width: geo.bookW,
-              height: geo.bookH,
-              child: Row(
-                children: [
-                  if (nextSpread.leftPage != null)
-                    Expanded(
-                      child: _buildPageSurface(
-                        doc: doc,
-                        pageNumber: nextSpread.leftPage,
-                        isLeft: true,
-                        width: geo.pageW,
-                        height: geo.pageH,
-                      ),
-                    ),
-                  if (nextSpread.rightPage != null)
-                    Expanded(
-                      child: _buildPageSurface(
-                        doc: doc,
-                        pageNumber: nextSpread.rightPage,
-                        isLeft: false,
-                        width: geo.pageW,
-                        height: geo.pageH,
-                      ),
-                    ),
-                ],
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildPageSurface(
+                doc: doc,
+                pageNumber: spread.leftPage,
+                isLeft: true,
+                width: geo.pageW,
+                height: geo.pageH,
               ),
             ),
-          ),
-      ],
+            _buildCenterSpineCrease(),
+            Expanded(
+              child: _buildPageSurface(
+                doc: doc,
+                pageNumber: spread.rightPage,
+                isLeft: false,
+                width: geo.pageW,
+                height: geo.pageH,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  // Realistic Page Surface with Spine & Edge Shadowing
+  // Realistic Page Surface with Retained Double-Buffered Bitmaps & Spine Shadowing
   Widget _buildPageSurface({
     required PdfDocument doc,
     required int? pageNumber,
@@ -1115,56 +1361,58 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     required double width,
     required double height,
   }) {
+    final paperColor = widget.theme.isDark
+        ? const Color(0xFF232325)
+        : (widget.theme == ReadingThemeType.sepia
+            ? const Color(0xFFF4ECD8)
+            : const Color(0xFFFAF9F6));
+
     if (pageNumber == null) {
-      return Container(
-        color: Colors.white,
-        child: Center(
-          child: Text(
-            '',
-            style: TextStyle(color: widget.theme.secondaryTextColor),
-          ),
-        ),
-      );
+      return Container(color: paperColor);
     }
+
+    _lastKnownPageW = width;
+    _lastKnownPageH = height;
+
+    if (!_bitmapCache.containsKey(pageNumber)) {
+      _renderPageToCache(pageNumber, width, height);
+    }
+
+    final cached = _bitmapCache[pageNumber];
 
     return RepaintBoundary(
       child: Container(
-        color: Colors.white,
+        color: paperColor,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Container(color: Colors.white),
-            PdfPageView(
-              key: ValueKey('pdf_pv_$pageNumber'),
-              document: doc,
-              pageNumber: pageNumber,
-              maximumDpi: 180,
-              decorationBuilder: (context, pageSize, page, pageImage) {
-                return Align(
-                  alignment: Alignment.center,
-                  child: AspectRatio(
-                    aspectRatio: pageSize.width / pageSize.height,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (pageImage == null)
-                          const Center(
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFD4AF37),
-                              ),
-                            ),
-                          ),
-                        ?pageImage,
-                      ],
-                    ),
+            Container(color: paperColor),
+
+            if (cached != null)
+              Align(
+                alignment: Alignment.center,
+                child: AspectRatio(
+                  aspectRatio: cached.width / cached.height,
+                  child: RawImage(
+                    image: cached.image,
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.medium,
                   ),
-                );
-              },
-            ),
+                ),
+              )
+            else
+              Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: widget.theme.isDark
+                        ? const Color(0xFF6B7280)
+                        : const Color(0xFFD4AF37),
+                  ),
+                ),
+              ),
 
             // Inner Spine Crease Shadow (realistic book fold)
             if (isLeft != null)
@@ -1262,7 +1510,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         width: geo.bookW,
         height: geo.bookH,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: widget.theme.isDark
+              ? const Color(0xFF232325)
+              : (widget.theme == ReadingThemeType.sepia
+                  ? const Color(0xFFF4ECD8)
+                  : const Color(0xFFFAF9F6)),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
@@ -1553,7 +1805,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         width: geo.pageW,
         height: geo.pageH,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: widget.theme.isDark
+              ? const Color(0xFF232325)
+              : (widget.theme == ReadingThemeType.sepia
+                  ? const Color(0xFFF4ECD8)
+                  : const Color(0xFFFAF9F6)),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
@@ -1694,7 +1950,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
               width: geo.pageW,
               height: geo.pageH,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: widget.theme.isDark
+                    ? const Color(0xFF232325)
+                    : (widget.theme == ReadingThemeType.sepia
+                        ? const Color(0xFFF4ECD8)
+                        : const Color(0xFFFAF9F6)),
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(

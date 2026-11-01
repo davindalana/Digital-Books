@@ -75,7 +75,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      final pageViews = find.byType(PdfPageView);
+      final renderedPages = find.byType(RawImage);
       final spinners = find.byType(CircularProgressIndicator);
       final stationaryRss = ProcessInfo.currentRss / (1024 * 1024);
       sw.stop();
@@ -83,7 +83,7 @@ void main() {
       print('[PROFILE SCENARIO 2 - Stationary Reader]');
       print('Initial RSS: ${initialRss.toStringAsFixed(2)} MB');
       print('Stationary RSS: ${stationaryRss.toStringAsFixed(2)} MB');
-      print('Rendered PdfPageView count: ${pageViews.evaluate().length}');
+      print('Rendered Page Image count: ${renderedPages.evaluate().length}');
       print('Active CircularProgressIndicator count in tree after load: ${spinners.evaluate().length}');
       expect(spinners.evaluate().length, equals(0), reason: 'Zero active tickers when page is stationary');
     });
@@ -117,7 +117,10 @@ void main() {
 
       for (int i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 100));
-        if (find.byType(PdfPageView).evaluate().isNotEmpty) break;
+        if (find.byType(RawImage).evaluate().isNotEmpty ||
+            find.byType(PdfPageView).evaluate().isNotEmpty) {
+          break;
+        }
       }
 
       final startRss = ProcessInfo.currentRss / (1024 * 1024);
@@ -253,7 +256,10 @@ void main() {
       );
       for (int i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 100));
-        if (find.byType(PdfPageView).evaluate().isNotEmpty) break;
+        if (find.byType(RawImage).evaluate().isNotEmpty ||
+            find.byType(PdfPageView).evaluate().isNotEmpty) {
+          break;
+        }
       }
       final midRss = ProcessInfo.currentRss / (1024 * 1024);
 
@@ -282,7 +288,10 @@ void main() {
       );
       for (int i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 100));
-        if (find.byType(PdfPageView).evaluate().isNotEmpty) break;
+        if (find.byType(RawImage).evaluate().isNotEmpty ||
+            find.byType(PdfPageView).evaluate().isNotEmpty) {
+          break;
+        }
       }
       final reopenRss = ProcessInfo.currentRss / (1024 * 1024);
 
