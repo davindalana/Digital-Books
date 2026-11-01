@@ -3683,6 +3683,560 @@ class BookCollectionsCompanion extends UpdateCompanion<BookCollection> {
   }
 }
 
+class $OcrPagesTable extends OcrPages with TableInfo<$OcrPagesTable, OcrPage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OcrPagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES books (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
+    'page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('completed'),
+  );
+  static const VerificationMeta _confidenceMeta = const VerificationMeta(
+    'confidence',
+  );
+  @override
+  late final GeneratedColumn<double> confidence = GeneratedColumn<double>(
+    'confidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1.0),
+  );
+  static const VerificationMeta _charCountMeta = const VerificationMeta(
+    'charCount',
+  );
+  @override
+  late final GeneratedColumn<int> charCount = GeneratedColumn<int>(
+    'char_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<double> durationMs = GeneratedColumn<double>(
+    'duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _linesJsonMeta = const VerificationMeta(
+    'linesJson',
+  );
+  @override
+  late final GeneratedColumn<String> linesJson = GeneratedColumn<String>(
+    'lines_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookId,
+    pageIndex,
+    status,
+    confidence,
+    charCount,
+    durationMs,
+    linesJson,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ocr_pages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OcrPage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('page_index')) {
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pageIndexMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+        _confidenceMeta,
+        confidence.isAcceptableOrUnknown(data['confidence']!, _confidenceMeta),
+      );
+    }
+    if (data.containsKey('char_count')) {
+      context.handle(
+        _charCountMeta,
+        charCount.isAcceptableOrUnknown(data['char_count']!, _charCountMeta),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    }
+    if (data.containsKey('lines_json')) {
+      context.handle(
+        _linesJsonMeta,
+        linesJson.isAcceptableOrUnknown(data['lines_json']!, _linesJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_linesJsonMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OcrPage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OcrPage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      confidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}confidence'],
+      )!,
+      charCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}char_count'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}duration_ms'],
+      )!,
+      linesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lines_json'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $OcrPagesTable createAlias(String alias) {
+    return $OcrPagesTable(attachedDatabase, alias);
+  }
+}
+
+class OcrPage extends DataClass implements Insertable<OcrPage> {
+  final String id;
+  final String bookId;
+  final int pageIndex;
+  final String status;
+  final double confidence;
+  final int charCount;
+  final double durationMs;
+  final String linesJson;
+  final DateTime createdAt;
+  const OcrPage({
+    required this.id,
+    required this.bookId,
+    required this.pageIndex,
+    required this.status,
+    required this.confidence,
+    required this.charCount,
+    required this.durationMs,
+    required this.linesJson,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['book_id'] = Variable<String>(bookId);
+    map['page_index'] = Variable<int>(pageIndex);
+    map['status'] = Variable<String>(status);
+    map['confidence'] = Variable<double>(confidence);
+    map['char_count'] = Variable<int>(charCount);
+    map['duration_ms'] = Variable<double>(durationMs);
+    map['lines_json'] = Variable<String>(linesJson);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  OcrPagesCompanion toCompanion(bool nullToAbsent) {
+    return OcrPagesCompanion(
+      id: Value(id),
+      bookId: Value(bookId),
+      pageIndex: Value(pageIndex),
+      status: Value(status),
+      confidence: Value(confidence),
+      charCount: Value(charCount),
+      durationMs: Value(durationMs),
+      linesJson: Value(linesJson),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory OcrPage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OcrPage(
+      id: serializer.fromJson<String>(json['id']),
+      bookId: serializer.fromJson<String>(json['bookId']),
+      pageIndex: serializer.fromJson<int>(json['pageIndex']),
+      status: serializer.fromJson<String>(json['status']),
+      confidence: serializer.fromJson<double>(json['confidence']),
+      charCount: serializer.fromJson<int>(json['charCount']),
+      durationMs: serializer.fromJson<double>(json['durationMs']),
+      linesJson: serializer.fromJson<String>(json['linesJson']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'bookId': serializer.toJson<String>(bookId),
+      'pageIndex': serializer.toJson<int>(pageIndex),
+      'status': serializer.toJson<String>(status),
+      'confidence': serializer.toJson<double>(confidence),
+      'charCount': serializer.toJson<int>(charCount),
+      'durationMs': serializer.toJson<double>(durationMs),
+      'linesJson': serializer.toJson<String>(linesJson),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  OcrPage copyWith({
+    String? id,
+    String? bookId,
+    int? pageIndex,
+    String? status,
+    double? confidence,
+    int? charCount,
+    double? durationMs,
+    String? linesJson,
+    DateTime? createdAt,
+  }) => OcrPage(
+    id: id ?? this.id,
+    bookId: bookId ?? this.bookId,
+    pageIndex: pageIndex ?? this.pageIndex,
+    status: status ?? this.status,
+    confidence: confidence ?? this.confidence,
+    charCount: charCount ?? this.charCount,
+    durationMs: durationMs ?? this.durationMs,
+    linesJson: linesJson ?? this.linesJson,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  OcrPage copyWithCompanion(OcrPagesCompanion data) {
+    return OcrPage(
+      id: data.id.present ? data.id.value : this.id,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      pageIndex: data.pageIndex.present ? data.pageIndex.value : this.pageIndex,
+      status: data.status.present ? data.status.value : this.status,
+      confidence: data.confidence.present
+          ? data.confidence.value
+          : this.confidence,
+      charCount: data.charCount.present ? data.charCount.value : this.charCount,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      linesJson: data.linesJson.present ? data.linesJson.value : this.linesJson,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OcrPage(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('status: $status, ')
+          ..write('confidence: $confidence, ')
+          ..write('charCount: $charCount, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('linesJson: $linesJson, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    bookId,
+    pageIndex,
+    status,
+    confidence,
+    charCount,
+    durationMs,
+    linesJson,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OcrPage &&
+          other.id == this.id &&
+          other.bookId == this.bookId &&
+          other.pageIndex == this.pageIndex &&
+          other.status == this.status &&
+          other.confidence == this.confidence &&
+          other.charCount == this.charCount &&
+          other.durationMs == this.durationMs &&
+          other.linesJson == this.linesJson &&
+          other.createdAt == this.createdAt);
+}
+
+class OcrPagesCompanion extends UpdateCompanion<OcrPage> {
+  final Value<String> id;
+  final Value<String> bookId;
+  final Value<int> pageIndex;
+  final Value<String> status;
+  final Value<double> confidence;
+  final Value<int> charCount;
+  final Value<double> durationMs;
+  final Value<String> linesJson;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const OcrPagesCompanion({
+    this.id = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.pageIndex = const Value.absent(),
+    this.status = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.charCount = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.linesJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OcrPagesCompanion.insert({
+    required String id,
+    required String bookId,
+    required int pageIndex,
+    this.status = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.charCount = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    required String linesJson,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       bookId = Value(bookId),
+       pageIndex = Value(pageIndex),
+       linesJson = Value(linesJson),
+       createdAt = Value(createdAt);
+  static Insertable<OcrPage> custom({
+    Expression<String>? id,
+    Expression<String>? bookId,
+    Expression<int>? pageIndex,
+    Expression<String>? status,
+    Expression<double>? confidence,
+    Expression<int>? charCount,
+    Expression<double>? durationMs,
+    Expression<String>? linesJson,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookId != null) 'book_id': bookId,
+      if (pageIndex != null) 'page_index': pageIndex,
+      if (status != null) 'status': status,
+      if (confidence != null) 'confidence': confidence,
+      if (charCount != null) 'char_count': charCount,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (linesJson != null) 'lines_json': linesJson,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OcrPagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? bookId,
+    Value<int>? pageIndex,
+    Value<String>? status,
+    Value<double>? confidence,
+    Value<int>? charCount,
+    Value<double>? durationMs,
+    Value<String>? linesJson,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return OcrPagesCompanion(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      pageIndex: pageIndex ?? this.pageIndex,
+      status: status ?? this.status,
+      confidence: confidence ?? this.confidence,
+      charCount: charCount ?? this.charCount,
+      durationMs: durationMs ?? this.durationMs,
+      linesJson: linesJson ?? this.linesJson,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (pageIndex.present) {
+      map['page_index'] = Variable<int>(pageIndex.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<double>(confidence.value);
+    }
+    if (charCount.present) {
+      map['char_count'] = Variable<int>(charCount.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<double>(durationMs.value);
+    }
+    if (linesJson.present) {
+      map['lines_json'] = Variable<String>(linesJson.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OcrPagesCompanion(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('status: $status, ')
+          ..write('confidence: $confidence, ')
+          ..write('charCount: $charCount, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('linesJson: $linesJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3696,6 +4250,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BookCollectionsTable bookCollections = $BookCollectionsTable(
     this,
   );
+  late final $OcrPagesTable ocrPages = $OcrPagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3708,6 +4263,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     highlights,
     collections,
     bookCollections,
+    ocrPages,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3752,6 +4308,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('book_collections', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'books',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('ocr_pages', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3886,6 +4449,25 @@ final class $$BooksTableReferences
     final cache = $_typedResult.readTableOrNull(
       _bookCollectionsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$OcrPagesTable, List<OcrPage>> _ocrPagesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.ocrPages,
+    aliasName: 'books__id__ocr_pages__book_id',
+  );
+
+  $$OcrPagesTableProcessedTableManager get ocrPagesRefs {
+    final manager = $$OcrPagesTableTableManager(
+      $_db,
+      $_db.ocrPages,
+    ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_ocrPagesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -4081,6 +4663,31 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
           }) => $$BookCollectionsTableFilterComposer(
             $db: $db,
             $table: $db.bookCollections,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> ocrPagesRefs(
+    Expression<bool> Function($$OcrPagesTableFilterComposer f) f,
+  ) {
+    final $$OcrPagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ocrPages,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$OcrPagesTableFilterComposer(
+            $db: $db,
+            $table: $db.ocrPages,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4347,6 +4954,31 @@ class $$BooksTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> ocrPagesRefs<T extends Object>(
+    Expression<T> Function($$OcrPagesTableAnnotationComposer a) f,
+  ) {
+    final $$OcrPagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.ocrPages,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$OcrPagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.ocrPages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BooksTableTableManager
@@ -4368,6 +5000,7 @@ class $$BooksTableTableManager
             bool bookmarksRefs,
             bool highlightsRefs,
             bool bookCollectionsRefs,
+            bool ocrPagesRefs,
           })
         > {
   $$BooksTableTableManager(_$AppDatabase db, $BooksTable table)
@@ -4458,6 +5091,7 @@ class $$BooksTableTableManager
                 bookmarksRefs = false,
                 highlightsRefs = false,
                 bookCollectionsRefs = false,
+                ocrPagesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4467,6 +5101,7 @@ class $$BooksTableTableManager
                     if (bookmarksRefs) db.bookmarks,
                     if (highlightsRefs) db.highlights,
                     if (bookCollectionsRefs) db.bookCollections,
+                    if (ocrPagesRefs) db.ocrPages,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4564,6 +5199,23 @@ class $$BooksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (ocrPagesRefs)
+                        await $_getPrefetchedData<Book, $BooksTable, OcrPage>(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._ocrPagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).ocrPagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4590,6 +5242,7 @@ typedef $$BooksTableProcessedTableManager =
         bool bookmarksRefs,
         bool highlightsRefs,
         bool bookCollectionsRefs,
+        bool ocrPagesRefs,
       })
     >;
 typedef $$ChaptersTableCreateCompanionBuilder =
@@ -6885,6 +7538,403 @@ typedef $$BookCollectionsTableProcessedTableManager =
       BookCollection,
       PrefetchHooks Function({bool bookId, bool collectionId})
     >;
+typedef $$OcrPagesTableCreateCompanionBuilder =
+    OcrPagesCompanion Function({
+      required String id,
+      required String bookId,
+      required int pageIndex,
+      Value<String> status,
+      Value<double> confidence,
+      Value<int> charCount,
+      Value<double> durationMs,
+      required String linesJson,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$OcrPagesTableUpdateCompanionBuilder =
+    OcrPagesCompanion Function({
+      Value<String> id,
+      Value<String> bookId,
+      Value<int> pageIndex,
+      Value<String> status,
+      Value<double> confidence,
+      Value<int> charCount,
+      Value<double> durationMs,
+      Value<String> linesJson,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$OcrPagesTableReferences
+    extends BaseReferences<_$AppDatabase, $OcrPagesTable, OcrPage> {
+  $$OcrPagesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BooksTable _bookIdTable(_$AppDatabase db) =>
+      db.books.createAlias('ocr_pages__book_id__books__id');
+
+  $$BooksTableProcessedTableManager get bookId {
+    final $_column = $_itemColumn<String>('book_id')!;
+
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$OcrPagesTableFilterComposer
+    extends Composer<_$AppDatabase, $OcrPagesTable> {
+  $$OcrPagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get charCount => $composableBuilder(
+    column: $table.charCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get linesJson => $composableBuilder(
+    column: $table.linesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BooksTableFilterComposer get bookId {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OcrPagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $OcrPagesTable> {
+  $$OcrPagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get charCount => $composableBuilder(
+    column: $table.charCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get linesJson => $composableBuilder(
+    column: $table.linesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BooksTableOrderingComposer get bookId {
+    final $$BooksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableOrderingComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OcrPagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OcrPagesTable> {
+  $$OcrPagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get pageIndex =>
+      $composableBuilder(column: $table.pageIndex, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get confidence => $composableBuilder(
+    column: $table.confidence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get charCount =>
+      $composableBuilder(column: $table.charCount, builder: (column) => column);
+
+  GeneratedColumn<double> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get linesJson =>
+      $composableBuilder(column: $table.linesJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$BooksTableAnnotationComposer get bookId {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OcrPagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OcrPagesTable,
+          OcrPage,
+          $$OcrPagesTableFilterComposer,
+          $$OcrPagesTableOrderingComposer,
+          $$OcrPagesTableAnnotationComposer,
+          $$OcrPagesTableCreateCompanionBuilder,
+          $$OcrPagesTableUpdateCompanionBuilder,
+          (OcrPage, $$OcrPagesTableReferences),
+          OcrPage,
+          PrefetchHooks Function({bool bookId})
+        > {
+  $$OcrPagesTableTableManager(_$AppDatabase db, $OcrPagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OcrPagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OcrPagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OcrPagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> bookId = const Value.absent(),
+                Value<int> pageIndex = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
+                Value<int> charCount = const Value.absent(),
+                Value<double> durationMs = const Value.absent(),
+                Value<String> linesJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OcrPagesCompanion(
+                id: id,
+                bookId: bookId,
+                pageIndex: pageIndex,
+                status: status,
+                confidence: confidence,
+                charCount: charCount,
+                durationMs: durationMs,
+                linesJson: linesJson,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String bookId,
+                required int pageIndex,
+                Value<String> status = const Value.absent(),
+                Value<double> confidence = const Value.absent(),
+                Value<int> charCount = const Value.absent(),
+                Value<double> durationMs = const Value.absent(),
+                required String linesJson,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => OcrPagesCompanion.insert(
+                id: id,
+                bookId: bookId,
+                pageIndex: pageIndex,
+                status: status,
+                confidence: confidence,
+                charCount: charCount,
+                durationMs: durationMs,
+                linesJson: linesJson,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$OcrPagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bookId,
+                                referencedTable: $$OcrPagesTableReferences
+                                    ._bookIdTable(db),
+                                referencedColumn: $$OcrPagesTableReferences
+                                    ._bookIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$OcrPagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OcrPagesTable,
+      OcrPage,
+      $$OcrPagesTableFilterComposer,
+      $$OcrPagesTableOrderingComposer,
+      $$OcrPagesTableAnnotationComposer,
+      $$OcrPagesTableCreateCompanionBuilder,
+      $$OcrPagesTableUpdateCompanionBuilder,
+      (OcrPage, $$OcrPagesTableReferences),
+      OcrPage,
+      PrefetchHooks Function({bool bookId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6903,4 +7953,6 @@ class $AppDatabaseManager {
       $$CollectionsTableTableManager(_db, _db.collections);
   $$BookCollectionsTableTableManager get bookCollections =>
       $$BookCollectionsTableTableManager(_db, _db.bookCollections);
+  $$OcrPagesTableTableManager get ocrPages =>
+      $$OcrPagesTableTableManager(_db, _db.ocrPages);
 }

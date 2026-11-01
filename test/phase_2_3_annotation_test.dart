@@ -360,9 +360,9 @@ void main() {
     });
 
     test(
-      'Schema version is 3 and supports all new annotation anchor fields',
+      'Schema version is at least 3 and supports all new annotation anchor fields',
       () {
-        expect(db.schemaVersion, equals(3));
+        expect(db.schemaVersion, greaterThanOrEqualTo(3));
       },
     );
   });

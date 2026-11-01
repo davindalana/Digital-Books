@@ -114,6 +114,18 @@ class DatabaseService {
     );
   }
 
+  Future<int> updateBookProcessedPath(
+    String bookId,
+    String processedBookPath,
+  ) {
+    return (db.update(db.books)..where((t) => t.id.equals(bookId))).write(
+      BooksCompanion(
+        processedBookPath: Value(processedBookPath),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<Book?> findDuplicateBook({
     required String title,
     required String author,
@@ -556,6 +568,55 @@ class DatabaseService {
           (t) => t.bookId.equals(bookId) & t.collectionId.equals(collectionId),
         ))
         .go();
+  }
+
+  // --- OCR Pages ---
+  Future<int> insertOcrPage(OcrPagesCompanion page) {
+    return db.into(db.ocrPages).insertOnConflictUpdate(page);
+  }
+
+  Future<OcrPage?> getOcrPage(String bookId, int pageIndex) {
+    return (db.select(db.ocrPages)
+          ..where(
+            (t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex),
+          ))
+        .getSingleOrNull();
+  }
+
+  Future<List<OcrPage>> getOcrPagesForBook(String bookId) {
+    return (db.select(db.ocrPages)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.pageIndex, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  Stream<List<OcrPage>> watchOcrPagesForBook(String bookId) {
+    return (db.select(db.ocrPages)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.pageIndex, mode: OrderingMode.asc),
+          ]))
+        .watch();
+  }
+
+  Future<int> deleteOcrPagesForBook(String bookId) {
+    return (db.delete(db.ocrPages)..where((t) => t.bookId.equals(bookId))).go();
+  }
+
+  Future<int> getCompletedOcrPageCount(String bookId) async {
+    final count = db.ocrPages.id.count();
+    final query = db.selectOnly(db.ocrPages)
+      ..addColumns([count])
+      ..where(
+        db.ocrPages.bookId.equals(bookId) &
+            db.ocrPages.status.equals('completed'),
+      );
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
   }
 }
 

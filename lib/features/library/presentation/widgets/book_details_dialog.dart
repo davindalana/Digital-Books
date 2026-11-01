@@ -7,6 +7,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
+import '../../../processing/providers/background_ocr_provider.dart';
 import 'manage_collections_dialog.dart';
 
 class BookDetailsDialog extends ConsumerStatefulWidget {
@@ -296,6 +297,14 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                         : 'Digital Text PDF',
                                   ),
                                   _DetailRow(
+                                    label: 'Reflowable',
+                                    value: _currentBook.processedBookPath != null
+                                        ? 'Tersedia (OCR Selesai)'
+                                        : (_currentBook.isScanned
+                                            ? 'Belum diproses'
+                                            : 'Bawaan'),
+                                  ),
+                                  _DetailRow(
                                     label: 'Added',
                                     value: dateFormat.format(
                                       _currentBook.createdAt,
@@ -342,6 +351,196 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                     ),
                     const SizedBox(height: 20),
                   ],
+
+                  // Background OCR progress / trigger card for scanned books
+                  if (!_isEditing && _currentBook.isScanned)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final ocrProgressAsync =
+                            ref.watch(ocrQueueProgressStreamProvider);
+                        final ocrProgress = ocrProgressAsync.valueOrNull;
+                        final isRunning = ocrProgress != null &&
+                            ocrProgress.bookId == _currentBook.id &&
+                            ocrProgress.isRunning;
+                        final isPaused = ocrProgress != null &&
+                            ocrProgress.bookId == _currentBook.id &&
+                            ocrProgress.isPaused;
+
+                        if (isRunning || isPaused) {
+                          final pct =
+                              (ocrProgress.progressPercentage * 100).toInt();
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF007AFF).withAlpha(15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF007AFF).withAlpha(40),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      isPaused
+                                          ? 'OCR Dijeda'
+                                          : 'Memproses OCR Latar Belakang...',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF007AFF),
+                                      ),
+                                    ),
+                                    Text(
+                                      '$pct%',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF007AFF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                LinearProgressIndicator(
+                                  value: ocrProgress.progressPercentage,
+                                  backgroundColor:
+                                      const Color(0xFF007AFF).withAlpha(30),
+                                  valueColor: const AlwaysStoppedAnimation(
+                                    Color(0xFF007AFF),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Halaman ${ocrProgress.completedPages} dari ${ocrProgress.totalPages}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isDark
+                                            ? Colors.grey.shade400
+                                            : Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        TextButton(
+                                          onPressed: () {
+                                            if (isPaused) {
+                                              ref
+                                                  .read(
+                                                    backgroundOcrQueueProvider,
+                                                  )
+                                                  .resume();
+                                            } else {
+                                              ref
+                                                  .read(
+                                                    backgroundOcrQueueProvider,
+                                                  )
+                                                  .pause();
+                                            }
+                                          },
+                                          child: Text(
+                                            isPaused ? 'Lanjutkan' : 'Jeda',
+                                            style:
+                                                const TextStyle(fontSize: 12),
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            ref
+                                                .read(
+                                                  backgroundOcrQueueProvider,
+                                                )
+                                                .cancel();
+                                          },
+                                          child: const Text(
+                                            'Batal',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.red,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        if (_currentBook.processedBookPath == null) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withAlpha(8)
+                                  : Colors.black.withAlpha(5),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark ? Colors.white12 : Colors.black12,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.auto_stories_outlined,
+                                  size: 20,
+                                  color: Color(0xFF007AFF),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Mode Buku belum tersedia',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Jalankan OCR lokal untuk menghasilkan teks reflowable.',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: isDark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                OutlinedButton(
+                                  onPressed: () {
+                                    ref.read(backgroundOcrQueueProvider).start(
+                                          bookId: _currentBook.id,
+                                          pdfPath: _currentBook.originalPdfPath,
+                                          autoReconstruct: true,
+                                        );
+                                  },
+                                  child: const Text('Mulai OCR'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return const SizedBox.shrink();
+                      },
+                    ),
 
                   // Action Buttons Row
                   if (_isEditing)
@@ -451,9 +650,11 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                           ),
                           onPressed: () {
                             Navigator.of(context).pop();
-                            final mode = _currentBook.isScanned
-                                ? ReadingMode.originalPdf
-                                : ReadingMode.reflowable;
+                            final mode = (_currentBook.processedBookPath !=
+                                        null ||
+                                    !_currentBook.isScanned)
+                                ? ReadingMode.reflowable
+                                : ReadingMode.originalPdf;
                             ref
                                     .read(
                                       activeReadingModeProvider(

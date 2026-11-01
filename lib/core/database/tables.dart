@@ -106,3 +106,21 @@ class BookCollections extends Table {
   @override
   Set<Column> get primaryKey => {bookId, collectionId};
 }
+
+/// Page-level OCR cache and provenance persistence.
+/// Stores recognized text lines, bounding boxes, confidence, and status per page.
+class OcrPages extends Table {
+  TextColumn get id => text()();
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
+  IntColumn get pageIndex => integer()();
+  TextColumn get status => text().withDefault(const Constant('completed'))(); // pending, processing, completed, failed
+  RealColumn get confidence => real().withDefault(const Constant(1.0))();
+  IntColumn get charCount => integer().withDefault(const Constant(0))();
+  RealColumn get durationMs => real().withDefault(const Constant(0.0))();
+  TextColumn get linesJson => text()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

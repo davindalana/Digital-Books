@@ -27,6 +27,8 @@ import '../widgets/original_pdf_reader.dart';
 import '../widgets/reflowable/reflowable_reader_container.dart';
 import '../widgets/search_traversal_bar.dart';
 import '../widgets/toc_dialog.dart';
+import '../../../processing/models/ocr_queue_state.dart';
+import '../../../processing/providers/background_ocr_provider.dart';
 
 class ReadingScreen extends ConsumerStatefulWidget {
   final Book book;
@@ -69,6 +71,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   double? _sliderDragValue;
   String _currentChapterTitle = '';
   int _estimatedMinutesLeftInChapter = 0;
+  StreamSubscription<OcrQueueProgress>? _ocrProgressSub;
 
   late final ReadingNavigationHistory _navigationHistory;
   List<ActiveSearchMatch> _activeSearchMatches = [];
@@ -150,10 +153,30 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       }
     });
     _startAutoHideTimer();
+
+    _ocrProgressSub = ref
+        .read(backgroundOcrQueueProvider)
+        .progressStream
+        .listen((p) {
+      if (p.bookId == widget.book.id && p.status == OcrQueueStatus.completed) {
+        _loadProcessedDoc();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Pengenalan teks (OCR) selesai. Mode Buku (Reflowable) kini tersedia!',
+              ),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _ocrProgressSub?.cancel();
     _cancelAutoHideTimer();
     _periodicProgressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -338,29 +361,39 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     } catch (_) {}
 
     // 2. Load processed book document if available
-    if (widget.book.processedBookPath != null) {
-      try {
-        final jsonStr = await FileStorageService.readProcessedBook(
-          widget.book.processedBookPath!,
-        );
-        if (jsonStr != null) {
-          final loadedDoc = BookDocument.fromJsonString(jsonStr);
-          _document = loadedDoc.metadata.containsKey('reconstructionQuality')
-              ? loadedDoc
-              : BookTextNormalizer.normalizeDocument(loadedDoc);
-          _readerDocument = ReflowableEngine.normalizeDocument(_document!);
-          if (_currentChapter < _document!.chapters.length) {
-            _currentChapterTitle = _document!.chapters[_currentChapter].title;
-          }
-        }
-      } catch (_) {}
-    }
+    await _loadProcessedDoc();
 
     if (mounted) {
       setState(() {
         _isLoadingDoc = false;
         _totalPages = widget.book.totalPages > 0 ? widget.book.totalPages : 1;
       });
+    }
+  }
+
+  Future<void> _loadProcessedDoc([String? explicitPath]) async {
+    String? path = explicitPath ?? widget.book.processedBookPath;
+    if (path == null) {
+      final dbBook =
+          await ref.read(databaseServiceProvider).getBookById(widget.book.id);
+      path = dbBook?.processedBookPath;
+    }
+    if (path != null) {
+      try {
+        final jsonStr = await FileStorageService.readProcessedBook(path);
+        if (jsonStr != null && mounted) {
+          final loadedDoc = BookDocument.fromJsonString(jsonStr);
+          setState(() {
+            _document = loadedDoc.metadata.containsKey('reconstructionQuality')
+                ? loadedDoc
+                : BookTextNormalizer.normalizeDocument(loadedDoc);
+            _readerDocument = ReflowableEngine.normalizeDocument(_document!);
+            if (_currentChapter < _document!.chapters.length) {
+              _currentChapterTitle = _document!.chapters[_currentChapter].title;
+            }
+          });
+        }
+      } catch (_) {}
     }
   }
 
@@ -1482,6 +1515,128 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                           ),
                       ],
                     ),
+                  ),
+
+                  // Background OCR progress / trigger pill
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final ocrProgressAsync =
+                          ref.watch(ocrQueueProgressStreamProvider);
+                      final ocrProgress = ocrProgressAsync.valueOrNull;
+                      final isThisBookOcrRunning = ocrProgress != null &&
+                          ocrProgress.bookId == widget.book.id &&
+                          ocrProgress.isRunning;
+
+                      if (isThisBookOcrRunning) {
+                        return Container(
+                          height: 28,
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF007AFF).withAlpha(25),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: const Color(0xFF007AFF).withAlpha(60),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 12,
+                                height: 12,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Color(0xFF007AFF),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'OCR ${ocrProgress.completedPages}/${ocrProgress.totalPages} (${(ocrProgress.progressPercentage * 100).toInt()}%)',
+                                style: const TextStyle(
+                                  color: Color(0xFF007AFF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      // If document is null, allow triggering OCR directly from reader bar
+                      if (_document == null && !isCompact) {
+                        return Tooltip(
+                          message:
+                              'Mulai Pengenalan Teks Latar Belakang (OCR) agar dapat membaca dalam mode Teks / Reflowable',
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () {
+                              ref.read(backgroundOcrQueueProvider).start(
+                                    bookId: widget.book.id,
+                                    pdfPath: widget.book.originalPdfPath,
+                                    autoReconstruct: true,
+                                  );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pengenalan teks (OCR) dimulai di latar belakang. Mode Buku akan aktif setelah selesai.',
+                                  ),
+                                  duration: Duration(seconds: 3),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              height: 28,
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: activeTheme.isDark
+                                    ? Colors.white.withAlpha(15)
+                                    : Colors.black.withAlpha(8),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: activeTheme.isDark
+                                      ? Colors.white24
+                                      : Colors.black12,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.document_scanner_outlined,
+                                    size: 14,
+                                    color: activeTheme.textColor,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Mulai OCR',
+                                    style: TextStyle(
+                                      color: activeTheme.textColor,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
                   ),
 
                   // Mode Switcher: Reflowable vs PDF (only if processed document is present and not compact)

@@ -13,6 +13,7 @@ part 'app_database.g.dart';
     Highlights,
     Collections,
     BookCollections,
+    OcrPages,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -20,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
     : super(e ?? driftDatabase(name: 'digital_books_db'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +46,9 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(highlights, highlights.prefixContext);
         await m.addColumn(highlights, highlights.suffixContext);
         await m.addColumn(highlights, highlights.anchorVersion);
+      }
+      if (from < 4) {
+        await m.createTable(ocrPages);
       }
     },
   );

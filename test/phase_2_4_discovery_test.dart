@@ -422,8 +422,8 @@ void main() {
                 ),
               );
 
-          // Verify schema version is 3
-          expect(db.schemaVersion, equals(3));
+          // Verify schema version is at least 3
+          expect(db.schemaVersion, greaterThanOrEqualTo(3));
 
           // Verify existing rows are intact
           final allBooks = await db.select(db.books).get();
