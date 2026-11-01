@@ -2,9 +2,9 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 enum ScanEnhancementIntensity {
-  gentle('Lembut', contrast: 1.25, brightness: 12, unsharpAmount: 0.35),
-  balanced('Seimbang', contrast: 1.45, brightness: 22, unsharpAmount: 0.55),
-  strong('Kuat', contrast: 1.70, brightness: 32, unsharpAmount: 0.75);
+  gentle('Lembut', contrast: 1.20, brightness: 10, unsharpAmount: 0.25),
+  balanced('Seimbang', contrast: 1.35, brightness: 16, unsharpAmount: 0.32),
+  strong('Kuat', contrast: 1.50, brightness: 20, unsharpAmount: 0.40);
 
   final String label;
   final double contrast;
@@ -17,6 +17,25 @@ enum ScanEnhancementIntensity {
     required this.brightness,
     required this.unsharpAmount,
   });
+}
+
+/// Adaptive gutter shadow profile derived from empirical page luminance analysis.
+class GutterShadowProfile {
+  final bool hasShadow;
+  final int maxBoost;
+  final int gutterWidth;
+
+  const GutterShadowProfile({
+    required this.hasShadow,
+    required this.maxBoost,
+    required this.gutterWidth,
+  });
+
+  static const none = GutterShadowProfile(
+    hasShadow: false,
+    maxBoost: 0,
+    gutterWidth: 0,
+  );
 }
 
 class ScanEnhancementConfig {
@@ -91,23 +110,27 @@ class ScannedImageEnhancer {
     final lut = Uint8List(256);
     final contrast = intensity.contrast;
     final brightness = intensity.brightness;
+    final isStrong = (intensity == ScanEnhancementIntensity.strong);
+    final thresh = isStrong ? 185 : 192;
+    final bonus = isStrong ? 48.0 : 24.0;
 
     for (int i = 0; i < 256; i++) {
-      // S-curve contrast boost with background whitening:
-      // Dark text (values < 120) is pushed towards deep black.
-      // Yellowed or gray paper background (values > 175) is cleanly pushed to white (255).
+      // S-curve contrast boost with gentle paper background whitening:
+      // Dark text (values < 110) is pushed towards deep solid black.
+      // Yellowed or gray paper background is cleanly pushed to white (255).
       double normalized = (i - 128.0) / 128.0;
       double contrasted = normalized * contrast;
-      // Apply brightness primarily to the upper half (paper background) without washing out text ink
+      // Apply brightness gently to upper tones without washing out text ink
       double brightAdjustment = normalized > 0
           ? (brightness * (normalized * normalized))
-          : (brightness * normalized * 0.5);
+          : (brightness * normalized * 0.3);
       double shifted = (contrasted * 128.0) + 128.0 + brightAdjustment;
 
-      // Soft non-linear highlight compression (paper whitening)
-      if (i > 175) {
-        final highlightBonus = (i - 175) * 1.8;
-        shifted += highlightBonus;
+      // Smooth quadratic highlight compression for true paper background (i > thresh)
+      // Preserves anti-aliased character edges (100-195) from being bleached to 255!
+      if (i > thresh) {
+        final t = (i - thresh) / (255.0 - thresh);
+        shifted += t * t * bonus;
       }
 
       int clamped = shifted.round().clamp(0, 255);
@@ -116,6 +139,73 @@ class ScannedImageEnhancer {
 
     _contrastLuts[intensity] = lut;
     return lut;
+  }
+
+  /// Adaptively measures whether an actual luminance gradient (spine shadow)
+  /// is present near the gutter binding edge.
+  static GutterShadowProfile _detectGutterShadow(
+    Uint8List srcPixels,
+    int width,
+    int height,
+    bool isLeftPage,
+  ) {
+    if (width <= 20 || height <= 20) return GutterShadowProfile.none;
+
+    final maxGutterWidth = (width * 0.16).round();
+    final coreStart = (width * 0.35).round();
+    final coreEnd = (width * 0.65).round();
+
+    // Fast sampling across 40 rows (< 0.5 ms budget)
+    const rowsToSample = 40;
+    final stepY = math.max(1, height ~/ rowsToSample);
+
+    final coreSamples = <int>[];
+    final edgeSamples = <int>[];
+
+    for (int r = 1; r < rowsToSample; r++) {
+      final y = r * stepY;
+      if (y >= height) break;
+      final rowOffset = y * width * 4;
+
+      // Sample core background
+      for (int x = coreStart; x < coreEnd; x += 16) {
+        final idx = rowOffset + (x * 4);
+        final lum = (srcPixels[idx + 2] * 77 + srcPixels[idx + 1] * 150 + srcPixels[idx] * 29) >> 8;
+        coreSamples.add(lum);
+      }
+
+      // Sample gutter edge strip (outer 4% of page)
+      final edgeXStart = isLeftPage ? (width - (maxGutterWidth * 0.25).round()) : 0;
+      final edgeXEnd = isLeftPage ? width : (maxGutterWidth * 0.25).round();
+      for (int x = edgeXStart; x < edgeXEnd; x += 4) {
+        final idx = rowOffset + (x * 4);
+        final lum = (srcPixels[idx + 2] * 77 + srcPixels[idx + 1] * 150 + srcPixels[idx] * 29) >> 8;
+        edgeSamples.add(lum);
+      }
+    }
+
+    if (coreSamples.isEmpty || edgeSamples.isEmpty) return GutterShadowProfile.none;
+
+    coreSamples.sort();
+    edgeSamples.sort();
+
+    // 90th percentile gives background paper luminance (free from text/illustration pixels)
+    final coreBg = coreSamples[(coreSamples.length * 0.90).round().clamp(0, coreSamples.length - 1)];
+    final edgeBg = edgeSamples[(edgeSamples.length * 0.90).round().clamp(0, edgeSamples.length - 1)];
+
+    // If edge is already clean white (>= 242) or edge is not darker than core by at least 12 luminance:
+    // Page has no gutter shadow! Do not apply compensation.
+    final shadowDelta = coreBg - edgeBg;
+    if (shadowDelta < 12 || edgeBg >= 242) {
+      return GutterShadowProfile.none;
+    }
+
+    final maxBoost = math.min(45, shadowDelta);
+    return GutterShadowProfile(
+      hasShadow: true,
+      maxBoost: maxBoost,
+      gutterWidth: maxGutterWidth,
+    );
   }
 
   /// Enhances a BGRA8888 image buffer non-destructively.
@@ -141,10 +231,11 @@ class ScannedImageEnhancer {
     final removeGutter = config.removeGutterShadow;
     final isLeft = config.isLeftPage;
 
-    // Gutter gradient parameters:
-    // Left page: gutter is on the RIGHT 15% of the page.
-    // Right page: gutter is on the LEFT 15% of the page.
-    final gutterWidth = (width * 0.16).round();
+    // Detect actual gutter shadow gradient if enabled
+    final shadowProfile = removeGutter
+        ? _detectGutterShadow(srcPixels, width, height, isLeft)
+        : GutterShadowProfile.none;
+    final gutterWidth = shadowProfile.gutterWidth;
 
     for (int y = 0; y < height; y++) {
       final rowOffset = y * width * 4;
@@ -157,16 +248,22 @@ class ScannedImageEnhancer {
         final a = srcPixels[idx + 3];
 
         int gutterBoost = 0;
-        if (removeGutter && gutterWidth > 0) {
+        if (shadowProfile.hasShadow && gutterWidth > 0) {
+          int rawBoost = 0;
           if (isLeft && x > width - gutterWidth) {
-            // Distance from right edge (0 = edge, 1 = inner)
             final distFromEdge = width - 1 - x;
             final factor = (gutterWidth - distFromEdge) / gutterWidth;
-            gutterBoost = (factor * 38.0).round();
+            rawBoost = (factor * shadowProfile.maxBoost).round();
           } else if (!isLeft && x < gutterWidth) {
-            // Distance from left edge
             final factor = (gutterWidth - x) / gutterWidth;
-            gutterBoost = (factor * 38.0).round();
+            rawBoost = (factor * shadowProfile.maxBoost).round();
+          }
+
+          if (rawBoost > 0) {
+            // Text preservation: do not wash out solid dark ink (L < 90) near margin
+            final lum = (r * 77 + g * 150 + b * 29) >> 8;
+            final textProtection = ((lum - 90) / 130.0).clamp(0.0, 1.0);
+            gutterBoost = (rawBoost * textProtection).round();
           }
         }
 
@@ -214,7 +311,7 @@ class ScannedImageEnhancer {
     int height,
     double amount,
   ) {
-    final int blendFactor = (amount * 64).round().clamp(0, 64);
+    final int blendFactor = (amount * 48).round().clamp(0, 48);
     if (blendFactor <= 0) return;
 
     // Use a lightweight 5-point cross stencil for sharp edges without blur halo
@@ -227,15 +324,23 @@ class ScannedImageEnhancer {
         final c = rowCurr + (x * 4);
         final val = pixels[c];
 
-        // Only sharpen non-saturated pixels (protect pure white background and pure black)
-        if (val > 15 && val < 245) {
+        // Only sharpen non-saturated pixels, protecting anti-aliased edge boundaries
+        if (val > 20 && val < 235) {
           final top = pixels[rowPrev + (x * 4)];
           final bot = pixels[rowNext + (x * 4)];
           final left = pixels[rowCurr + ((x - 1) * 4)];
           final right = pixels[rowCurr + ((x + 1) * 4)];
 
           final laplacian = (val << 2) - (top + bot + left + right);
-          final sharpened = val + ((laplacian * blendFactor) >> 6);
+          final adjustment = (laplacian * blendFactor) >> 6;
+
+          // Edge-preserving clamp: do not push a stroke edge pixel above 220 into white!
+          int sharpened;
+          if (val < 200 && adjustment > 0) {
+            sharpened = math.min(220, val + adjustment);
+          } else {
+            sharpened = val + adjustment;
+          }
           final clamped = sharpened.clamp(0, 255);
 
           pixels[c] = clamped;

@@ -99,17 +99,42 @@ void main() {
       expect(outStrong[inkIdx], lessThanOrEqualTo(outBalanced[inkIdx]));
     });
 
-    test('2. Spine Gutter Shadow Suppression: Asymmetric left vs right page leveling', () {
+    test('2. Spine Gutter Shadow Suppression: Adaptive gradient detection vs flat margins', () {
       const width = 100;
-      const height = 10;
-      final pixels = Uint8List(width * height * 4);
+      const height = 40;
+      final pixelsLeft = Uint8List(width * height * 4);
+      final pixelsRight = Uint8List(width * height * 4);
 
-      // Fill with uniform shadow gray (160 across all pixels)
-      for (int i = 0; i < width * height * 4; i += 4) {
-        pixels[i] = 160;
-        pixels[i + 1] = 160;
-        pixels[i + 2] = 160;
-        pixels[i + 3] = 255;
+      // Create synthetic page with real gutter gradient:
+      // Core is paper white (235).
+      // On left page: right 16% (x > 84) darkens towards 150 at the edge.
+      // On right page: left 16% (x < 16) darkens towards 150 at the edge.
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          final idx = (y * width + x) * 4;
+
+          // Left page
+          int valLeft = 235;
+          if (x >= 84) {
+            final t = (x - 84) / 16.0;
+            valLeft = (235 - (t * 70)).round(); // Drops to 165 at edge
+          }
+          pixelsLeft[idx] = valLeft;
+          pixelsLeft[idx + 1] = valLeft;
+          pixelsLeft[idx + 2] = valLeft;
+          pixelsLeft[idx + 3] = 255;
+
+          // Right page
+          int valRight = 235;
+          if (x < 16) {
+            final t = (16 - x) / 16.0;
+            valRight = (235 - (t * 70)).round(); // Drops to 165 at edge
+          }
+          pixelsRight[idx] = valRight;
+          pixelsRight[idx + 1] = valRight;
+          pixelsRight[idx + 2] = valRight;
+          pixelsRight[idx + 3] = 255;
+        }
       }
 
       // Left page: gutter is on the right inner edge (x near 99)
@@ -120,7 +145,7 @@ void main() {
         intensity: ScanEnhancementIntensity.gentle,
       );
       final outLeft = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: pixels,
+        srcPixels: pixelsLeft,
         width: width,
         height: height,
         config: leftPageConfig,
@@ -134,21 +159,38 @@ void main() {
         intensity: ScanEnhancementIntensity.gentle,
       );
       final outRight = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: pixels,
+        srcPixels: pixelsRight,
         width: width,
         height: height,
         config: rightPageConfig,
       );
 
-      // On left page, right edge (x=99) receives gutter boost compared to outer left edge (x=0)
-      final leftOuterEdgeVal = outLeft[0]; // x = 0
-      final leftGutterEdgeVal = outLeft[99 * 4]; // x = 99
-      expect(leftGutterEdgeVal, greaterThan(leftOuterEdgeVal));
+      // Verify that gutter shadow on right edge of left page was lifted
+      final leftUnenhancedGutterVal = pixelsLeft[(width - 1) * 4];
+      final leftEnhancedGutterVal = outLeft[(width - 1) * 4];
+      expect(leftEnhancedGutterVal, greaterThan(leftUnenhancedGutterVal));
 
-      // On right page, left edge (x=0) receives gutter boost compared to outer right edge (x=99)
-      final rightGutterEdgeVal = outRight[0]; // x = 0
-      final rightOuterEdgeVal = outRight[99 * 4]; // x = 99
-      expect(rightGutterEdgeVal, greaterThan(rightOuterEdgeVal));
+      // Verify that gutter shadow on left edge of right page was lifted
+      final rightUnenhancedGutterVal = pixelsRight[0];
+      final rightEnhancedGutterVal = outRight[0];
+      expect(rightEnhancedGutterVal, greaterThan(rightUnenhancedGutterVal));
+
+      // Flat margin test: verify that a page WITHOUT shadow gradient receives 0 boost
+      final flatPixels = Uint8List(width * height * 4);
+      for (int i = 0; i < flatPixels.length; i += 4) {
+        flatPixels[i] = 245;
+        flatPixels[i + 1] = 245;
+        flatPixels[i + 2] = 245;
+        flatPixels[i + 3] = 255;
+      }
+      final outFlat = ScannedImageEnhancer.enhanceBgra(
+        srcPixels: flatPixels,
+        width: width,
+        height: height,
+        config: leftPageConfig,
+      );
+      // Flat margin at edge (x=99) receives no artificial gutter offset
+      expect(outFlat[(width - 1) * 4], equals(outFlat[0]));
     });
 
     test('3. Grayscale Mode vs Color Preservation Mode', () {
