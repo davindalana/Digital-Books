@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' hide isNotNull;
 import 'package:pdfrx/pdfrx.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_service.dart';
+import '../../../core/utils/file_storage_service.dart';
 import '../models/ocr_queue_state.dart';
 import 'apple_vision_ocr_service.dart';
 import 'ocr_semantic_pipeline.dart';
@@ -122,6 +123,21 @@ class BackgroundOcrQueue {
     _isCancelled = false;
     _isPaused = false;
     _pauseCompleter = null;
+
+    // Validate PDF freshness against stored fileHash to avoid stale OCR cache
+    final book = await dbService.getBookById(bookId);
+    if (book != null && book.fileHash != null) {
+      final currentHash = await FileStorageService.computeFileSha256(file);
+      if (currentHash != book.fileHash) {
+        // File was modified or replaced: invalidate stale OCR pages and old processed derivative
+        await dbService.deleteOcrPagesForBook(bookId);
+        await dbService.insertBook(book.toCompanion(true).copyWith(
+              fileHash: Value(currentHash),
+              processedBookPath: const Value(null),
+              updatedAt: Value(DateTime.now()),
+            ));
+      }
+    }
 
     PdfDocument? doc;
     try {

@@ -140,8 +140,13 @@ class SemanticClassifier {
     }
 
     // E. Ordered and Unordered Lists
+    final fontRatio = fontSize / bodyFontSize;
+    final isLikelyHeading = (isBold && fontRatio >= 1.10) ||
+        fontRatio >= 1.25 ||
+        (isBold && lineCount == 1 && text.length < 100);
+
     final orderedMatch = RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+').firstMatch(text);
-    if (para.isOrderedList || orderedMatch != null) {
+    if ((para.isOrderedList || orderedMatch != null) && !isLikelyHeading) {
       final marker = orderedMatch?.group(1) ?? '';
       return SemanticReconstructedBlock(
         type: SemanticBlockType.orderedListItem,

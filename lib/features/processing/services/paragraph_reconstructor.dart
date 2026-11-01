@@ -92,31 +92,21 @@ class ParagraphReconstructor {
       final lines = pageResult.orderedLines;
       if (lines.isEmpty) continue;
 
-      // Filter out obvious running headers and footers to protect paragraph stitching
-      final filteredLines = <ExtractedTextLine>[];
-      for (final line in lines) {
+      // Calculate the typical (modal) line height and line gap for this page
+      final modalMetrics = _calculatePageLineMetrics(lines);
+
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i];
+
+        // Obvious running headers or page numbers are isolated in place
         if (_isPageNumberOrRunningChrome(line)) {
-          // If there's an ongoing builder, finish it before chrome
           if (currentBuilder != null && currentBuilder.lines.isNotEmpty) {
             allParagraphs.add(currentBuilder.build());
             currentBuilder = null;
           }
-          // Chrome is preserved as its own single-line paragraph so classifier can handle it
-          allParagraphs.add(
-            ReconstructedParagraphBuilder(line).build(),
-          );
-        } else {
-          filteredLines.add(line);
+          allParagraphs.add(ReconstructedParagraphBuilder(line).build());
+          continue;
         }
-      }
-
-      if (filteredLines.isEmpty) continue;
-
-      // Calculate the typical (modal) line height and line gap for this page
-      final modalMetrics = _calculatePageLineMetrics(filteredLines);
-
-      for (int i = 0; i < filteredLines.length; i++) {
-        final line = filteredLines[i];
 
         if (currentBuilder == null) {
           currentBuilder = ReconstructedParagraphBuilder(line);
@@ -322,10 +312,10 @@ class ParagraphReconstructor {
   /// Identifies obvious standalone page numbers or headers for isolating during paragraph joining.
   static bool _isPageNumberOrRunningChrome(ExtractedTextLine line) {
     final trimmed = line.text.trim();
-    if (RegExp(r'^(page\s+\d+(\s+of\s+\d+)?|\d+)$', caseSensitive: false).hasMatch(trimmed)) {
+    if (RegExp(r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*-)$', caseSensitive: false).hasMatch(trimmed)) {
       return true;
     }
-    if (line.bounds.top < 65.0 && line.fontSize <= 9.0 && trimmed.length < 60) {
+    if (line.bounds.top < 65.0 && line.fontSize <= 10.0 && trimmed.length < 80) {
       return true;
     }
     return false;

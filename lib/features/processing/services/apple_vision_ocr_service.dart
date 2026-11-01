@@ -30,11 +30,45 @@ class AppleVisionOcrService {
     return 'bin/vision_ocr';
   }
 
+  /// Path to the Swift source file if compilation is needed.
+  String get swiftSourcePath {
+    final rel = File('macos/tools/vision_ocr.swift');
+    if (rel.existsSync()) return rel.absolute.path;
+    return '${Directory.current.path}/macos/tools/vision_ocr.swift';
+  }
+
   /// Checks whether local Apple Vision OCR is supported and executable.
   bool get isAvailable {
     if (!Platform.isMacOS) return false;
     final file = File(binaryPath);
-    return file.existsSync();
+    if (file.existsSync()) return true;
+    return File(swiftSourcePath).existsSync();
+  }
+
+  /// Ensures the native helper binary is present, compiling from source if necessary.
+  Future<bool> ensureBinaryAvailable() async {
+    if (!Platform.isMacOS) return false;
+    final bin = File(binaryPath);
+    if (bin.existsSync()) return true;
+
+    final src = File(swiftSourcePath);
+    if (!src.existsSync()) return false;
+
+    try {
+      final binDir = bin.parent;
+      if (!binDir.existsSync()) {
+        binDir.createSync(recursive: true);
+      }
+      final result = await Process.run('swiftc', [
+        '-O',
+        src.absolute.path,
+        '-o',
+        bin.absolute.path,
+      ]);
+      return result.exitCode == 0 && bin.existsSync();
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Performs local OCR on an image file at [imagePath].
@@ -55,15 +89,19 @@ class AppleVisionOcrService {
       );
     }
 
-    if (!isAvailable) {
-      return OcrPageResult(
-        imagePath: imagePath,
-        width: 0,
-        height: 0,
-        durationMs: 0,
-        lines: const [],
-        error: 'Apple Vision OCR binary not found or not executable at $binaryPath',
-      );
+    if (!File(binaryPath).existsSync()) {
+      final compiled = await ensureBinaryAvailable();
+      if (!compiled || !File(binaryPath).existsSync()) {
+        return OcrPageResult(
+          imagePath: imagePath,
+          width: 0,
+          height: 0,
+          durationMs: 0,
+          lines: const [],
+          error:
+              'Apple Vision OCR binary not found and failed to compile from $swiftSourcePath',
+        );
+      }
     }
 
     final args = [
