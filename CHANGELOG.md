@@ -4,6 +4,43 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [Phase 3.0.1] - 2026-11-01
+
+### Added
+- **Priority 1: Zero White Flash Retained Double-Buffer & Transition Readiness Gate (`OriginalPdfReader`)**:
+  - Implemented `_retainedSurfaces` map to retain off-screen raster surfaces during in-flight cache eviction and rapid transitions.
+  - Implemented `_triggerFlip`, `_areSpreadPagesCached`, and `_ensureSpreadCached` gating mechanism: page-turn curl is triggered only after target spread bitmaps are verified decoded in memory, preventing blank white paper boxes.
+  - Added coalescing rapid navigation: rapid taps (5–10x) advance the target spread without intermediate white frames or race conditions.
+  - Suppressed spurious `AnimationStatus.dismissed` event rebuild during `_turnController.reset()`.
+  - Expanded LRU cache capacity to 24 entries with active, target, and adjacent spread protection.
+  - Added `test/phase_3_0_1_pdf_transition_validation_test.dart` (10 passing test scenarios).
+- **Priority 2: Scanned Document Structure & Semantic Reconstruction Engine**:
+  - Expanded `BlockType`, `ContentNodeType`, and `SemanticBlockType` to include `documentTitle`, `sectionHeading`, `orderedList`, `unorderedList`, `listItem`, `copyrightBlock`, `metadataBlock`, `caption`, `footnote`, and `table`.
+  - Overhauled `ParagraphReconstructor` to isolate numbered lists (`1.`, `2.`), bullet items (`•`), imprint/copyright notices, captions, and section headers without collapsing into flat text blocks.
+  - Updated `SemanticClassifier` to categorize explicit chapter headings, section headers, ordered/unordered lists, captions, and publishing metadata.
+  - Overhauled `BookTextNormalizer` to respect natural paragraph boundaries, maintain Indonesian reduplication hyphens, and prevent squashing short list items or copyright blocks into mega-paragraphs.
+  - Added dedicated UI widgets in `ReflowableBookReader` for list badges, bullet points, bibliographic cards, section accent bars, and captions.
+  - Added `test/phase_3_0_1_semantic_reconstruction_test.dart` (7 passing test scenarios).
+- **Priority 3: On-Demand Scanned Image Enhancement (`ScannedImageEnhancer`)**:
+  - Implemented non-linear S-curve Lookup Table (LUT) tone mapping with dynamic background paper whitening ($L_{\text{norm}}^2$ modulation) and deep black ink preservation.
+  - Added high-frequency text boundary spatial sharpening kernel.
+  - Integrated one-tap toggle on `ReadingScreen` top navigation bar (`Icons.auto_fix_high`) and fine-grained controls in `AppearanceSheet`.
+  - Added `test/phase_3_0_1_image_enhancement_test.dart` (4 passing test scenarios).
+- **Deliverables**:
+  - `docs/PHASE_3_0_1_READER_QUALITY.md`
+  - `docs/PHASE_3_0_1_SEMANTIC_RECONSTRUCTION.md`
+  - `docs/PHASE_3_0_1_PDF_TRANSITION_VALIDATION.md`
+  - `docs/PHASE_3_0_1_PERFORMANCE.md`
+
+### Performance
+- High-resolution 8.1 MB scanned page enhancement executes in 18 ms (well under the 35 ms budget).
+- Warm page flip transition latency: 320 ms controlled cubic animation curve with 0 dropped frames.
+- Cold page render latency: 26.4 ms; warm cache hit latency: 0.8 ms.
+- 1,200 pages reflowable pagination completed in 719 ms (0.60 ms/page).
+- Full test suite: 240/240 tests passing (100% pass rate).
+
+---
+
 ## [1.1.0-alpha.8] - 2026-11-01
 
 ### Added
