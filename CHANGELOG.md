@@ -4,6 +4,71 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.8] - 2026-11-01
+
+### Added
+- **Permanent Development Governance & Git Workflow (`AGENTS.md`)**:
+  - Established permanent engineering principles, quality policies, atomic commit standards, and macOS-native testing mandates.
+- **Standardized Workflow & Versioning Guides**:
+  - Created [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) detailing the 13-step development cycle, commit taxonomy, changelog maintenance, and rollback protocols.
+  - Created [`docs/VERSIONING.md`](docs/VERSIONING.md) defining Semantic Versioning for Flutter (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`) and release lifecycle gates.
+- **Phase 2.9.2 Rendering Stability Regression Test Suite (`test/phase_2_9_2_rendering_stability_test.dart`)**:
+  - 6 unit test scenarios verifying zero white flash, retained bitmap surface survival across page turns, and rapid non-blocking navigation.
+
+### Fixed
+- **Double Blank White Flash During Page Navigation**:
+  - Eliminated Flash #1 (before turn animation) and Flash #2 (after turn completion) in `OriginalPdfReader` by retaining rendered PDFium bitmaps in memory across stationary `_buildSolidSpread` and transitional `_buildTwoPageFlip` widget lifecycles via `_CachedPageBitmap`.
+  - Replaced unstyled `Colors.white` container backgrounds with theme-adaptive paper tone surfaces (`#232325` for dark/black, `#F8F1E3` for sepia, `#FAF9F6` for white/light), preventing stark white flashes even when an asset is initially rendering.
+- **Interruptible Non-Blocking Navigation**:
+  - Removed strict 320 ms lock (`_isFlipping`) in `OriginalPdfReader.nextPage` and `previousPage`. Repeated navigation actions now immediately fast-forward in-progress animations to completion or smoothly reverse direction without dropping user keyboard or click events.
+
+### Performance
+- Retained GPU raster surfaces during flip animations, eliminating redundant PDFium deallocation and re-render spikes.
+- Added proactive adjacent spread pre-rendering (`_warmCacheAroundSpread`).
+- Full test suite execution: 214/214 passing in ~18s.
+
+### Known Issues
+- Scanned documents (such as *Bicara Itu Ada Seninya*) lacking selectable text layers are safely recommended to be read in Original PDF mode. Automated OCR with Apple Vision framework and image enhancement (deskew, denoise, contrast leveling) are scheduled for Phase 3.0.
+
+---
+
+## [1.1.0-alpha.7] - 2026-11-01
+
+### Added
+- **macOS Phase 2.9 Baseline Profiler Suite (`integration_test/macos_phase_2_9_baseline_profiler_test.dart`)**:
+  - Automated harness benchmarking raster frame times, bitmap cache survival, and idle CPU consumption.
+- **Phase 2.9 Reader UX Test Suite (`test/phase_2_9_reader_ux_test.dart`)**:
+  - Tests covering auto-hide toolbar toggling, theme switching, and appearance menu state.
+
+### Changed
+- **Appearance & Typography Bottom Sheet UX (`lib/features/reader/presentation/widgets/appearance_sheet.dart`)**:
+  - Compact redesign optimizing screen real estate, adding clear page layout options (Paginated Spread vs Continuous Vertical Scroll).
+- **Auto-Hide Toolbar & Immersive Reading Mode (`lib/features/reader/presentation/screens/reading_screen.dart`)**:
+  - Tap-to-toggle overlay visibility allowing full-screen immersion without distracting chrome.
+
+### Performance
+- **Zero Idle CPU Spin**:
+  - Eliminated continuous widget rebuild loops and unbounded animation tickers while idle in reader view, stabilizing idle CPU usage at 0.0% – 0.5%.
+
+---
+
+## [1.1.0-alpha.6] - 2026-11-01
+
+### Added
+- **Phase 2.8.4 Native macOS Visual Acceptance Suite (`integration_test/macos_phase_2_8_4_native_visual_acceptance_test.dart`)**:
+  - Visual acceptance tests verifying layout across compact (750×600), standard (1000×700), and expansive (1300×850) macOS viewports.
+- **Widow & Orphan Prevention Suite (`test/phase_2_8_3_adaptive_paragraph_flow_test.dart`)**:
+  - Mathematical tests ensuring paragraphs split cleanly across pages without leaving single orphan lines or lonely widow lines.
+
+### Fixed
+- **Adaptive Paragraph Flow & Page Under-Utilization**:
+  - Enabled paragraph slicing across facing pages when remaining page budget is sufficient, eliminating premature page breaks that left pages half empty.
+  - Enforced strict widow-and-orphan constraints (minimum 2 lines required on origin page, minimum 2 lines required on continuation page).
+- **Position & Annotation Persistence**:
+  - Verified reading position anchors and highlights survive window resizing and font changes without drifting.
+
+---
+
 ## [1.1.0-alpha.5] - Visual Regression & Pagination Stress Validation (Phase 2.8.1)
 
 ### Fixed
