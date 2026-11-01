@@ -7,29 +7,35 @@ import '../../providers/reader_settings_provider.dart';
 
 class AppearanceSheet extends ConsumerWidget {
   final String? bookId;
-  const AppearanceSheet({super.key, this.bookId});
+  final bool isDialog;
+  const AppearanceSheet({super.key, this.bookId, this.isDialog = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeTheme = ref.watch(readingThemeStateProvider);
     final typoSettings = ref.watch(typographySettingsStateProvider);
+    final isPdf = bookId != null
+        ? ref.watch(activeReadingModeProvider(bookId!)) ==
+            ReadingMode.originalPdf
+        : false;
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: isDialog
+          ? BorderRadius.circular(16)
+          : const BorderRadius.vertical(top: Radius.circular(20)),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
           decoration: BoxDecoration(
             color: activeTheme.isDark
-                ? const Color(0xFF1E1E20).withAlpha(230)
-                : const Color(0xFFF9F9FB).withAlpha(235),
-            border: Border(
-              top: BorderSide(
-                color: activeTheme.isDark
-                    ? Colors.white.withAlpha(25)
-                    : Colors.black.withAlpha(20),
-              ),
+                ? const Color(0xFF1E1E20).withAlpha(235)
+                : const Color(0xFFF9F9FB).withAlpha(240),
+            borderRadius: isDialog ? BorderRadius.circular(16) : null,
+            border: Border.all(
+              color: activeTheme.isDark
+                  ? Colors.white.withAlpha(25)
+                  : Colors.black.withAlpha(20),
             ),
           ),
           child: SafeArea(
@@ -40,20 +46,49 @@ class AppearanceSheet extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Drag Handle
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: activeTheme.isDark
-                            ? Colors.white.withAlpha(50)
-                            : Colors.black.withAlpha(30),
-                        borderRadius: BorderRadius.circular(2.5),
+                  // Header / Drag Handle
+                  if (isDialog)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Pengaturan Tampilan',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: activeTheme.textColor,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.close,
+                            color: activeTheme.secondaryTextColor,
+                            size: 18,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: activeTheme.isDark
+                              ? Colors.white.withAlpha(50)
+                              : Colors.black.withAlpha(30),
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
                   // Theme Selector
                   Row(
@@ -234,23 +269,27 @@ class AppearanceSheet extends ConsumerWidget {
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
                                         Icons.view_carousel_outlined,
-                                        size: 18,
+                                        size: 16,
                                         color: isPaginated
                                             ? Colors.white
                                             : activeTheme.textColor,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Halaman',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: isPaginated
-                                              ? Colors.white
-                                              : activeTheme.textColor,
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          'Halaman',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isPaginated
+                                                ? Colors.white
+                                                : activeTheme.textColor,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -290,23 +329,27 @@ class AppearanceSheet extends ConsumerWidget {
                                   ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
                                         Icons.view_headline_rounded,
-                                        size: 18,
+                                        size: 16,
                                         color: !isPaginated
                                             ? Colors.white
                                             : activeTheme.textColor,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Gulir Vertikal',
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: !isPaginated
-                                              ? Colors.white
-                                              : activeTheme.textColor,
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          'Gulir Vertikal',
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: !isPaginated
+                                                ? Colors.white
+                                                : activeTheme.textColor,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -321,18 +364,52 @@ class AppearanceSheet extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Font Size Controls (A- / A+)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                  if (isPdf) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(12)
+                            : Colors.black.withAlpha(8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: activeTheme.secondaryTextColor,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Pengaturan ukuran font dan tipografi teks berlaku dalam mode Buku (Reflowable).',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: activeTheme.secondaryTextColor,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: activeTheme.isDark
-                          ? Colors.white.withAlpha(18)
-                          : Colors.black.withAlpha(10),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  ] else ...[
+                    // Font Size Controls (A- / A+)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(18)
+                            : Colors.black.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     child: Row(
                       children: [
                         IconButton(
@@ -538,11 +615,11 @@ class AppearanceSheet extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Margin / Line Spacing toggle
+                      // Line Spacing toggle
                       Expanded(
                         child: Container(
                           height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           decoration: BoxDecoration(
                             color: activeTheme.isDark
                                 ? Colors.white.withAlpha(18)
@@ -550,67 +627,54 @@ class AppearanceSheet extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Text(
-                                'Spacing',
-                                style: TextStyle(
-                                  color: activeTheme.textColor,
-                                  fontSize: 13,
-                                ),
+                              _SpacingButton(
+                                label: '1.4',
+                                isSelected: typoSettings.lineSpacing < 1.5,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        typographySettingsStateProvider
+                                            .notifier,
+                                      )
+                                      .state = typoSettings.copyWith(
+                                    lineSpacing: 1.4,
+                                  );
+                                },
+                                activeTheme: activeTheme,
                               ),
-                              Row(
-                                children: [
-                                  _SpacingButton(
-                                    label: '1.4',
-                                    isSelected: typoSettings.lineSpacing < 1.5,
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            typographySettingsStateProvider
-                                                .notifier,
-                                          )
-                                          .state = typoSettings.copyWith(
-                                        lineSpacing: 1.4,
-                                      );
-                                    },
-                                    activeTheme: activeTheme,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  _SpacingButton(
-                                    label: '1.7',
-                                    isSelected:
-                                        typoSettings.lineSpacing >= 1.5 &&
-                                        typoSettings.lineSpacing < 1.9,
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            typographySettingsStateProvider
-                                                .notifier,
-                                          )
-                                          .state = typoSettings.copyWith(
-                                        lineSpacing: 1.7,
-                                      );
-                                    },
-                                    activeTheme: activeTheme,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  _SpacingButton(
-                                    label: '2.0',
-                                    isSelected: typoSettings.lineSpacing >= 1.9,
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            typographySettingsStateProvider
-                                                .notifier,
-                                          )
-                                          .state = typoSettings.copyWith(
-                                        lineSpacing: 2.0,
-                                      );
-                                    },
-                                    activeTheme: activeTheme,
-                                  ),
-                                ],
+                              _SpacingButton(
+                                label: '1.7',
+                                isSelected:
+                                    typoSettings.lineSpacing >= 1.5 &&
+                                    typoSettings.lineSpacing < 1.9,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        typographySettingsStateProvider
+                                            .notifier,
+                                      )
+                                      .state = typoSettings.copyWith(
+                                    lineSpacing: 1.7,
+                                  );
+                                },
+                                activeTheme: activeTheme,
+                              ),
+                              _SpacingButton(
+                                label: '2.0',
+                                isSelected: typoSettings.lineSpacing >= 1.9,
+                                onTap: () {
+                                  ref
+                                      .read(
+                                        typographySettingsStateProvider
+                                            .notifier,
+                                      )
+                                      .state = typoSettings.copyWith(
+                                    lineSpacing: 2.0,
+                                  );
+                                },
+                                activeTheme: activeTheme,
                               ),
                             ],
                           ),
@@ -619,7 +683,8 @@ class AppearanceSheet extends ConsumerWidget {
                     ],
                   ),
                 ],
-              ),
+              ],
+            ),
             ),
           ),
         ),

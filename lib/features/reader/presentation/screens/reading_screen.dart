@@ -78,6 +78,32 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   bool _showSearchTraversal = false;
   bool _dismissedQualityBanner = false;
   Timer? _periodicProgressTimer;
+  Timer? _autoHideTimer;
+
+  void _startAutoHideTimer() {
+    _autoHideTimer?.cancel();
+    _autoHideTimer = Timer(const Duration(milliseconds: 3500), () {
+      if (mounted && _showControls) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
+  }
+
+  void _cancelAutoHideTimer() {
+    _autoHideTimer?.cancel();
+    _autoHideTimer = null;
+  }
+
+  void _onUserPointerInteraction() {
+    if (!_showControls) {
+      setState(() {
+        _showControls = true;
+      });
+    }
+    _startAutoHideTimer();
+  }
 
   final GlobalKey<ReflowableReaderContainerState> _reflowableKey =
       GlobalKey<ReflowableReaderContainerState>();
@@ -123,10 +149,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         );
       }
     });
+    _startAutoHideTimer();
   }
 
   @override
   void dispose() {
+    _cancelAutoHideTimer();
     _periodicProgressTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _saveProgress(
@@ -757,15 +785,48 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     setState(() {
       _showControls = !_showControls;
     });
+    if (_showControls) {
+      _startAutoHideTimer();
+    } else {
+      _cancelAutoHideTimer();
+    }
   }
 
   void _openAppearanceSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => AppearanceSheet(bookId: widget.book.id),
-    );
+    _cancelAutoHideTimer();
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 600) {
+      showDialog(
+        context: context,
+        barrierColor: Colors.black.withAlpha(90),
+        builder: (_) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 420,
+              maxHeight: 560,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: AppearanceSheet(
+                bookId: widget.book.id,
+                isDialog: true,
+              ),
+            ),
+          ),
+        ),
+      ).then((_) {
+        if (mounted) _startAutoHideTimer();
+      });
+    } else {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => AppearanceSheet(bookId: widget.book.id),
+      ).then((_) {
+        if (mounted) _startAutoHideTimer();
+      });
+    }
   }
 
   void _openTocDialog() {
@@ -1011,10 +1072,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       },
       child: Scaffold(
         backgroundColor: activeTheme.backgroundColor,
-        body: SizedBox.expand(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
+        body: MouseRegion(
+          onHover: (_) => _onUserPointerInteraction(),
+          child: SizedBox.expand(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
               // 1. Reading Body Engine
               Positioned.fill(
                 child: _isLoadingDoc
@@ -1313,7 +1376,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFloatingTopBar(
@@ -1534,24 +1598,46 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                   // PDF Zoom controls & View Mode Toggle
                   if (readingMode == ReadingMode.originalPdf) ...[
                     if (isDesktopOrTablet) ...[
-                      IconButton(
-                        tooltip:
+                      if (pdfViewMode == PdfViewMode.paginated)
+                        IconButton(
+                          tooltip:
+                              _pdfKey.currentState?.isTwoPageSpreadActive == true
+                              ? 'Tampilan 1 Halaman'
+                              : 'Tampilan 2 Halaman (Buku Terbuka)',
+                          icon: Icon(
                             _pdfKey.currentState?.isTwoPageSpreadActive == true
-                            ? 'Tampilan 1 Halaman'
-                            : 'Tampilan 2 Halaman (Buku Terbuka)',
-                        icon: Icon(
-                          _pdfKey.currentState?.isTwoPageSpreadActive == true
-                              ? Icons.auto_stories_rounded
-                              : Icons.article_rounded,
-                          color: activeTheme.textColor,
-                          size: 20,
+                                ? Icons.auto_stories_rounded
+                                : Icons.article_rounded,
+                            color: activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _pdfKey.currentState?.toggleTwoPageSpread();
+                            });
+                          },
+                        )
+                      else
+                        IconButton(
+                          tooltip:
+                              'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
+                          icon: Icon(
+                            Icons.article_rounded,
+                            color: activeTheme.textColor.withAlpha(80),
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
+                                ),
+                                duration: Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _pdfKey.currentState?.toggleTwoPageSpread();
-                          });
-                        },
-                      ),
                       IconButton(
                         tooltip: 'Zoom Out (Cmd -)',
                         icon: Icon(

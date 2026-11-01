@@ -196,7 +196,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
         ((offset + (approxPageHeight * 0.45)) / approxPageHeight).floor() + 1;
     final clampedPage = estimatedPage.clamp(1, _totalPages);
     if (clampedPage != _currentPage) {
-      setState(() => _currentPage = clampedPage);
+      _currentPage = clampedPage;
       widget.onPageChanged(clampedPage, _totalPages);
     }
   }
@@ -929,115 +929,181 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
     if (!isTwoPage || spread.isCover) {
       // Single Page / Cover card
-      return Center(
-        child: Container(
-          width: geo.pageW,
-          height: geo.pageH,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
-                blurRadius: widget.theme.isDark ? 30 : 20,
-                spreadRadius: 2,
-                offset: const Offset(0, 8),
+      final curPageNum = spread.rightPage ?? spread.leftPage ?? 1;
+      final nextPageNum = curPageNum + 1;
+      final hasNextPage = nextPageNum <= _totalPages;
+
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(
+            child: Container(
+              width: geo.pageW,
+              height: geo.pageH,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
+                    blurRadius: widget.theme.isDark ? 30 : 20,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withAlpha(widget.theme.isDark ? 90 : 20),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              BoxShadow(
-                color: Colors.black.withAlpha(widget.theme.isDark ? 90 : 20),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _buildPageSurface(
-                doc: doc,
-                pageNumber: spread.rightPage ?? spread.leftPage ?? 1,
-                isLeft: null,
-                width: geo.pageW,
-                height: geo.pageH,
-              ),
-              // Subtle spine fold on left edge for closed cover
-              if (spread.isCover)
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  width: 14,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Colors.black.withAlpha(
-                              widget.theme.isDark ? 90 : 45,
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildPageSurface(
+                    doc: doc,
+                    pageNumber: curPageNum,
+                    isLeft: null,
+                    width: geo.pageW,
+                    height: geo.pageH,
+                  ),
+                  // Subtle spine fold on left edge for closed cover
+                  if (spread.isCover)
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: 14,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.black.withAlpha(
+                                  widget.theme.isDark ? 90 : 45,
+                                ),
+                                Colors.transparent,
+                              ],
                             ),
-                            Colors.transparent,
-                          ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          if (hasNextPage)
+            Offstage(
+              offstage: true,
+              child: SizedBox(
+                width: geo.pageW,
+                height: geo.pageH,
+                child: _buildPageSurface(
+                  doc: doc,
+                  pageNumber: nextPageNum,
+                  isLeft: null,
+                  width: geo.pageW,
+                  height: geo.pageH,
+                ),
+              ),
+            ),
+        ],
       );
     }
 
     // Two-Page Open Book Spread
-    return Center(
-      child: Container(
-        width: geo.bookW,
-        height: geo.bookH,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(4),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
-              blurRadius: widget.theme.isDark ? 32 : 22,
-              spreadRadius: 2,
-              offset: const Offset(0, 8),
+    final nextSpreadIdx = _currentSpreadIndex + 1;
+    final allSpreads = _getSpreads(true);
+    final hasNextSpread = nextSpreadIdx < allSpreads.length;
+    final nextSpread = hasNextSpread ? allSpreads[nextSpreadIdx] : null;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Center(
+          child: Container(
+            width: geo.bookW,
+            height: geo.bookH,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(widget.theme.isDark ? 160 : 40),
+                  blurRadius: widget.theme.isDark ? 32 : 22,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withAlpha(widget.theme.isDark ? 85 : 20),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            BoxShadow(
-              color: Colors.black.withAlpha(widget.theme.isDark ? 85 : 20),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+            clipBehavior: Clip.antiAlias,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildPageSurface(
+                    doc: doc,
+                    pageNumber: spread.leftPage,
+                    isLeft: true,
+                    width: geo.pageW,
+                    height: geo.pageH,
+                  ),
+                ),
+                _buildCenterSpineCrease(),
+                Expanded(
+                  child: _buildPageSurface(
+                    doc: doc,
+                    pageNumber: spread.rightPage,
+                    isLeft: false,
+                    width: geo.pageW,
+                    height: geo.pageH,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildPageSurface(
-                doc: doc,
-                pageNumber: spread.leftPage,
-                isLeft: true,
-                width: geo.pageW,
-                height: geo.pageH,
+        if (nextSpread != null)
+          Offstage(
+            offstage: true,
+            child: SizedBox(
+              width: geo.bookW,
+              height: geo.bookH,
+              child: Row(
+                children: [
+                  if (nextSpread.leftPage != null)
+                    Expanded(
+                      child: _buildPageSurface(
+                        doc: doc,
+                        pageNumber: nextSpread.leftPage,
+                        isLeft: true,
+                        width: geo.pageW,
+                        height: geo.pageH,
+                      ),
+                    ),
+                  if (nextSpread.rightPage != null)
+                    Expanded(
+                      child: _buildPageSurface(
+                        doc: doc,
+                        pageNumber: nextSpread.rightPage,
+                        isLeft: false,
+                        width: geo.pageW,
+                        height: geo.pageH,
+                      ),
+                    ),
+                ],
               ),
             ),
-            _buildCenterSpineCrease(),
-            Expanded(
-              child: _buildPageSurface(
-                doc: doc,
-                pageNumber: spread.rightPage,
-                isLeft: false,
-                width: geo.pageW,
-                height: geo.pageH,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 
@@ -1068,30 +1134,32 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           fit: StackFit.expand,
           children: [
             Container(color: Colors.white),
-            const Center(
-              child: SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFFD4AF37),
-                ),
-              ),
-            ),
             PdfPageView(
               key: ValueKey('pdf_pv_$pageNumber'),
               document: doc,
               pageNumber: pageNumber,
-              maximumDpi: 300,
+              maximumDpi: 180,
               decorationBuilder: (context, pageSize, page, pageImage) {
                 return Align(
                   alignment: Alignment.center,
                   child: AspectRatio(
                     aspectRatio: pageSize.width / pageSize.height,
-                    child: AnimatedOpacity(
-                      duration: const Duration(milliseconds: 140),
-                      opacity: pageImage != null ? 1.0 : 0.0,
-                      child: pageImage ?? const SizedBox.shrink(),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (pageImage == null)
+                          const Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFD4AF37),
+                              ),
+                            ),
+                          ),
+                        ?pageImage,
+                      ],
                     ),
                   ),
                 );
@@ -1609,6 +1677,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
+      cacheExtent: 1500.0,
       itemCount: _totalPages,
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
