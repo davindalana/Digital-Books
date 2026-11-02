@@ -18,12 +18,16 @@ import '../../services/book_text_normalizer.dart';
 import '../../domain/engines/in_book_search_engine.dart';
 import '../../domain/engines/reflowable_engine.dart';
 import '../../domain/engines/reflowable_highlight_span_builder.dart';
+import '../../domain/models/book_annotation.dart';
 import '../../domain/models/reader_content.dart';
 import '../../domain/models/reading_navigation_history.dart';
+import '../../domain/services/anchor_resolution_service.dart';
 import '../../providers/reader_settings_provider.dart';
+import '../widgets/annotations_sheet.dart';
 import '../widgets/appearance_sheet.dart';
 import '../widgets/book_search_dialog.dart';
 import '../widgets/original_pdf_reader.dart';
+import '../widgets/reflowable/highlight_interaction_sheet.dart';
 import '../widgets/reflowable/reflowable_reader_container.dart';
 import '../widgets/search_traversal_bar.dart';
 import '../widgets/toc_dialog.dart';
@@ -433,7 +437,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       startPosition: drift.Value(pageNumber),
       endPosition: drift.Value(pageNumber),
       color: drift.Value(color),
+      anchorNodeId: drift.Value(_activeAnchorNodeId),
+      startOffset: drift.Value(_activeCharOffset),
+      endOffset: drift.Value(_activeCharOffset + text.length),
+      pageIndex: drift.Value(pageNumber),
       createdAt: drift.Value(DateTime.now()),
+      updatedAt: drift.Value(DateTime.now()),
     );
     await ref.read(databaseServiceProvider).addHighlight(highlight);
     if (mounted) {
@@ -481,6 +490,79 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         _currentChapterTitle = ch.title;
         _estimatedMinutesLeftInChapter = estMins > 0 ? estMins : 1;
       });
+    }
+  }
+
+  void _openAnnotationsSheet() async {
+    final dbService = ref.read(databaseServiceProvider);
+    final rawAnnotations = await dbService.getAnnotationsForBook(widget.book.id);
+
+    // Resolve anchors using AnchorResolutionService against current document
+    final resolvedAnnotations = rawAnnotations.map((ann) {
+      if (_readerDocument != null) {
+        return AnchorResolutionService.resolveInReflowableDocument(
+          annotation: ann,
+          document: _readerDocument!,
+        );
+      }
+      return ann;
+    }).toList();
+
+    if (!mounted) return;
+
+    AnnotationsSheet.show(
+      context: context,
+      bookTitle: widget.book.title,
+      annotations: resolvedAnnotations,
+      theme: ref.read(readingThemeStateProvider),
+      onNavigateToAnnotation: _navigateToAnnotation,
+      onEditAnnotation: (ann) {
+        HighlightInteractionSheet.show(
+          context: context,
+          selectedText: ann.selectedText,
+          initialColor: ann.color,
+          initialNote: ann.note,
+          theme: ref.read(readingThemeStateProvider),
+          onSave: (color, note) async {
+            final updated = ann.copyWith(
+              color: color,
+              note: note,
+              updatedAt: DateTime.now(),
+            );
+            await dbService.saveAnnotation(updated);
+          },
+          onDelete: () async {
+            await dbService.deleteAnnotation(ann.id, ann.type);
+          },
+        );
+      },
+      onDeleteAnnotation: (ann) async {
+        await dbService.deleteAnnotation(ann.id, ann.type);
+      },
+    );
+  }
+
+  void _navigateToAnnotation(BookAnnotation ann) {
+    if (_readingMode == ReadingMode.originalPdf) {
+      if (ann.pageIndex != null) {
+        _pdfKey.currentState?.jumpToPage(ann.pageIndex!);
+      }
+    } else {
+      // Reflowable mode
+      if (ann.anchorNodeId != null) {
+        _reflowableKey.currentState?.jumpToAnchor(
+          ann.anchorNodeId!,
+          ann.startOffset,
+        );
+      } else if (ann.pageIndex != null && _readerDocument != null) {
+        final node = _readerDocument!.chapters
+            .expand((c) => c.nodes)
+            .where((n) => n.sourcePdfPage == ann.pageIndex)
+            .firstOrNull;
+        if (node != null) {
+          _reflowableKey.currentState?.jumpToAnchor(node.id, 0);
+        }
+      }
     }
   }
 
@@ -1010,7 +1092,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           b.anchorNodeId != null) {
         return b.anchorNodeId == _activeAnchorNodeId;
       }
-      return b.position == _currentPage;
+      final pageTarget = isReflowable ? _reflowablePosition : _pdfPage;
+      return (b.pageIndex ?? b.position) == pageTarget;
     }).toList();
 
     if (existing.isNotEmpty) {
@@ -1026,9 +1109,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         );
       }
     } else {
+      final pageTarget = isReflowable ? _reflowablePosition : _pdfPage;
       final label = isReflowable && _currentChapterTitle.isNotEmpty
-          ? '$_currentChapterTitle • Hal. $_currentPage'
-          : 'Halaman $_currentPage';
+          ? '$_currentChapterTitle • Hal. $pageTarget'
+          : 'Halaman $pageTarget';
 
       await dbService.addBookmark(
         BookmarksCompanion(
@@ -1044,12 +1128,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       .id
                 : null,
           ),
-          position: drift.Value(_currentPage),
+          position: drift.Value(pageTarget),
+          pageIndex: drift.Value(pageTarget),
           label: drift.Value(label),
           anchorNodeId: drift.Value(_activeAnchorNodeId),
           characterOffset: drift.Value(_activeCharOffset),
           progressPercentage: drift.Value(_progressPercentage),
           createdAt: drift.Value(DateTime.now()),
+          updatedAt: drift.Value(DateTime.now()),
         ),
       );
       if (mounted) {
@@ -1219,45 +1305,84 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                               );
                             },
                       )
-                    : OriginalPdfReader(
-                        key: _pdfKey,
-                        pdfPath: _currentPdfPath,
-                        initialPage: _currentPage,
-                        theme: activeTheme,
-                        viewMode: ref.watch(pdfViewModeProvider),
-                        enhancementConfig: ref.watch(
-                          scanEnhancementConfigProvider(widget.book.id),
-                        ),
-                        showControls: _showControls,
-                        searchHighlights: _activePdfSearchHighlights,
-                        onTapContent: _toggleControls,
-                        onSwitchToReflowable: _document != null
-                            ? () => _setReadingMode(ReadingMode.reflowable)
-                            : null,
-                        onBack: () => Navigator.of(context).pop(),
-                        onRelinkPdf: _handleRelinkPdf,
-                        onRemoveBook: _handleRemoveBook,
-                        onToggleViewMode: () {
-                          final current = ref.read(pdfViewModeProvider);
-                          ref
-                              .read(pdfViewModeProvider.notifier)
-                              .state = current == PdfViewMode.paginated
-                              ? PdfViewMode.continuous
-                              : PdfViewMode.paginated;
-                        },
-                        onPageChanged: (page, total) {
-                          _pdfPage = page;
-                          setState(() {
-                            _currentPage = page;
-                            _totalPages = total;
-                            _progressPercentage = total > 0
-                                ? (page / total)
-                                : 0.0;
-                          });
-                          _saveProgress(
-                            chapter: _reflowableChapter,
-                            position: page,
-                            percentage: total > 0 ? (page / total) : 0.0,
+                    : Consumer(
+                        builder: (context, ref, _) {
+                          final userAnnotations = ref.watch(
+                            bookAnnotationsStreamProvider(widget.book.id),
+                          ).value ?? const [];
+                          return OriginalPdfReader(
+                            key: _pdfKey,
+                            pdfPath: _currentPdfPath,
+                            initialPage: _currentPage,
+                            theme: activeTheme,
+                            viewMode: ref.watch(pdfViewModeProvider),
+                            enhancementConfig: ref.watch(
+                              scanEnhancementConfigProvider(widget.book.id),
+                            ),
+                            showControls: _showControls,
+                            searchHighlights: _activePdfSearchHighlights,
+                            userAnnotations: userAnnotations,
+                            onAnnotationTap: (ann) {
+                              if (ann.isHighlight) {
+                                HighlightInteractionSheet.show(
+                                  context: context,
+                                  existingHighlight: ann.toHighlight(),
+                                  selectedText: ann.selectedText,
+                                  theme: activeTheme,
+                                  onSave: (color, note) async {
+                                    final dbService =
+                                        ref.read(databaseServiceProvider);
+                                    if (color != ann.color) {
+                                      await dbService.updateHighlightColor(
+                                        ann.id,
+                                        color,
+                                      );
+                                    }
+                                    if (note != ann.note) {
+                                      await dbService.updateHighlightNote(
+                                        ann.id,
+                                        note,
+                                      );
+                                    }
+                                  },
+                                  onDelete: () async {
+                                    final dbService =
+                                        ref.read(databaseServiceProvider);
+                                    await dbService.deleteHighlight(ann.id);
+                                  },
+                                );
+                              }
+                            },
+                            onTapContent: _toggleControls,
+                            onSwitchToReflowable: _document != null
+                                ? () => _setReadingMode(ReadingMode.reflowable)
+                                : null,
+                            onBack: () => Navigator.of(context).pop(),
+                            onRelinkPdf: _handleRelinkPdf,
+                            onRemoveBook: _handleRemoveBook,
+                            onToggleViewMode: () {
+                              final current = ref.read(pdfViewModeProvider);
+                              ref
+                                  .read(pdfViewModeProvider.notifier)
+                                  .state = current == PdfViewMode.paginated
+                                  ? PdfViewMode.continuous
+                                  : PdfViewMode.paginated;
+                            },
+                            onPageChanged: (page, total) {
+                              _pdfPage = page;
+                              setState(() {
+                                _currentPage = page;
+                                _totalPages = total;
+                                _progressPercentage = total > 0
+                                    ? (page / total)
+                                    : 0.0;
+                              });
+                              _saveProgress(
+                                chapter: _reflowableChapter,
+                                position: page,
+                                percentage: total > 0 ? (page / total) : 0.0,
+                              );
+                            },
                           );
                         },
                       ),
@@ -1951,6 +2076,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
 
                   // Appearance Settings (aA)
                   IconButton(
+                    key: const ValueKey('reader_appearance_button'),
                     tooltip: 'Tampilan & Tema',
                     icon: Text(
                       'aA',
@@ -1963,8 +2089,21 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                     onPressed: _openAppearanceSheet,
                   ),
 
+                  // Annotations Library (Highlights, Notes, Bookmarks)
+                  IconButton(
+                    key: const ValueKey('reader_annotations_button'),
+                    tooltip: 'Daftar Anotasi & Catatan',
+                    icon: Icon(
+                      Icons.collections_bookmark_rounded,
+                      color: activeTheme.textColor,
+                      size: 20,
+                    ),
+                    onPressed: _openAnnotationsSheet,
+                  ),
+
                   // Bookmark button
                   IconButton(
+                    key: const ValueKey('reader_bookmark_button'),
                     tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
                     icon: Icon(
                       isBookmarked ? Icons.bookmark : Icons.bookmark_border,

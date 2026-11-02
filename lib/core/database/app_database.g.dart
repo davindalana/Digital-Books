@@ -1777,6 +1777,17 @@ class $BookmarksTable extends Bookmarks
         requiredDuringInsert: false,
         defaultValue: const Constant(0.0),
       );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
+    'page_index',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1788,6 +1799,17 @@ class $BookmarksTable extends Bookmarks
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1798,7 +1820,9 @@ class $BookmarksTable extends Bookmarks
     anchorNodeId,
     characterOffset,
     progressPercentage,
+    pageIndex,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1874,6 +1898,12 @@ class $BookmarksTable extends Bookmarks
         ),
       );
     }
+    if (data.containsKey('page_index')) {
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1881,6 +1911,12 @@ class $BookmarksTable extends Bookmarks
       );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     }
     return context;
   }
@@ -1923,10 +1959,18 @@ class $BookmarksTable extends Bookmarks
         DriftSqlType.double,
         data['${effectivePrefix}progress_percentage'],
       )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -1945,7 +1989,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
   final String? anchorNodeId;
   final int characterOffset;
   final double progressPercentage;
+  final int? pageIndex;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   const Bookmark({
     required this.id,
     required this.bookId,
@@ -1955,7 +2001,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     this.anchorNodeId,
     required this.characterOffset,
     required this.progressPercentage,
+    this.pageIndex,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1972,7 +2020,13 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     }
     map['character_offset'] = Variable<int>(characterOffset);
     map['progress_percentage'] = Variable<double>(progressPercentage);
+    if (!nullToAbsent || pageIndex != null) {
+      map['page_index'] = Variable<int>(pageIndex);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -1990,7 +2044,13 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           : Value(anchorNodeId),
       characterOffset: Value(characterOffset),
       progressPercentage: Value(progressPercentage),
+      pageIndex: pageIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pageIndex),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -2010,7 +2070,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       progressPercentage: serializer.fromJson<double>(
         json['progressPercentage'],
       ),
+      pageIndex: serializer.fromJson<int?>(json['pageIndex']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -2025,7 +2087,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       'anchorNodeId': serializer.toJson<String?>(anchorNodeId),
       'characterOffset': serializer.toJson<int>(characterOffset),
       'progressPercentage': serializer.toJson<double>(progressPercentage),
+      'pageIndex': serializer.toJson<int?>(pageIndex),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -2038,7 +2102,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     Value<String?> anchorNodeId = const Value.absent(),
     int? characterOffset,
     double? progressPercentage,
+    Value<int?> pageIndex = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => Bookmark(
     id: id ?? this.id,
     bookId: bookId ?? this.bookId,
@@ -2048,7 +2114,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     anchorNodeId: anchorNodeId.present ? anchorNodeId.value : this.anchorNodeId,
     characterOffset: characterOffset ?? this.characterOffset,
     progressPercentage: progressPercentage ?? this.progressPercentage,
+    pageIndex: pageIndex.present ? pageIndex.value : this.pageIndex,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   Bookmark copyWithCompanion(BookmarksCompanion data) {
     return Bookmark(
@@ -2066,7 +2134,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
       progressPercentage: data.progressPercentage.present
           ? data.progressPercentage.value
           : this.progressPercentage,
+      pageIndex: data.pageIndex.present ? data.pageIndex.value : this.pageIndex,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -2081,7 +2151,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           ..write('anchorNodeId: $anchorNodeId, ')
           ..write('characterOffset: $characterOffset, ')
           ..write('progressPercentage: $progressPercentage, ')
-          ..write('createdAt: $createdAt')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -2096,7 +2168,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
     anchorNodeId,
     characterOffset,
     progressPercentage,
+    pageIndex,
     createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -2110,7 +2184,9 @@ class Bookmark extends DataClass implements Insertable<Bookmark> {
           other.anchorNodeId == this.anchorNodeId &&
           other.characterOffset == this.characterOffset &&
           other.progressPercentage == this.progressPercentage &&
-          other.createdAt == this.createdAt);
+          other.pageIndex == this.pageIndex &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class BookmarksCompanion extends UpdateCompanion<Bookmark> {
@@ -2122,7 +2198,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
   final Value<String?> anchorNodeId;
   final Value<int> characterOffset;
   final Value<double> progressPercentage;
+  final Value<int?> pageIndex;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const BookmarksCompanion({
     this.id = const Value.absent(),
@@ -2133,7 +2211,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.anchorNodeId = const Value.absent(),
     this.characterOffset = const Value.absent(),
     this.progressPercentage = const Value.absent(),
+    this.pageIndex = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BookmarksCompanion.insert({
@@ -2145,7 +2225,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     this.anchorNodeId = const Value.absent(),
     this.characterOffset = const Value.absent(),
     this.progressPercentage = const Value.absent(),
+    this.pageIndex = const Value.absent(),
     required DateTime createdAt,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        bookId = Value(bookId),
@@ -2161,7 +2243,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Expression<String>? anchorNodeId,
     Expression<int>? characterOffset,
     Expression<double>? progressPercentage,
+    Expression<int>? pageIndex,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2173,7 +2257,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       if (anchorNodeId != null) 'anchor_node_id': anchorNodeId,
       if (characterOffset != null) 'character_offset': characterOffset,
       if (progressPercentage != null) 'progress_percentage': progressPercentage,
+      if (pageIndex != null) 'page_index': pageIndex,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2187,7 +2273,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     Value<String?>? anchorNodeId,
     Value<int>? characterOffset,
     Value<double>? progressPercentage,
+    Value<int?>? pageIndex,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return BookmarksCompanion(
@@ -2199,7 +2287,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
       anchorNodeId: anchorNodeId ?? this.anchorNodeId,
       characterOffset: characterOffset ?? this.characterOffset,
       progressPercentage: progressPercentage ?? this.progressPercentage,
+      pageIndex: pageIndex ?? this.pageIndex,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2231,8 +2321,14 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
     if (progressPercentage.present) {
       map['progress_percentage'] = Variable<double>(progressPercentage.value);
     }
+    if (pageIndex.present) {
+      map['page_index'] = Variable<int>(pageIndex.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2251,7 +2347,9 @@ class BookmarksCompanion extends UpdateCompanion<Bookmark> {
           ..write('anchorNodeId: $anchorNodeId, ')
           ..write('characterOffset: $characterOffset, ')
           ..write('progressPercentage: $progressPercentage, ')
+          ..write('pageIndex: $pageIndex, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2417,6 +2515,41 @@ class $HighlightsTable extends Highlights
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
+    'page_index',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _boundingBoxesJsonMeta = const VerificationMeta(
+    'boundingBoxesJson',
+  );
+  @override
+  late final GeneratedColumn<String> boundingBoxesJson =
+      GeneratedColumn<String>(
+        'bounding_boxes_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _anchorStatusMeta = const VerificationMeta(
+    'anchorStatus',
+  );
+  @override
+  late final GeneratedColumn<String> anchorStatus = GeneratedColumn<String>(
+    'anchor_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('resolved'),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2427,6 +2560,17 @@ class $HighlightsTable extends Highlights
     false,
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
   );
   @override
   List<GeneratedColumn> get $columns => [
@@ -2444,7 +2588,11 @@ class $HighlightsTable extends Highlights
     prefixContext,
     suffixContext,
     anchorVersion,
+    pageIndex,
+    boundingBoxesJson,
+    anchorStatus,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2573,6 +2721,30 @@ class $HighlightsTable extends Highlights
         ),
       );
     }
+    if (data.containsKey('page_index')) {
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
+    }
+    if (data.containsKey('bounding_boxes_json')) {
+      context.handle(
+        _boundingBoxesJsonMeta,
+        boundingBoxesJson.isAcceptableOrUnknown(
+          data['bounding_boxes_json']!,
+          _boundingBoxesJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchor_status')) {
+      context.handle(
+        _anchorStatusMeta,
+        anchorStatus.isAcceptableOrUnknown(
+          data['anchor_status']!,
+          _anchorStatusMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2580,6 +2752,12 @@ class $HighlightsTable extends Highlights
       );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     }
     return context;
   }
@@ -2646,10 +2824,26 @@ class $HighlightsTable extends Highlights
         DriftSqlType.int,
         data['${effectivePrefix}anchor_version'],
       )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      ),
+      boundingBoxesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bounding_boxes_json'],
+      ),
+      anchorStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchor_status'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -2674,7 +2868,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
   final String? prefixContext;
   final String? suffixContext;
   final int anchorVersion;
+  final int? pageIndex;
+  final String? boundingBoxesJson;
+  final String? anchorStatus;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   const Highlight({
     required this.id,
     required this.bookId,
@@ -2690,7 +2888,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     this.prefixContext,
     this.suffixContext,
     required this.anchorVersion,
+    this.pageIndex,
+    this.boundingBoxesJson,
+    this.anchorStatus,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2719,7 +2921,19 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       map['suffix_context'] = Variable<String>(suffixContext);
     }
     map['anchor_version'] = Variable<int>(anchorVersion);
+    if (!nullToAbsent || pageIndex != null) {
+      map['page_index'] = Variable<int>(pageIndex);
+    }
+    if (!nullToAbsent || boundingBoxesJson != null) {
+      map['bounding_boxes_json'] = Variable<String>(boundingBoxesJson);
+    }
+    if (!nullToAbsent || anchorStatus != null) {
+      map['anchor_status'] = Variable<String>(anchorStatus);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -2747,7 +2961,19 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           ? const Value.absent()
           : Value(suffixContext),
       anchorVersion: Value(anchorVersion),
+      pageIndex: pageIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pageIndex),
+      boundingBoxesJson: boundingBoxesJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(boundingBoxesJson),
+      anchorStatus: anchorStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorStatus),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -2771,7 +2997,13 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       prefixContext: serializer.fromJson<String?>(json['prefixContext']),
       suffixContext: serializer.fromJson<String?>(json['suffixContext']),
       anchorVersion: serializer.fromJson<int>(json['anchorVersion']),
+      pageIndex: serializer.fromJson<int?>(json['pageIndex']),
+      boundingBoxesJson: serializer.fromJson<String?>(
+        json['boundingBoxesJson'],
+      ),
+      anchorStatus: serializer.fromJson<String?>(json['anchorStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -2792,7 +3024,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       'prefixContext': serializer.toJson<String?>(prefixContext),
       'suffixContext': serializer.toJson<String?>(suffixContext),
       'anchorVersion': serializer.toJson<int>(anchorVersion),
+      'pageIndex': serializer.toJson<int?>(pageIndex),
+      'boundingBoxesJson': serializer.toJson<String?>(boundingBoxesJson),
+      'anchorStatus': serializer.toJson<String?>(anchorStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -2811,7 +3047,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     Value<String?> prefixContext = const Value.absent(),
     Value<String?> suffixContext = const Value.absent(),
     int? anchorVersion,
+    Value<int?> pageIndex = const Value.absent(),
+    Value<String?> boundingBoxesJson = const Value.absent(),
+    Value<String?> anchorStatus = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => Highlight(
     id: id ?? this.id,
     bookId: bookId ?? this.bookId,
@@ -2831,7 +3071,13 @@ class Highlight extends DataClass implements Insertable<Highlight> {
         ? suffixContext.value
         : this.suffixContext,
     anchorVersion: anchorVersion ?? this.anchorVersion,
+    pageIndex: pageIndex.present ? pageIndex.value : this.pageIndex,
+    boundingBoxesJson: boundingBoxesJson.present
+        ? boundingBoxesJson.value
+        : this.boundingBoxesJson,
+    anchorStatus: anchorStatus.present ? anchorStatus.value : this.anchorStatus,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   Highlight copyWithCompanion(HighlightsCompanion data) {
     return Highlight(
@@ -2865,7 +3111,15 @@ class Highlight extends DataClass implements Insertable<Highlight> {
       anchorVersion: data.anchorVersion.present
           ? data.anchorVersion.value
           : this.anchorVersion,
+      pageIndex: data.pageIndex.present ? data.pageIndex.value : this.pageIndex,
+      boundingBoxesJson: data.boundingBoxesJson.present
+          ? data.boundingBoxesJson.value
+          : this.boundingBoxesJson,
+      anchorStatus: data.anchorStatus.present
+          ? data.anchorStatus.value
+          : this.anchorStatus,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -2886,7 +3140,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           ..write('prefixContext: $prefixContext, ')
           ..write('suffixContext: $suffixContext, ')
           ..write('anchorVersion: $anchorVersion, ')
-          ..write('createdAt: $createdAt')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('boundingBoxesJson: $boundingBoxesJson, ')
+          ..write('anchorStatus: $anchorStatus, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -2907,7 +3165,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
     prefixContext,
     suffixContext,
     anchorVersion,
+    pageIndex,
+    boundingBoxesJson,
+    anchorStatus,
     createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -2927,7 +3189,11 @@ class Highlight extends DataClass implements Insertable<Highlight> {
           other.prefixContext == this.prefixContext &&
           other.suffixContext == this.suffixContext &&
           other.anchorVersion == this.anchorVersion &&
-          other.createdAt == this.createdAt);
+          other.pageIndex == this.pageIndex &&
+          other.boundingBoxesJson == this.boundingBoxesJson &&
+          other.anchorStatus == this.anchorStatus &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class HighlightsCompanion extends UpdateCompanion<Highlight> {
@@ -2945,7 +3211,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
   final Value<String?> prefixContext;
   final Value<String?> suffixContext;
   final Value<int> anchorVersion;
+  final Value<int?> pageIndex;
+  final Value<String?> boundingBoxesJson;
+  final Value<String?> anchorStatus;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const HighlightsCompanion({
     this.id = const Value.absent(),
@@ -2962,7 +3232,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     this.prefixContext = const Value.absent(),
     this.suffixContext = const Value.absent(),
     this.anchorVersion = const Value.absent(),
+    this.pageIndex = const Value.absent(),
+    this.boundingBoxesJson = const Value.absent(),
+    this.anchorStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HighlightsCompanion.insert({
@@ -2980,7 +3254,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     this.prefixContext = const Value.absent(),
     this.suffixContext = const Value.absent(),
     this.anchorVersion = const Value.absent(),
+    this.pageIndex = const Value.absent(),
+    this.boundingBoxesJson = const Value.absent(),
+    this.anchorStatus = const Value.absent(),
     required DateTime createdAt,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        bookId = Value(bookId),
@@ -3003,7 +3281,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     Expression<String>? prefixContext,
     Expression<String>? suffixContext,
     Expression<int>? anchorVersion,
+    Expression<int>? pageIndex,
+    Expression<String>? boundingBoxesJson,
+    Expression<String>? anchorStatus,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3021,7 +3303,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
       if (prefixContext != null) 'prefix_context': prefixContext,
       if (suffixContext != null) 'suffix_context': suffixContext,
       if (anchorVersion != null) 'anchor_version': anchorVersion,
+      if (pageIndex != null) 'page_index': pageIndex,
+      if (boundingBoxesJson != null) 'bounding_boxes_json': boundingBoxesJson,
+      if (anchorStatus != null) 'anchor_status': anchorStatus,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3041,7 +3327,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     Value<String?>? prefixContext,
     Value<String?>? suffixContext,
     Value<int>? anchorVersion,
+    Value<int?>? pageIndex,
+    Value<String?>? boundingBoxesJson,
+    Value<String?>? anchorStatus,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return HighlightsCompanion(
@@ -3059,7 +3349,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
       prefixContext: prefixContext ?? this.prefixContext,
       suffixContext: suffixContext ?? this.suffixContext,
       anchorVersion: anchorVersion ?? this.anchorVersion,
+      pageIndex: pageIndex ?? this.pageIndex,
+      boundingBoxesJson: boundingBoxesJson ?? this.boundingBoxesJson,
+      anchorStatus: anchorStatus ?? this.anchorStatus,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3109,8 +3403,20 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
     if (anchorVersion.present) {
       map['anchor_version'] = Variable<int>(anchorVersion.value);
     }
+    if (pageIndex.present) {
+      map['page_index'] = Variable<int>(pageIndex.value);
+    }
+    if (boundingBoxesJson.present) {
+      map['bounding_boxes_json'] = Variable<String>(boundingBoxesJson.value);
+    }
+    if (anchorStatus.present) {
+      map['anchor_status'] = Variable<String>(anchorStatus.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -3135,7 +3441,11 @@ class HighlightsCompanion extends UpdateCompanion<Highlight> {
           ..write('prefixContext: $prefixContext, ')
           ..write('suffixContext: $suffixContext, ')
           ..write('anchorVersion: $anchorVersion, ')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('boundingBoxesJson: $boundingBoxesJson, ')
+          ..write('anchorStatus: $anchorStatus, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6701,7 +7011,9 @@ typedef $$BookmarksTableCreateCompanionBuilder =
       Value<String?> anchorNodeId,
       Value<int> characterOffset,
       Value<double> progressPercentage,
+      Value<int?> pageIndex,
       required DateTime createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$BookmarksTableUpdateCompanionBuilder =
@@ -6714,7 +7026,9 @@ typedef $$BookmarksTableUpdateCompanionBuilder =
       Value<String?> anchorNodeId,
       Value<int> characterOffset,
       Value<double> progressPercentage,
+      Value<int?> pageIndex,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -6784,8 +7098,18 @@ class $$BookmarksTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6857,8 +7181,18 @@ class $$BookmarksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6922,8 +7256,14 @@ class $$BookmarksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get pageIndex =>
+      $composableBuilder(column: $table.pageIndex, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$BooksTableAnnotationComposer get bookId {
     final $$BooksTableAnnotationComposer composer = $composerBuilder(
@@ -6985,7 +7325,9 @@ class $$BookmarksTableTableManager
                 Value<String?> anchorNodeId = const Value.absent(),
                 Value<int> characterOffset = const Value.absent(),
                 Value<double> progressPercentage = const Value.absent(),
+                Value<int?> pageIndex = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BookmarksCompanion(
                 id: id,
@@ -6996,7 +7338,9 @@ class $$BookmarksTableTableManager
                 anchorNodeId: anchorNodeId,
                 characterOffset: characterOffset,
                 progressPercentage: progressPercentage,
+                pageIndex: pageIndex,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7009,7 +7353,9 @@ class $$BookmarksTableTableManager
                 Value<String?> anchorNodeId = const Value.absent(),
                 Value<int> characterOffset = const Value.absent(),
                 Value<double> progressPercentage = const Value.absent(),
+                Value<int?> pageIndex = const Value.absent(),
                 required DateTime createdAt,
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BookmarksCompanion.insert(
                 id: id,
@@ -7020,7 +7366,9 @@ class $$BookmarksTableTableManager
                 anchorNodeId: anchorNodeId,
                 characterOffset: characterOffset,
                 progressPercentage: progressPercentage,
+                pageIndex: pageIndex,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7106,7 +7454,11 @@ typedef $$HighlightsTableCreateCompanionBuilder =
       Value<String?> prefixContext,
       Value<String?> suffixContext,
       Value<int> anchorVersion,
+      Value<int?> pageIndex,
+      Value<String?> boundingBoxesJson,
+      Value<String?> anchorStatus,
       required DateTime createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$HighlightsTableUpdateCompanionBuilder =
@@ -7125,7 +7477,11 @@ typedef $$HighlightsTableUpdateCompanionBuilder =
       Value<String?> prefixContext,
       Value<String?> suffixContext,
       Value<int> anchorVersion,
+      Value<int?> pageIndex,
+      Value<String?> boundingBoxesJson,
+      Value<String?> anchorStatus,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -7225,8 +7581,28 @@ class $$HighlightsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get boundingBoxesJson => $composableBuilder(
+    column: $table.boundingBoxesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchorStatus => $composableBuilder(
+    column: $table.anchorStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7328,8 +7704,28 @@ class $$HighlightsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get boundingBoxesJson => $composableBuilder(
+    column: $table.boundingBoxesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchorStatus => $composableBuilder(
+    column: $table.anchorStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -7421,8 +7817,24 @@ class $$HighlightsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get pageIndex =>
+      $composableBuilder(column: $table.pageIndex, builder: (column) => column);
+
+  GeneratedColumn<String> get boundingBoxesJson => $composableBuilder(
+    column: $table.boundingBoxesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchorStatus => $composableBuilder(
+    column: $table.anchorStatus,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$BooksTableAnnotationComposer get bookId {
     final $$BooksTableAnnotationComposer composer = $composerBuilder(
@@ -7490,7 +7902,11 @@ class $$HighlightsTableTableManager
                 Value<String?> prefixContext = const Value.absent(),
                 Value<String?> suffixContext = const Value.absent(),
                 Value<int> anchorVersion = const Value.absent(),
+                Value<int?> pageIndex = const Value.absent(),
+                Value<String?> boundingBoxesJson = const Value.absent(),
+                Value<String?> anchorStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HighlightsCompanion(
                 id: id,
@@ -7507,7 +7923,11 @@ class $$HighlightsTableTableManager
                 prefixContext: prefixContext,
                 suffixContext: suffixContext,
                 anchorVersion: anchorVersion,
+                pageIndex: pageIndex,
+                boundingBoxesJson: boundingBoxesJson,
+                anchorStatus: anchorStatus,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7526,7 +7946,11 @@ class $$HighlightsTableTableManager
                 Value<String?> prefixContext = const Value.absent(),
                 Value<String?> suffixContext = const Value.absent(),
                 Value<int> anchorVersion = const Value.absent(),
+                Value<int?> pageIndex = const Value.absent(),
+                Value<String?> boundingBoxesJson = const Value.absent(),
+                Value<String?> anchorStatus = const Value.absent(),
                 required DateTime createdAt,
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HighlightsCompanion.insert(
                 id: id,
@@ -7543,7 +7967,11 @@ class $$HighlightsTableTableManager
                 prefixContext: prefixContext,
                 suffixContext: suffixContext,
                 anchorVersion: anchorVersion,
+                pageIndex: pageIndex,
+                boundingBoxesJson: boundingBoxesJson,
+                anchorStatus: anchorStatus,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

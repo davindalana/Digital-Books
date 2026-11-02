@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/reader/domain/models/book_annotation.dart';
 import '../database/app_database.dart';
 import '../database/database_service.dart';
 
@@ -137,4 +138,10 @@ final bookCollectionIdsStreamProvider =
     StreamProvider.family<List<String>, String>((ref, bookId) {
       final dbService = ref.watch(databaseServiceProvider);
       return dbService.watchCollectionIdsForBook(bookId);
+    });
+
+final bookAnnotationsStreamProvider =
+    StreamProvider.family<List<BookAnnotation>, String>((ref, bookId) {
+      final dbService = ref.watch(databaseServiceProvider);
+      return dbService.watchAnnotationsForBook(bookId);
     });

@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:pdfrx/pdfrx.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../processing/services/scanned_image_enhancer.dart';
+import '../../domain/models/book_annotation.dart';
+import '../../domain/models/highlight_palette.dart';
 import '../../providers/reader_settings_provider.dart';
 
 enum FlipDirection { forward, backward }
@@ -68,6 +70,8 @@ class OriginalPdfReader extends StatefulWidget {
   final VoidCallback? onRelinkPdf;
   final VoidCallback? onRemoveBook;
   final Map<int, List<Rect>>? searchHighlights;
+  final List<BookAnnotation>? userAnnotations;
+  final void Function(BookAnnotation annotation)? onAnnotationTap;
 
   const OriginalPdfReader({
     super.key,
@@ -85,6 +89,8 @@ class OriginalPdfReader extends StatefulWidget {
     this.onRelinkPdf,
     this.onRemoveBook,
     this.searchHighlights,
+    this.userAnnotations,
+    this.onAnnotationTap,
   });
 
   @override
@@ -1482,6 +1488,48 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                             ),
                           ),
                         ),
+                      if (widget.userAnnotations != null &&
+                          widget.userAnnotations!.isNotEmpty) ...[
+                        Builder(
+                          builder: (context) {
+                            final pageAnns = widget.userAnnotations!
+                                .where((a) =>
+                                    a.pageIndex == pageNumber &&
+                                    a.boundingBoxes.isNotEmpty)
+                                .toList();
+                            if (pageAnns.isEmpty) return const SizedBox.shrink();
+                            return Positioned.fill(
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTapUp: (details) {
+                                  if (widget.onAnnotationTap == null) return;
+                                  final box = context.findRenderObject() as RenderBox?;
+                                  if (box == null) return;
+                                  final localSize = box.size;
+                                  if (localSize.width <= 0 || localSize.height <= 0) return;
+                                  final normX = details.localPosition.dx / localSize.width;
+                                  final normY = details.localPosition.dy / localSize.height;
+
+                                  for (final ann in pageAnns) {
+                                    for (final b in ann.boundingBoxes) {
+                                      if (b.inflate(0.015).contains(Offset(normX, normY))) {
+                                        widget.onAnnotationTap!(ann);
+                                        return;
+                                      }
+                                    }
+                                  }
+                                },
+                                child: CustomPaint(
+                                  painter: PdfUserAnnotationPainter(
+                                    annotations: pageAnns,
+                                    theme: widget.theme,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -2388,5 +2436,70 @@ class PdfSearchHighlightPainter extends CustomPainter {
   bool shouldRepaint(covariant PdfSearchHighlightPainter oldDelegate) {
     return oldDelegate.normalizedBoxes != normalizedBoxes ||
         oldDelegate.isDark != isDark;
+  }
+}
+
+/// Custom painter for rendering persistent user annotations & highlights on PDF pages.
+class PdfUserAnnotationPainter extends CustomPainter {
+  final List<BookAnnotation> annotations;
+  final ReadingThemeType theme;
+
+  const PdfUserAnnotationPainter({
+    required this.annotations,
+    required this.theme,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (annotations.isEmpty || size.width <= 0 || size.height <= 0) return;
+
+    for (final ann in annotations) {
+      if (ann.boundingBoxes.isEmpty) continue;
+      final colorType = HighlightColorType.fromKey(ann.color);
+      final bg = colorType.getBackgroundColor(theme);
+
+      final fillPaint = Paint()
+        ..color = bg
+        ..style = PaintingStyle.fill;
+
+      final borderPaint = Paint()
+        ..color = colorType.primaryColor.withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3;
+
+      for (int i = 0; i < ann.boundingBoxes.length; i++) {
+        final normBox = ann.boundingBoxes[i];
+        final rect = Rect.fromLTWH(
+          normBox.left * size.width,
+          normBox.top * size.height,
+          normBox.width * size.width,
+          normBox.height * size.height,
+        );
+
+        final paddedRect = rect.inflate(1.2);
+        final rrect =
+            RRect.fromRectAndRadius(paddedRect, const Radius.circular(2.5));
+        canvas.drawRRect(rrect, fillPaint);
+        canvas.drawRRect(rrect, borderPaint);
+
+        // If this annotation has a note, paint a note indicator badge on top-right of first box
+        if (ann.hasNote && i == 0) {
+          final noteDotPaint = Paint()
+            ..color = const Color(0xFFFF9500)
+            ..style = PaintingStyle.fill;
+          canvas.drawCircle(
+            Offset(rect.right + 2, rect.top - 2),
+            3.5,
+            noteDotPaint,
+          );
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant PdfUserAnnotationPainter oldDelegate) {
+    return oldDelegate.annotations != annotations ||
+        oldDelegate.theme != theme;
   }
 }

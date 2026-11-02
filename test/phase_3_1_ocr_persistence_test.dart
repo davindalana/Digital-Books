@@ -21,8 +21,8 @@ void main() {
   });
 
   group('Phase 3.1 Checkpoint B: OCR Persistence & Drift Schema v4', () {
-    test('Database schema version is 5 (current version with search indexing)', () {
-      expect(db.schemaVersion, equals(5));
+    test('Database schema version is 6 (current version with persistent annotations)', () {
+      expect(db.schemaVersion, equals(6));
     });
 
     test('Can insert, query, update, and delete OcrPage records', () async {

@@ -6,7 +6,8 @@ enum HighlightColorType {
   green('Hijau', 'green'),
   blue('Biru', 'blue'),
   pink('Merah Muda', 'pink'),
-  purple('Ungu', 'purple');
+  purple('Ungu', 'purple'),
+  gold('Emas', 'gold');
 
   final String label;
   final String key;
@@ -18,7 +19,6 @@ enum HighlightColorType {
     for (final c in HighlightColorType.values) {
       if (lower.contains(c.key)) return c;
     }
-    if (lower.contains('gold')) return HighlightColorType.yellow;
     if (lower.contains('red')) return HighlightColorType.pink;
     return HighlightColorType.yellow;
   }
@@ -35,6 +35,8 @@ enum HighlightColorType {
         return const Color(0xFFFF2D55);
       case HighlightColorType.purple:
         return const Color(0xFFAF52DE);
+      case HighlightColorType.gold:
+        return const Color(0xFFD4AF37);
     }
   }
 
@@ -51,6 +53,8 @@ enum HighlightColorType {
           return const Color(0xFFFF2D55).withValues(alpha: 0.35);
         case HighlightColorType.purple:
           return const Color(0xFFAF52DE).withValues(alpha: 0.38);
+        case HighlightColorType.gold:
+          return const Color(0xFFD4AF37).withValues(alpha: 0.40);
       }
     }
 
@@ -67,6 +71,8 @@ enum HighlightColorType {
           return const Color(0xFFF48FB1).withValues(alpha: 0.45);
         case HighlightColorType.purple:
           return const Color(0xFFCE93D8).withValues(alpha: 0.45);
+        case HighlightColorType.gold:
+          return const Color(0xFFFFD54F).withValues(alpha: 0.50);
       }
     }
 
@@ -82,6 +88,8 @@ enum HighlightColorType {
         return const Color(0xFFF48FB1).withValues(alpha: 0.50);
       case HighlightColorType.purple:
         return const Color(0xFFCE93D8).withValues(alpha: 0.50);
+      case HighlightColorType.gold:
+        return const Color(0xFFFFE082).withValues(alpha: 0.55);
     }
   }
 }

@@ -59,7 +59,9 @@ class Bookmarks extends Table {
   IntColumn get characterOffset => integer().withDefault(const Constant(0))();
   RealColumn get progressPercentage =>
       real().withDefault(const Constant(0.0))();
+  IntColumn get pageIndex => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -81,7 +83,12 @@ class Highlights extends Table {
   TextColumn get prefixContext => text().nullable()();
   TextColumn get suffixContext => text().nullable()();
   IntColumn get anchorVersion => integer().withDefault(const Constant(1))();
+  IntColumn get pageIndex => integer().nullable()();
+  TextColumn get boundingBoxesJson => text().nullable()();
+  TextColumn get anchorStatus =>
+      text().nullable().withDefault(const Constant('resolved'))();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

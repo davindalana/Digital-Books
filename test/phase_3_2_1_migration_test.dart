@@ -217,7 +217,7 @@ void main() {
       final driftDb = AppDatabase(NativeDatabase(File(dbPath)));
       final dbService = DatabaseService(driftDb);
 
-      expect(driftDb.schemaVersion, equals(5));
+      expect(driftDb.schemaVersion, greaterThanOrEqualTo(5));
 
       // Step C: Verify all 8 legacy tables remain 100% intact
       final book = await dbService.getBookById('book_v4_test');

@@ -1,6 +1,7 @@
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
+import 'package:digital_books/features/reader/domain/models/book_annotation.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 import 'package:drift/native.dart';
@@ -29,6 +30,9 @@ void main() {
         bookBookmarksStreamProvider(
           book.id,
         ).overrideWith((ref) => Stream.value(<Bookmark>[])),
+        bookAnnotationsStreamProvider(
+          book.id,
+        ).overrideWith((ref) => Stream.value(<BookAnnotation>[])),
       ],
       child: MaterialApp(
         home: ReadingScreen(book: book, initialMode: ReadingMode.originalPdf),

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'app_database.dart';
 import '../utils/file_storage_service.dart';
+import '../../features/reader/domain/models/book_annotation.dart';
 
 class DatabaseService {
   final AppDatabase db;
@@ -470,6 +471,61 @@ class DatabaseService {
 
   Future<int> deleteHighlight(String id) {
     return (db.delete(db.highlights)..where((t) => t.id.equals(id))).go();
+  }
+
+  // --- Unified Annotations (Highlights, Notes & Bookmarks) ---
+  Stream<List<BookAnnotation>> watchAnnotationsForBook(String bookId) {
+    // Combine highlights and bookmarks streams
+    return watchHighlights(bookId).asyncMap((highlights) async {
+      final bookmarks = await getBookmarksForBook(bookId);
+      final all = <BookAnnotation>[];
+      for (final h in highlights) {
+        all.add(BookAnnotation.fromHighlight(h));
+      }
+      for (final b in bookmarks) {
+        all.add(BookAnnotation.fromBookmark(b));
+      }
+      all.sort((a, b) {
+        final pageCompare = (a.pageIndex ?? 0).compareTo(b.pageIndex ?? 0);
+        if (pageCompare != 0) return pageCompare;
+        return a.createdAt.compareTo(b.createdAt);
+      });
+      return all;
+    });
+  }
+
+  Future<List<BookAnnotation>> getAnnotationsForBook(String bookId) async {
+    final highlights = await getHighlightsForBook(bookId);
+    final bookmarks = await getBookmarksForBook(bookId);
+    final all = <BookAnnotation>[];
+    for (final h in highlights) {
+      all.add(BookAnnotation.fromHighlight(h));
+    }
+    for (final b in bookmarks) {
+      all.add(BookAnnotation.fromBookmark(b));
+    }
+    all.sort((a, b) {
+      final pageCompare = (a.pageIndex ?? 0).compareTo(b.pageIndex ?? 0);
+      if (pageCompare != 0) return pageCompare;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+    return all;
+  }
+
+  Future<void> saveAnnotation(BookAnnotation annotation) async {
+    if (annotation.isBookmark) {
+      await db.into(db.bookmarks).insertOnConflictUpdate(annotation.toBookmarkCompanion());
+    } else {
+      await db.into(db.highlights).insertOnConflictUpdate(annotation.toHighlightCompanion());
+    }
+  }
+
+  Future<void> deleteAnnotation(String id, AnnotationType type) async {
+    if (type == AnnotationType.bookmark) {
+      await deleteBookmark(id);
+    } else {
+      await deleteHighlight(id);
+    }
   }
 
   // --- Collections ---
