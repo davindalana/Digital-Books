@@ -105,6 +105,9 @@ class ParagraphReconstructor {
     'sebelas', 'seratus', 'seribu', 'tua', 'kasih', 'hendak',
   };
 
+  /// Cleans OCR artifacts, normalizes ligatures/unicode, and resolves glued or split words.
+  static String cleanOcrText(String raw) => ReconstructedParagraphBuilder.cleanOcrText(raw);
+
   /// Reconstructs paragraphs across all pages of a document.
   static List<ReconstructedParagraph> reconstructDocument(
     List<PageReadingOrderResult> pageResults,
@@ -450,7 +453,15 @@ class ReconstructedParagraphBuilder {
           return '$part1$part2';
         }
 
-        // Generic word split by hyphen and space
+        // If neither is an affix nor reduplication:
+        // An in-line hyphen followed by space represents an accidental space in a compound word:
+        // e.g. "siang- malam" -> "siang-malam", "ibu- bapak" -> "ibu-bapak"
+        // If both parts are substantive words (>= 3 chars), preserve the hyphen.
+        if (part1.length >= 3 && part2.length >= 3) {
+          return '$part1-$part2';
+        }
+
+        // Generic syllable split by hyphen and space
         return '$part1$part2';
       },
     );
