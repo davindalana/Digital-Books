@@ -105,6 +105,141 @@ class ParagraphReconstructor {
     'sebelas', 'seratus', 'seribu', 'tua', 'kasih', 'hendak',
   };
 
+  /// Known Indonesian coordinate compounds (kata majemuk setara), rhyming reduplications
+  /// (dwilingga salin suara), and loan compounds that must retain their hyphen.
+  static const Set<String> indonesianPairedCompounds = {
+    // Coordinate antonymous & complementary compounds (kata majemuk setara)
+    'siang-malam', 'malam-siang',
+    'ibu-bapak', 'bapak-ibu',
+    'ayah-bunda', 'bunda-ayah',
+    'orang-tua',
+    'tua-muda', 'muda-tua',
+    'suami-istri', 'istri-suami',
+    'pria-wanita', 'wanita-pria',
+    'putra-putri', 'putri-putra',
+    'laki-bini', 'bini-laki',
+    'suka-duka', 'duka-suka',
+    'jual-beli', 'beli-jual',
+    'tanya-jawab', 'jawab-tanya',
+    'maju-mundur', 'mundur-maju',
+    'naik-turun', 'turun-naik',
+    'keluar-masuk', 'masuk-keluar',
+    'pulang-pergi', 'pergi-pulang',
+    'hidup-mati', 'mati-hidup',
+    'besar-kecil', 'kecil-besar',
+    'panjang-pendek', 'pendek-panjang',
+    'tinggi-rendah', 'rendah-tinggi',
+    'luar-dalam', 'dalam-luar',
+    'hulu-hilir', 'hilir-hulu',
+    'timur-barat', 'utara-selatan',
+    'kaya-miskin', 'miskin-kaya',
+    'cerdik-pandai',
+    'hancur-lebur',
+    'alim-ulama',
+    'kasih-sayang',
+    'belas-kasih',
+    'jiwa-raga',
+    'harta-benda',
+    'sanak-saudara',
+    'kaum-kerabat',
+    'handai-taulan',
+    'caci-maki',
+    'budi-pekerti',
+    'sopan-santun',
+    'ramah-tamah',
+    'gotong-royong',
+    'asal-usul',
+
+    // Rhyming / ablaut reduplications (dwilingga salin suara)
+    'sayur-mayur',
+    'lauk-pauk',
+    'mondar-mandir',
+    'bolak-balik',
+    'morat-marit',
+    'pontang-panting',
+    'serba-serbi',
+    'seluk-beluk',
+    'warna-warni',
+    'desas-desus',
+    'cerai-berai',
+    'kelap-kelip',
+    'kocar-kacir',
+    'tunggang-langgang',
+    'porak-poranda',
+    'tindak-tanduk',
+    'hiruk-pikuk',
+    'gerak-gerik',
+    'terang-benderang',
+    'teka-teki',
+    'simpang-siur',
+    'sunyi-senyap',
+    'gelap-gulita',
+    'lemah-gemulai',
+    'basa-basi',
+    'liku-liku',
+    'selang-seling',
+    'sorak-sorai',
+    'corat-coret',
+    'compang-camping',
+    'riang-gembira',
+    'kelang-kabut',
+    'kusut-masai',
+    'remuk-redam',
+
+    // Common loanword / English hyphenated compounds
+    'well-known',
+    'self-esteem',
+    'long-term',
+    'short-term',
+    'high-tech',
+    'decision-making',
+    'problem-solving',
+    'state-of-the-art',
+    'non-fiction',
+    'non-fiksi',
+  };
+
+  /// Evaluates whether two words form a valid Indonesian reduplication.
+  static bool isIndonesianReduplication(String p1Lower, String p2Lower) {
+    if (p1Lower == p2Lower) return true;
+    if (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) return true;
+
+    const prefixes = [
+      'ber', 'ter', 'per', 'se', 'meng', 'meny', 'men', 'mem', 'me',
+      'peng', 'peny', 'pen', 'pem', 'pe', 'di', 'ke'
+    ];
+
+    for (final prefix in prefixes) {
+      if (p1Lower.startsWith(prefix) && p1Lower.length > prefix.length) {
+        if (p1Lower.substring(prefix.length) == p2Lower) return true;
+      }
+      if (p2Lower.startsWith(prefix) && p2Lower.length > prefix.length) {
+        if (p2Lower.substring(prefix.length) == p1Lower) return true;
+      }
+    }
+
+    // Morphological nasalization in reciprocal verbs (e.g. tarik-menarik, kejar-mengejar)
+    if (p2Lower.startsWith('men') && p2Lower.length > 3 && 't${p2Lower.substring(3)}' == p1Lower) {
+      return true;
+    }
+    if (p2Lower.startsWith('meng') && p2Lower.length > 4 && 'k${p2Lower.substring(4)}' == p1Lower) {
+      return true;
+    }
+    if (p2Lower.startsWith('mem') && p2Lower.length > 3 && 'p${p2Lower.substring(3)}' == p1Lower) {
+      return true;
+    }
+    if (p2Lower.startsWith('meny') && p2Lower.length > 4 && 's${p2Lower.substring(4)}' == p1Lower) {
+      return true;
+    }
+
+    // Suffix -an (e.g. mobil-mobilan, anak-anakan)
+    if (p2Lower.endsWith('an') && p2Lower.length > 2) {
+      if (p2Lower.substring(0, p2Lower.length - 2) == p1Lower) return true;
+    }
+
+    return false;
+  }
+
   /// Cleans OCR artifacts, normalizes ligatures/unicode, and resolves glued or split words.
   static String cleanOcrText(String raw) => ReconstructedParagraphBuilder.cleanOcrText(raw);
 
@@ -417,6 +552,7 @@ class ReconstructedParagraphBuilder {
     // 5. Fix words split with hyphen and spurious space inside lines:
     // e.g. "se- buah" -> "sebuah", "peng- alaman" -> "pengalaman"
     // BUT preserve Indonesian reduplications: "anak- anak" -> "anak-anak", "mengira- ngira" -> "mengira-ngira"
+    // and coordinate compounds: "siang- malam" -> "siang-malam"
     s = s.replaceAllMapped(
       RegExp(r'\b([a-zA-Z]{1,20})[-\u2010\u2013\u2014]\s+([a-zA-Z]{1,20})\b'),
       (m) {
@@ -425,17 +561,12 @@ class ReconstructedParagraphBuilder {
         final p1Lower = part1.toLowerCase();
         final p2Lower = part2.toLowerCase();
 
-        // Check if reduplication (e.g. anak-anak, tiba-tiba, kata-kata)
-        if (p1Lower == p2Lower ||
-            (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) ||
-            (p1Lower.startsWith('ber') && p1Lower.substring(3) == p2Lower) ||
-            (p1Lower.startsWith('meng') && p1Lower.substring(4) == p2Lower) ||
-            (p1Lower.startsWith('ter') && p1Lower.substring(3) == p2Lower) ||
-            (p1Lower.startsWith('se') && p1Lower.substring(2) == p2Lower)) {
+        // 5a. Check if reduplication (e.g. anak-anak, tiba-tiba, kata-kata, mengira-ngira)
+        if (ParagraphReconstructor.isIndonesianReduplication(p1Lower, p2Lower)) {
           return '$part1-$part2';
         }
 
-        // Common Indonesian affixes that were split by OCR hyphenation
+        // 5b. Common Indonesian affixes that were split by OCR hyphenation
         const affixes = {
           'se', 'di', 'ke', 'me', 'pe', 'ber', 'ter', 'per', 'men', 'mem',
           'peng', 'meng', 'meny', 'pen', 'pem'
@@ -453,15 +584,14 @@ class ReconstructedParagraphBuilder {
           return '$part1$part2';
         }
 
-        // If neither is an affix nor reduplication:
-        // An in-line hyphen followed by space represents an accidental space in a compound word:
-        // e.g. "siang- malam" -> "siang-malam", "ibu- bapak" -> "ibu-bapak"
-        // If both parts are substantive words (>= 3 chars), preserve the hyphen.
-        if (part1.length >= 3 && part2.length >= 3) {
+        // 5c. Check if known Indonesian coordinate compound or rhyming reduplication
+        final compoundKey = '$p1Lower-$p2Lower';
+        if (ParagraphReconstructor.indonesianPairedCompounds.contains(compoundKey)) {
           return '$part1-$part2';
         }
 
-        // Generic syllable split by hyphen and space
+        // 5d. Default: generic syllable or word split by line break hyphen: join without hyphen!
+        // e.g. "dok- umen" -> "dokumen", "kom- puter" -> "komputer", "sta- bilitas" -> "stabilitas"
         return '$part1$part2';
       },
     );
@@ -518,10 +648,10 @@ class ReconstructedParagraphBuilder {
           final p2Lower = nextFirstWord.toLowerCase();
 
           // Is it an Indonesian reduplication across lines? (e.g. mengira- \n ngira)
-          final isRedup = p1Lower == p2Lower ||
-              (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) ||
-              (p1Lower.startsWith('meng') && p1Lower.substring(4) == p2Lower) ||
-              (p1Lower.startsWith('ber') && p1Lower.substring(3) == p2Lower);
+          final isRedup = ParagraphReconstructor.isIndonesianReduplication(p1Lower, p2Lower);
+
+          // Is it a known Indonesian paired compound across lines? (e.g. siang- \n malam)
+          final isCompound = ParagraphReconstructor.indonesianPairedCompounds.contains('$p1Lower-$p2Lower');
 
           // Is it an Indonesian preposition complement across lines? (e.g. di- \n rumah)
           final isPrepositionSplit = (p1Lower == 'di' || p1Lower == 'ke') &&
@@ -534,7 +664,7 @@ class ReconstructedParagraphBuilder {
           if (lastHyphenIdx != -1) {
             buffer.clear();
             buffer.write(currentBufferStr.substring(0, lastHyphenIdx));
-            if (isRedup) {
+            if (isRedup || isCompound) {
               buffer.write('-$text');
             } else if (isPrepositionSplit) {
               buffer.write(' $text');

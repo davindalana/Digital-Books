@@ -90,6 +90,24 @@ void main() {
       expect(ParagraphReconstructor.cleanOcrText('siang- malam'), equals('siang-malam'));
       expect(ParagraphReconstructor.cleanOcrText('ibu- bapak'), equals('ibu-bapak'));
       expect(ParagraphReconstructor.cleanOcrText('tua- muda'), equals('tua-muda'));
+      expect(ParagraphReconstructor.cleanOcrText('sayur- mayur'), equals('sayur-mayur'));
+      expect(ParagraphReconstructor.cleanOcrText('lauk- pauk'), equals('lauk-pauk'));
+      expect(ParagraphReconstructor.cleanOcrText('ramah- tamah'), equals('ramah-tamah'));
+      expect(ParagraphReconstructor.cleanOcrText('suami- istri'), equals('suami-istri'));
+
+      // CRIT-01 Fix Verification: Standard word syllables split across lines must be joined without hyphen
+      // (NEVER falsely converted to hyphenated compound words even if both parts length >= 3)
+      expect(ParagraphReconstructor.cleanOcrText('dok- umen'), equals('dokumen'));
+      expect(ParagraphReconstructor.cleanOcrText('kom- puter'), equals('komputer'));
+      expect(ParagraphReconstructor.cleanOcrText('sta- bilitas'), equals('stabilitas'));
+      expect(ParagraphReconstructor.cleanOcrText('par- agraf'), equals('paragraf'));
+      expect(ParagraphReconstructor.cleanOcrText('res- pons'), equals('respons'));
+      expect(ParagraphReconstructor.cleanOcrText('trans- portasi'), equals('transportasi'));
+      expect(ParagraphReconstructor.cleanOcrText('struk- tur'), equals('struktur'));
+      expect(ParagraphReconstructor.cleanOcrText('in- formasi'), equals('informasi'));
+      expect(ParagraphReconstructor.cleanOcrText('ha- laman'), equals('halaman'));
+      expect(ParagraphReconstructor.cleanOcrText('ka- limat'), equals('kalimat'));
+      expect(ParagraphReconstructor.cleanOcrText('kon- teks'), equals('konteks'));
     });
 
     test('3. Idempotency Audit: cleanOcrText(cleanOcrText(x)) == cleanOcrText(x)', () {
