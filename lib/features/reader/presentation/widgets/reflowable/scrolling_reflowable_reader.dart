@@ -292,12 +292,12 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final effectiveMargin = (screenWidth < 400)
-        ? 16.0
-        : (screenWidth < 650 ? 24.0 : widget.typography.horizontalMargin);
+    final effectiveMargin = (screenWidth < 420.0)
+        ? 18.0
+        : (screenWidth < 680.0 ? 24.0 : math.max(36.0, widget.typography.horizontalMargin));
     final maxContentWidth = math.min(
-      760.0,
-      screenWidth - (effectiveMargin * 2),
+      660.0,
+      screenWidth - (effectiveMargin * 2.0),
     );
 
     return GestureDetector(
@@ -309,9 +309,9 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
           child: ListView.builder(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               vertical: 48,
-              horizontal: effectiveMargin,
+              horizontal: 0,
             ),
             itemCount: _flatItems.length,
             itemBuilder: (context, index) {

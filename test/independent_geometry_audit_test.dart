@@ -1,4 +1,5 @@
 // ignore_for_file: avoid_print
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
@@ -131,12 +132,12 @@ void main() {
         const typo = TypographySettings(twoPageSpread: true, fontSize: 16);
 
         // 1. Engine calculation
-        const double spineWidth = 16.0;
+        const double spineWidth = 24.0;
         final double rawPageWidth = (w - spineWidth) / 2;
-        final double effectiveMargin = (rawPageWidth < 400)
-            ? 16.0
-            : (rawPageWidth < 650 ? 22.0 : typo.horizontalMargin);
-        final double expectedContentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(160.0, 800.0);
+        final double effectiveMargin = (rawPageWidth < 400.0)
+            ? 18.0
+            : (rawPageWidth < 650.0 ? 24.0 : math.max(32.0, typo.horizontalMargin));
+        final double expectedContentWidth = (rawPageWidth - (effectiveMargin * 2.0)).clamp(160.0, 620.0);
 
         // Run engine pagination
         final pages = PaginationEngine.paginateChapter(
@@ -165,9 +166,9 @@ void main() {
 
         // Check spine width
         final spineFinder = find.byWidgetPredicate(
-          (widget) => widget is Container && widget.constraints?.maxWidth == 16.0 && widget.decoration != null,
+          (widget) => widget is Container && widget.constraints?.maxWidth == 24.0 && widget.decoration != null,
         );
-        expect(spineFinder, findsOneWidget, reason: '$name: Spine container must be exactly 16 pt');
+        expect(spineFinder, findsOneWidget, reason: '$name: Spine container must be exactly 24 pt');
 
         // Check left page renderer actual rendered box width
         final renderers = find.byType(ReflowablePageRenderer);
@@ -206,10 +207,10 @@ void main() {
 
         const typo = TypographySettings(twoPageSpread: false, fontSize: 16);
 
-        final double effectiveMargin = (w < 400)
-            ? 16.0
-            : (w < 650 ? 22.0 : typo.horizontalMargin);
-        final double expectedContentWidth = (w - (effectiveMargin * 2)).clamp(160.0, 900.0);
+        final double effectiveMargin = (w < 400.0)
+            ? 18.0
+            : (w < 650.0 ? 24.0 : math.max(32.0, typo.horizontalMargin));
+        final double expectedContentWidth = (w - (effectiveMargin * 2.0)).clamp(160.0, 680.0);
 
         await tester.pumpWidget(
           MaterialApp(

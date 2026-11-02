@@ -397,6 +397,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         color: theme.secondaryTextColor,
       ).copyWith(
         fontSize: typography.fontSize * 0.82,
+        height: 1.5,
         letterSpacing: 0.2,
       );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
@@ -411,22 +412,12 @@ class ReflowablePageRenderer extends StatelessWidget {
       );
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: theme.isDark ? Colors.white.withAlpha(20) : Colors.black.withAlpha(15),
-            ),
-          ),
-          child: SelectableText.rich(
-            richSpan,
-            textAlign: TextAlign.left,
-            contextMenuBuilder: (ctx, editableTextState) =>
-                _buildContextMenu(ctx, editableTextState, slice),
-          ),
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: SelectableText.rich(
+          richSpan,
+          textAlign: TextAlign.left,
+          contextMenuBuilder: (ctx, editableTextState) =>
+              _buildContextMenu(ctx, editableTextState, slice),
         ),
       );
     }

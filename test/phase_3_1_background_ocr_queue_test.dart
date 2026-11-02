@@ -25,10 +25,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     dbService = DatabaseService(db);
     ocrService = const AppleVisionOcrService();
-    queue = BackgroundOcrQueue(
-      dbService: dbService,
-      ocrService: ocrService,
-    );
+    queue = BackgroundOcrQueue(dbService: dbService, ocrService: ocrService);
 
     // Seed test book in DB
     await dbService.insertBook(
@@ -83,7 +80,10 @@ void main() {
 
       // Verify stream emitted progression
       expect(progressEvents.isNotEmpty, isTrue);
-      expect(progressEvents.any((p) => p.status == OcrQueueStatus.running), isTrue);
+      expect(
+        progressEvents.any((p) => p.status == OcrQueueStatus.running),
+        isTrue,
+      );
       expect(progressEvents.last.status, equals(OcrQueueStatus.completed));
     });
 
@@ -127,7 +127,9 @@ void main() {
       final pauseTriggered = Completer<void>();
 
       final sub = queue.progressStream.listen((p) {
-        if (p.status == OcrQueueStatus.running && p.currentPageIndex == 14 && !pauseTriggered.isCompleted) {
+        if (p.status == OcrQueueStatus.running &&
+            p.currentPageIndex == 14 &&
+            !pauseTriggered.isCompleted) {
           queue.pause();
           pauseTriggered.complete();
         }

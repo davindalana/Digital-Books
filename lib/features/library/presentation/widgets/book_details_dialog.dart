@@ -5,10 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
-import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import '../../../processing/providers/background_ocr_provider.dart';
 import 'manage_collections_dialog.dart';
+
+class BookLaunchRequest {
+  final Book book;
+  final ReadingMode mode;
+  const BookLaunchRequest({required this.book, required this.mode});
+}
 
 class BookDetailsDialog extends ConsumerStatefulWidget {
   final Book book;
@@ -613,21 +618,10 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                             ),
                           ),
                           onPressed: () {
-                            Navigator.of(context).pop();
-                            ref
-                                    .read(
-                                      activeReadingModeProvider(
-                                        _currentBook.id,
-                                      ).notifier,
-                                    )
-                                    .state =
-                                ReadingMode.originalPdf;
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ReadingScreen(
-                                  book: _currentBook,
-                                  initialMode: ReadingMode.originalPdf,
-                                ),
+                            Navigator.of(context).pop(
+                              BookLaunchRequest(
+                                book: _currentBook,
+                                mode: ReadingMode.originalPdf,
                               ),
                             );
                           },
@@ -649,26 +643,15 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                             ),
                           ),
                           onPressed: () {
-                            Navigator.of(context).pop();
                             final mode = (_currentBook.processedBookPath !=
                                         null ||
                                     !_currentBook.isScanned)
                                 ? ReadingMode.reflowable
                                 : ReadingMode.originalPdf;
-                            ref
-                                    .read(
-                                      activeReadingModeProvider(
-                                        _currentBook.id,
-                                      ).notifier,
-                                    )
-                                    .state =
-                                mode;
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ReadingScreen(
-                                  book: _currentBook,
-                                  initialMode: mode,
-                                ),
+                            Navigator.of(context).pop(
+                              BookLaunchRequest(
+                                book: _currentBook,
+                                mode: mode,
                               ),
                             );
                           },

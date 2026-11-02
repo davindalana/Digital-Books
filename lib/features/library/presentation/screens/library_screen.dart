@@ -2184,22 +2184,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ReadingScreen(
-              book: book,
-              initialMode: book.isScanned
-                  ? ReadingMode.originalPdf
-                  : ReadingMode.reflowable,
-            ),
-          ),
-        );
+        Navigator.of(context, rootNavigator: true).pop();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReadingScreen(
+                  book: book,
+                  initialMode: book.isScanned
+                      ? ReadingMode.originalPdf
+                      : ReadingMode.reflowable,
+                ),
+              ),
+            );
+          }
+        });
       }
     } catch (e, stack) {
       debugPrint('Failed to load sample book: $e\n$stack');
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load sample book: $e'),
@@ -2500,11 +2504,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  void _openBookDetails(Book book) {
-    showDialog(
+  void _openBookDetails(Book book) async {
+    final req = await showDialog<BookLaunchRequest>(
       context: context,
       barrierColor: Colors.black.withAlpha(120),
       builder: (_) => BookDetailsDialog(book: book),
     );
+    if (req != null && mounted) {
+      ref.read(activeReadingModeProvider(req.book.id).notifier).state = req.mode;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ReadingScreen(
+            book: req.book,
+            initialMode: req.mode,
+          ),
+        ),
+      );
+    }
   }
 }

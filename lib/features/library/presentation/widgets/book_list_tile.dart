@@ -399,14 +399,24 @@ class BookListTile extends ConsumerWidget {
     }
   }
 
-  void _openInfo(BuildContext context) {
+  void _openInfo(BuildContext context) async {
     if (onDetails != null) {
       onDetails!();
     } else {
-      showDialog(
+      final req = await showDialog<BookLaunchRequest>(
         context: context,
         builder: (_) => BookDetailsDialog(book: book),
       );
+      if (req != null && context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ReadingScreen(
+              book: req.book,
+              initialMode: req.mode,
+            ),
+          ),
+        );
+      }
     }
   }
 

@@ -28,14 +28,14 @@ final backgroundOcrQueueProvider = Provider<BackgroundOcrQueue>((ref) {
   return queue;
 });
 
-final ocrQueueProgressStreamProvider =
-    StreamProvider<OcrQueueProgress>((ref) {
+final ocrQueueProgressStreamProvider = StreamProvider<OcrQueueProgress>((ref) {
   final queue = ref.watch(backgroundOcrQueueProvider);
   return queue.progressStream;
 });
 
-final bookOcrPagesStreamProvider =
-    StreamProvider.family<List<OcrPage>, String>((ref, bookId) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return dbService.watchOcrPagesForBook(bookId);
-});
+final bookOcrPagesStreamProvider = StreamProvider.family<List<OcrPage>, String>(
+  (ref, bookId) {
+    final dbService = ref.watch(databaseServiceProvider);
+    return dbService.watchOcrPagesForBook(bookId);
+  },
+);

@@ -127,15 +127,15 @@ class PaginationEngine {
     double verticalPadding = 8.0,
   }) {
     // 1. Check cache
-    final isTwoPageSpread = viewportWidth >= 850 && typography.twoPageSpread;
+    final isTwoPageSpread = viewportWidth >= 850.0 && typography.twoPageSpread;
     final double rawPageWidth = isTwoPageSpread
-        ? ((viewportWidth - 16.0) / 2)
+        ? ((viewportWidth - 24.0) / 2.0)
         : viewportWidth;
-    final double effectiveMargin = (rawPageWidth < 400)
-        ? 16.0
-        : (rawPageWidth < 650 ? 22.0 : typography.horizontalMargin);
-    final double maxClampWidth = isTwoPageSpread ? 800.0 : 900.0;
-    final double contentWidth = (rawPageWidth - (effectiveMargin * 2)).clamp(
+    final double effectiveMargin = (rawPageWidth < 400.0)
+        ? 18.0
+        : (rawPageWidth < 650.0 ? 24.0 : math.max(32.0, typography.horizontalMargin));
+    final double maxClampWidth = isTwoPageSpread ? 620.0 : 680.0;
+    final double contentWidth = (rawPageWidth - (effectiveMargin * 2.0)).clamp(
       160.0,
       maxClampWidth,
     );

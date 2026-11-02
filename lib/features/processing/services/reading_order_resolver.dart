@@ -45,8 +45,7 @@ class ReadingOrderResolver {
     }
 
     if (page.lines.length <= 2) {
-      final sorted = List<ExtractedTextLine>.from(page.lines)
-        ..sort((a, b) => _compareLinesSingleColumn(a, b));
+      final sorted = _sortLinesSingleColumn(page.lines);
       return PageReadingOrderResult(
         pageIndex: page.pageIndex,
         layoutStructure: PageLayoutStructure.singleColumn,
@@ -58,16 +57,37 @@ class ReadingOrderResolver {
     final pageWidth = page.pageSize.width > 0
         ? page.pageSize.width
         : page.lines.map((l) => l.bounds.right).reduce(math.max) + 50.0;
+    final pageHeight = page.pageSize.height > 0
+        ? page.pageSize.height
+        : page.lines.map((l) => l.bounds.bottom).reduce(math.max) + 50.0;
 
-    // 1. Separate full-width banners / titles that span across columns
+    // 1. Separate running chrome (top header & bottom footer/page number)
+    final headerLines = <ExtractedTextLine>[];
+    final footerLines = <ExtractedTextLine>[];
+    final nonChromeLines = <ExtractedTextLine>[];
+
+    final topHeaderThreshold = math.min(65.0, pageHeight * 0.10);
+    final bottomFooterThreshold = math.max(pageHeight - 65.0, pageHeight * 0.90);
+
+    for (final line in page.lines) {
+      if (line.bounds.bottom <= topHeaderThreshold && line.bounds.height < 25.0) {
+        headerLines.add(line);
+      } else if (line.bounds.top >= bottomFooterThreshold && line.bounds.height < 25.0) {
+        footerLines.add(line);
+      } else {
+        nonChromeLines.add(line);
+      }
+    }
+
+    // 2. Separate full-width banners / titles that span across columns
     final fullWidthLines = <ExtractedTextLine>[];
     final candidateBodyLines = <ExtractedTextLine>[];
 
-    for (final line in page.lines) {
+    for (final line in nonChromeLines) {
       final width = line.bounds.width;
-      final spansCenter = line.bounds.left < pageWidth * 0.42 &&
-          line.bounds.right > pageWidth * 0.58;
-      final isWide = width >= pageWidth * 0.65;
+      final spansCenter = line.bounds.left < pageWidth * 0.40 &&
+          line.bounds.right > pageWidth * 0.60;
+      final isWide = width >= pageWidth * 0.68;
 
       if (spansCenter || isWide) {
         fullWidthLines.add(line);
@@ -76,7 +96,7 @@ class ReadingOrderResolver {
       }
     }
 
-    // 2. Attempt two-column partitioning on candidate body lines
+    // 3. Attempt two-column partitioning on candidate body lines
     if (candidateBodyLines.length >= 4) {
       final twoColResult = _tryPartitionTwoColumns(
         candidateBodyLines,
@@ -84,11 +104,8 @@ class ReadingOrderResolver {
       );
 
       if (twoColResult != null) {
-        final col1Lines = twoColResult.col1;
-        final col2Lines = twoColResult.col2;
-
-        col1Lines.sort((a, b) => _compareLinesSingleColumn(a, b));
-        col2Lines.sort((a, b) => _compareLinesSingleColumn(a, b));
+        final col1Lines = _sortLinesSingleColumn(twoColResult.col1);
+        final col2Lines = _sortLinesSingleColumn(twoColResult.col2);
 
         final colMinTop = math.min(
           col1Lines.first.bounds.top,
@@ -109,20 +126,23 @@ class ReadingOrderResolver {
           } else if (banner.bounds.top >= colMaxBottom - 15.0) {
             bottomBanners.add(banner);
           } else {
-            // Banner interleaved between columns; place before columns
             topBanners.add(banner);
           }
         }
 
-        topBanners.sort((a, b) => _compareLinesSingleColumn(a, b));
-        bottomBanners.sort((a, b) => _compareLinesSingleColumn(a, b));
+        final sortedTopBanners = _sortLinesSingleColumn(topBanners);
+        final sortedBottomBanners = _sortLinesSingleColumn(bottomBanners);
+        final sortedHeaders = _sortLinesSingleColumn(headerLines);
+        final sortedFooters = _sortLinesSingleColumn(footerLines);
 
-        // Sequence: Top Banners -> Column 1 (top to bottom) -> Column 2 (top to bottom) -> Bottom Banners
+        // Sequence: Running Headers -> Top Banners -> Column 1 (top to bottom) -> Column 2 (top to bottom) -> Bottom Banners -> Running Footers
         final combined = <ExtractedTextLine>[
-          ...topBanners,
+          ...sortedHeaders,
+          ...sortedTopBanners,
           ...col1Lines,
           ...col2Lines,
-          ...bottomBanners,
+          ...sortedBottomBanners,
+          ...sortedFooters,
         ];
 
         return PageReadingOrderResult(
@@ -136,9 +156,8 @@ class ReadingOrderResolver {
       }
     }
 
-    // 3. Fallback: Single-column ordering (Y ascending, then X ascending for same line)
-    final allSorted = List<ExtractedTextLine>.from(page.lines)
-      ..sort((a, b) => _compareLinesSingleColumn(a, b));
+    // 4. Single-column ordering (Robust baseline clustering)
+    final allSorted = _sortLinesSingleColumn(page.lines);
 
     return PageReadingOrderResult(
       pageIndex: page.pageIndex,
@@ -148,17 +167,57 @@ class ReadingOrderResolver {
     );
   }
 
-  /// Compares two lines in single-column mode: primary sort by Y, secondary by X.
-  static int _compareLinesSingleColumn(
-    ExtractedTextLine a,
-    ExtractedTextLine b,
+  /// Sorts lines in single-column mode using baseline clustering.
+  /// Lines that share a common vertical band (vertical overlap >= 45% of height)
+  /// are grouped together and sorted left-to-right.
+  /// Visual bands are sorted top-to-bottom.
+  static List<ExtractedTextLine> _sortLinesSingleColumn(
+    List<ExtractedTextLine> lines,
   ) {
-    const baselineTolerance = 4.0;
-    final yDiff = a.bounds.top - b.bounds.top;
-    if (yDiff.abs() <= baselineTolerance) {
-      return a.bounds.left.compareTo(b.bounds.left);
+    if (lines.length <= 1) return List.from(lines);
+
+    // Initial sort by top Y coordinate
+    final rawList = List<ExtractedTextLine>.from(lines)
+      ..sort((a, b) => a.bounds.top.compareTo(b.bounds.top));
+
+    final bands = <List<ExtractedTextLine>>[];
+
+    for (final line in rawList) {
+      bool placedInBand = false;
+      for (final band in bands) {
+        final refLine = band.first;
+        final overlapTop = math.max(line.bounds.top, refLine.bounds.top);
+        final overlapBottom = math.min(line.bounds.bottom, refLine.bounds.bottom);
+        final overlapHeight = overlapBottom - overlapTop;
+
+        final minHeight = math.min(line.bounds.height, refLine.bounds.height);
+        if (minHeight > 0 && overlapHeight >= minHeight * 0.45) {
+          band.add(line);
+          placedInBand = true;
+          break;
+        }
+      }
+
+      if (!placedInBand) {
+        bands.add([line]);
+      }
     }
-    return yDiff < 0 ? -1 : 1;
+
+    // Sort bands top-to-bottom by average top coordinate
+    bands.sort((a, b) {
+      final aAvg = a.map((l) => l.bounds.top).reduce((v, e) => v + e) / a.length;
+      final bAvg = b.map((l) => l.bounds.top).reduce((v, e) => v + e) / b.length;
+      return aAvg.compareTo(bAvg);
+    });
+
+    // Within each band, sort lines strictly left-to-right
+    final sortedLines = <ExtractedTextLine>[];
+    for (final band in bands) {
+      band.sort((a, b) => a.bounds.left.compareTo(b.bounds.left));
+      sortedLines.addAll(band);
+    }
+
+    return sortedLines;
   }
 
   /// Attempts to partition body lines into two distinct columns separated by a vertical gutter.

@@ -39,8 +39,9 @@ class OcrSemanticPipeline {
 
     // 1. Fetch all completed OCR pages for this book
     final ocrPages = await dbService.getOcrPagesForBook(bookId);
-    final completedOcrPages =
-        ocrPages.where((p) => p.status == 'completed').toList();
+    final completedOcrPages = ocrPages
+        .where((p) => p.status == 'completed')
+        .toList();
 
     if (completedOcrPages.isEmpty) {
       return null;
@@ -92,10 +93,14 @@ class OcrSemanticPipeline {
     }
 
     // 3. Assemble geometry extraction result
-    final totalLines =
-        extractedPages.fold<int>(0, (sum, p) => sum + p.lines.length);
-    final totalImages =
-        extractedPages.fold<int>(0, (sum, p) => sum + p.images.length);
+    final totalLines = extractedPages.fold<int>(
+      0,
+      (sum, p) => sum + p.lines.length,
+    );
+    final totalImages = extractedPages.fold<int>(
+      0,
+      (sum, p) => sum + p.images.length,
+    );
 
     final extraction = DocumentExtractionResult(
       bookId: bookId,
@@ -103,9 +108,7 @@ class OcrSemanticPipeline {
       pages: extractedPages,
       totalTextLines: totalLines,
       totalImages: totalImages,
-      layerBreakdown: {
-        PageLayerType.nativeText: extractedPages.length,
-      },
+      layerBreakdown: {PageLayerType.nativeText: extractedPages.length},
       hasUsableTextLayer: totalLines > 0,
       warnings: const [],
       durationMs: totalOcrDurationMs,

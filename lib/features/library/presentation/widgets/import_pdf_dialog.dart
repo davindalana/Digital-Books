@@ -287,20 +287,23 @@ class ImportPdfHelper {
           .importFile(selectedFile);
 
       if (context.mounted) {
-        Navigator.of(context).pop(); // Close import dialog
+        Navigator.of(context, rootNavigator: true).pop(); // Cleanly close progress dialog
 
         if (importedBook != null) {
-          // Open Reading Screen immediately
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ReadingScreen(
-                book: importedBook,
-                initialMode: importedBook.isScanned
-                    ? ReadingMode.originalPdf
-                    : ReadingMode.reflowable,
-              ),
-            ),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReadingScreen(
+                    book: importedBook,
+                    initialMode: importedBook.isScanned
+                        ? ReadingMode.originalPdf
+                        : ReadingMode.reflowable,
+                  ),
+                ),
+              );
+            }
+          });
         }
       }
     } catch (e) {

@@ -360,15 +360,15 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
   Widget _buildSinglePage(double width, double height, int index) {
     final page = _pages[index];
-    final effectiveMargin = (width < 400)
-        ? 16.0
-        : (width < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (width - (effectiveMargin * 2)).clamp(160.0, 900.0);
+    final effectiveMargin = (width < 400.0)
+        ? 18.0
+        : (width < 650.0 ? 24.0 : math.max(32.0, widget.typography.horizontalMargin));
+    final contentWidth = (width - (effectiveMargin * 2.0)).clamp(160.0, 680.0);
 
     return Center(
       key: ValueKey('page_${index}_spread_false'),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: effectiveMargin),
+      child: SizedBox(
+        width: contentWidth,
         child: ReflowablePageRenderer(
           page: page,
           totalPagesInBook: _pages.length,
@@ -392,80 +392,90 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final leftPage = _pages[leftIndex];
     final rightPage = rightIndex < _pages.length ? _pages[rightIndex] : null;
 
-    final double halfWidth = (width - 16.0) / 2;
-    final effectiveMargin = (halfWidth < 400)
-        ? 16.0
-        : (halfWidth < 650 ? 22.0 : widget.typography.horizontalMargin);
-    final contentWidth = (halfWidth - (effectiveMargin * 2)).clamp(
+    const double spineWidth = 24.0;
+    final double halfWidth = (width - spineWidth) / 2.0;
+    final effectiveMargin = (halfWidth < 400.0)
+        ? 18.0
+        : (halfWidth < 650.0 ? 24.0 : math.max(32.0, widget.typography.horizontalMargin));
+    final contentWidth = (halfWidth - (effectiveMargin * 2.0)).clamp(
       160.0,
-      800.0,
+      620.0,
     );
 
-    return Row(
+    return Center(
       key: ValueKey('page_${leftIndex}_spread_true'),
-      children: [
-        // Left Page
-        Expanded(
-          child: Center(
-            child: SizedBox(
-              width: contentWidth,
-              child: ReflowablePageRenderer(
-                page: leftPage,
-                totalPagesInBook: _pages.length,
-                theme: widget.theme,
-                typography: widget.typography,
-                contentWidth: contentWidth,
-                showHeader: true,
-                showFooter: true,
-                isLeftPage: true,
-                highlights: widget.highlights,
-                searchMatches: widget.searchMatches,
-                onHighlightCreated: widget.onHighlightCreated,
-                onHighlightTap: widget.onHighlightTap,
+      child: SizedBox(
+        width: (contentWidth * 2) + spineWidth + (effectiveMargin * 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left Page
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: contentWidth,
+                  child: ReflowablePageRenderer(
+                    page: leftPage,
+                    totalPagesInBook: _pages.length,
+                    theme: widget.theme,
+                    typography: widget.typography,
+                    contentWidth: contentWidth,
+                    showHeader: true,
+                    showFooter: true,
+                    isLeftPage: true,
+                    highlights: widget.highlights,
+                    searchMatches: widget.searchMatches,
+                    onHighlightCreated: widget.onHighlightCreated,
+                    onHighlightTap: widget.onHighlightTap,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
 
-        // Physical Center Spine Crease (Apple Books Open Book depth)
-        Container(
-          width: 16,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.black.withAlpha(widget.theme.isDark ? 40 : 25),
-                Colors.transparent,
-                Colors.black.withAlpha(widget.theme.isDark ? 40 : 25),
-              ],
+            // Physical Center Spine Crease (Apple Books Open Book depth)
+            Container(
+              width: spineWidth,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 25),
+                    Colors.transparent,
+                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 25),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
 
-        // Right Page
-        Expanded(
-          child: rightPage != null
-              ? Center(
-                  child: SizedBox(
-                    width: contentWidth,
-                    child: ReflowablePageRenderer(
-                      page: rightPage,
-                      totalPagesInBook: _pages.length,
-                      theme: widget.theme,
-                      typography: widget.typography,
-                      contentWidth: contentWidth,
-                      showHeader: true,
-                      showFooter: true,
-                      isLeftPage: false,
-                      highlights: widget.highlights,
-                      searchMatches: widget.searchMatches,
-                      onHighlightCreated: widget.onHighlightCreated,
-                      onHighlightTap: widget.onHighlightTap,
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink(),
+            // Right Page
+            Expanded(
+              child: rightPage != null
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: SizedBox(
+                        width: contentWidth,
+                        child: ReflowablePageRenderer(
+                          page: rightPage,
+                          totalPagesInBook: _pages.length,
+                          theme: widget.theme,
+                          typography: widget.typography,
+                          contentWidth: contentWidth,
+                          showHeader: true,
+                          showFooter: true,
+                          isLeftPage: false,
+                          highlights: widget.highlights,
+                          searchMatches: widget.searchMatches,
+                          onHighlightCreated: widget.onHighlightCreated,
+                          onHighlightTap: widget.onHighlightTap,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

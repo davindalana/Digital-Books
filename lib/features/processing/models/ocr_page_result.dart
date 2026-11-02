@@ -90,29 +90,46 @@ class OcrPageResult {
   }) {
     var lineIdx = 0;
     final extractedLines = lines.map((ocrLine) {
-      final absLeft = (ocrLine.box.left * pageSize.width).clamp(0.0, pageSize.width);
-      final absTop = (ocrLine.box.top * pageSize.height).clamp(0.0, pageSize.height);
-      final absWidth = (ocrLine.box.width * pageSize.width).clamp(0.0, pageSize.width - absLeft);
-      final absHeight = (ocrLine.box.height * pageSize.height).clamp(0.0, pageSize.height - absTop);
+      final absLeft = (ocrLine.box.left * pageSize.width).clamp(
+        0.0,
+        pageSize.width,
+      );
+      final absTop = (ocrLine.box.top * pageSize.height).clamp(
+        0.0,
+        pageSize.height,
+      );
+      final absWidth = (ocrLine.box.width * pageSize.width).clamp(
+        0.0,
+        pageSize.width - absLeft,
+      );
+      final absHeight = (ocrLine.box.height * pageSize.height).clamp(
+        0.0,
+        pageSize.height - absTop,
+      );
 
       // Estimate approximate font size from line height
       final estFontSize = (absHeight * 0.80).clamp(8.0, 32.0);
 
       // Split into words for word-level geometry
-      final wordsList = ocrLine.text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final wordsList = ocrLine.text
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .toList();
       final words = <ExtractedTextWord>[];
       if (wordsList.isNotEmpty && absWidth > 0) {
         final approxWordWidth = absWidth / wordsList.length;
         for (int wIdx = 0; wIdx < wordsList.length; wIdx++) {
-          words.add(ExtractedTextWord(
-            bounds: Rect.fromLTWH(
-              absLeft + (wIdx * approxWordWidth),
-              absTop,
-              approxWordWidth * 0.9,
-              absHeight,
+          words.add(
+            ExtractedTextWord(
+              bounds: Rect.fromLTWH(
+                absLeft + (wIdx * approxWordWidth),
+                absTop,
+                approxWordWidth * 0.9,
+                absHeight,
+              ),
+              text: wordsList[wIdx],
             ),
-            text: wordsList[wIdx],
-          ));
+          );
         }
       }
 

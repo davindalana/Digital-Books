@@ -312,11 +312,23 @@ class ParagraphReconstructor {
   /// Identifies obvious standalone page numbers or headers for isolating during paragraph joining.
   static bool _isPageNumberOrRunningChrome(ExtractedTextLine line) {
     final trimmed = line.text.trim();
-    if (RegExp(r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*-)$', caseSensitive: false).hasMatch(trimmed)) {
+    // 1. Standalone page numbers in header or footer
+    if (RegExp(
+      r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*|hal\.?\s*\d+|[ivxlcdm]+)$',
+      caseSensitive: false,
+    ).hasMatch(trimmed)) {
       return true;
     }
-    if (line.bounds.top < 65.0 && line.fontSize <= 10.0 && trimmed.length < 80) {
-      return true;
+
+    // 2. Running header at the extreme top of page (must be short and all uppercase or chapter heading)
+    if (line.bounds.top < 52.0 && line.fontSize <= 11.0 && trimmed.length <= 45) {
+      final isAllUpper = trimmed == trimmed.toUpperCase() &&
+          RegExp(r'[A-Z]').hasMatch(trimmed) &&
+          !trimmed.endsWith(',') &&
+          !trimmed.endsWith(';');
+      if (isAllUpper) {
+        return true;
+      }
     }
     return false;
   }
@@ -342,6 +354,89 @@ class ReconstructedParagraphBuilder {
     lines.add(line);
   }
 
+  /// Cleans OCR artifacts, normalizes ligatures/unicode, and resolves glued or split words.
+  static String cleanOcrText(String raw) {
+    if (raw.isEmpty) return raw;
+
+    var s = raw;
+
+    // 1. Unicode normalization: Non-breaking spaces and invisible characters
+    s = s.replaceAll(RegExp(r'[\u00A0\u200B\uFEFF\u200E\u200F]'), ' ');
+
+    // 2. Ligature expansion
+    s = s
+        .replaceAll('ﬁ', 'fi')
+        .replaceAll('ﬂ', 'fl')
+        .replaceAll('ﬀ', 'ff')
+        .replaceAll('ﬃ', 'ffi')
+        .replaceAll('ﬄ', 'ffl')
+        .replaceAll('œ', 'oe')
+        .replaceAll('æ', 'ae');
+
+    // 3. Dotless-i artifact from photocopy / scanned print (e.g. "dıtutup" -> "ditutup", "hasıl" -> "hasil")
+    s = s.replaceAllMapped(
+      RegExp(r'([a-zA-Z])ı|ı([a-zA-Z])'),
+      (m) => m.group(0)!.replaceAll('ı', 'i'),
+    );
+    s = s.replaceAll('ı', 'i');
+
+    // 4. Fix glued punctuation without space: e.g. "kata.Namun" -> "kata. Namun"
+    s = s.replaceAllMapped(
+      RegExp(r'([a-z0-9])([.,!?;:])([A-Z])'),
+      (m) => '${m.group(1)}${m.group(2)} ${m.group(3)}',
+    );
+
+    // 5. Fix words split with hyphen and spurious space inside lines:
+    // e.g. "se- buah" -> "sebuah", "peng- alaman" -> "pengalaman"
+    // BUT preserve Indonesian reduplications: "anak- anak" -> "anak-anak", "mengira- ngira" -> "mengira-ngira"
+    s = s.replaceAllMapped(
+      RegExp(r'\b([a-zA-Z]{1,20})[-\u2010\u2013\u2014]\s+([a-zA-Z]{1,20})\b'),
+      (m) {
+        final part1 = m.group(1)!;
+        final part2 = m.group(2)!;
+        final p1Lower = part1.toLowerCase();
+        final p2Lower = part2.toLowerCase();
+
+        // Check if reduplication (e.g. anak-anak, tiba-tiba, kata-kata)
+        if (p1Lower == p2Lower ||
+            (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) ||
+            (p1Lower.startsWith('ber') && p1Lower.substring(3) == p2Lower) ||
+            (p1Lower.startsWith('meng') && p1Lower.substring(4) == p2Lower) ||
+            (p1Lower.startsWith('ter') && p1Lower.substring(3) == p2Lower) ||
+            (p1Lower.startsWith('se') && p1Lower.substring(2) == p2Lower)) {
+          return '$part1-$part2';
+        }
+
+        // Common Indonesian affixes that were split by OCR hyphenation
+        const affixes = {
+          'se', 'di', 'ke', 'me', 'pe', 'ber', 'ter', 'per', 'men', 'mem',
+          'peng', 'meng', 'meny', 'pen', 'pem'
+        };
+        if (affixes.contains(p1Lower)) {
+          return '$part1$part2';
+        }
+
+        // Generic word split by hyphen and space
+        return '$part1$part2';
+      },
+    );
+
+    // 6. Fix Indonesian passive prefixes split with space:
+    // e.g. "di tutup" -> "ditutup", "di tendang" -> "ditendang", "di dorong" -> "didorong"
+    s = s.replaceAllMapped(
+      RegExp(
+        r'\b(di|ke)\s+(tutup|tendang|dorong|buka|baca|tulis|temukan|lakukan|buat|ambil|dengar|paksa|belah|tarik|giring|sebut|terima|kirim|lihat|rasakan|hadapi|tunjuk|mulai|tambah|kurang|nyatakan|pastikan)\b',
+        caseSensitive: false,
+      ),
+      (m) => '${m.group(1)}${m.group(2)}',
+    );
+
+    // 7. Multiple spaces collapsing
+    s = s.replaceAll(RegExp(r'[ \t]+'), ' ');
+
+    return s.trim();
+  }
+
   ReconstructedParagraph build() {
     if (lines.isEmpty) {
       throw StateError('Cannot build paragraph from empty lines');
@@ -356,17 +451,41 @@ class ReconstructedParagraphBuilder {
         buffer.write(text);
       } else {
         final prevText = lines[i - 1].text.trim();
-        // De-hyphenation: if prev line ends with '-' preceded by a lowercase letter
-        if (prevText.endsWith('-') &&
-            prevText.length >= 2 &&
-            RegExp(r'[a-z]-$').hasMatch(prevText) &&
+        // Cross-line de-hyphenation: check if prevLine ends with a hyphen or dash
+        final hyphenMatch =
+            RegExp(r'([a-zA-Z]+)[-\u2010\u2013\u2014]$').firstMatch(prevText);
+        if (hyphenMatch != null &&
             text.isNotEmpty &&
-            RegExp(r'^[a-z]').hasMatch(text)) {
-          // Remove trailing hyphen from buffer and append continuation without space
+            RegExp(r'^[a-zA-Z]').hasMatch(text)) {
+          final prefixWord = hyphenMatch.group(1)!;
+          final nextFirstWordMatch = RegExp(r'^([a-zA-Z]+)').firstMatch(text);
+          final nextFirstWord = nextFirstWordMatch?.group(1) ?? '';
+
+          final p1Lower = prefixWord.toLowerCase();
+          final p2Lower = nextFirstWord.toLowerCase();
+
+          // Is it an Indonesian reduplication across lines? (e.g. mengira- \n ngira)
+          final isRedup = p1Lower == p2Lower ||
+              (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) ||
+              (p1Lower.startsWith('meng') && p1Lower.substring(4) == p2Lower) ||
+              (p1Lower.startsWith('ber') && p1Lower.substring(3) == p2Lower);
+
           final currentBufferStr = buffer.toString();
-          buffer.clear();
-          buffer.write(currentBufferStr.substring(0, currentBufferStr.length - 1));
-          buffer.write(text);
+          final lastHyphenIdx = currentBufferStr.lastIndexOf(
+            RegExp(r'[-\u2010\u2013\u2014]'),
+          );
+          if (lastHyphenIdx != -1) {
+            buffer.clear();
+            buffer.write(currentBufferStr.substring(0, lastHyphenIdx));
+            if (isRedup) {
+              buffer.write('-$text');
+            } else {
+              buffer.write(text);
+            }
+          } else {
+            buffer.write(' ');
+            buffer.write(text);
+          }
         } else {
           buffer.write(' ');
           buffer.write(text);
@@ -392,10 +511,10 @@ class ReconstructedParagraphBuilder {
     final isItalic = lines.every((l) => l.isItalic);
     final fontStyles = firstLine.fontStyle;
 
-    final fullText = buffer.toString().trim();
+    final cleanedText = cleanOcrText(buffer.toString());
 
     return ReconstructedParagraph(
-      text: fullText,
+      text: cleanedText,
       startPageIndex: firstLine.pageIndex,
       endPageIndex: lines.last.pageIndex,
       boundingBox: Rect.fromLTRB(minLeft, minTop, maxRight, maxBottom),
@@ -405,13 +524,13 @@ class ReconstructedParagraphBuilder {
       isItalic: isItalic,
       lineCount: lines.length,
       sourceLines: List.unmodifiable(lines),
-      isDialogue: RegExp(r'^(["“‘«—\-]|--\s)').hasMatch(fullText),
+      isDialogue: RegExp(r'^(["“‘«—\-]|--\s)').hasMatch(cleanedText),
       isIsolated: lines.length == 1,
-      isOrderedList: ParagraphReconstructor._orderedListRegex.hasMatch(fullText),
-      isUnorderedList: ParagraphReconstructor._unorderedListRegex.hasMatch(fullText),
-      isCopyright: ParagraphReconstructor._copyrightMetaRegex.hasMatch(fullText) ||
-          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(fullText),
-      isCaption: ParagraphReconstructor._captionRegex.hasMatch(fullText),
+      isOrderedList: ParagraphReconstructor._orderedListRegex.hasMatch(cleanedText),
+      isUnorderedList: ParagraphReconstructor._unorderedListRegex.hasMatch(cleanedText),
+      isCopyright: ParagraphReconstructor._copyrightMetaRegex.hasMatch(cleanedText) ||
+          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(cleanedText),
+      isCaption: ParagraphReconstructor._captionRegex.hasMatch(cleanedText),
     );
   }
 }

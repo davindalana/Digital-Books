@@ -13,18 +13,32 @@ class SemanticClassifier {
   }) {
     if (paragraphs.isEmpty) return [];
 
+    final detectedMaxY = paragraphs
+        .map((p) => p.boundingBox.bottom)
+        .reduce(math.max);
+    final effectivePageHeight = (defaultPageHeight > 0 &&
+            (defaultPageHeight - detectedMaxY).abs() < 180)
+        ? defaultPageHeight
+        : math.max(defaultPageHeight, detectedMaxY + 20.0);
+
     // 1. Calculate document-wide typography baselines
     final bodyFontSize = _detectModalBodyFontSize(paragraphs);
     final bodyLeftMargin = _detectModalLeftMargin(paragraphs);
 
+    final headerZoneThreshold = math.min(65.0, effectivePageHeight * 0.10);
+    final footerZoneThreshold = math.max(
+      effectivePageHeight - 75.0,
+      effectivePageHeight * 0.88,
+    );
+
     // 2. Detect repeating header/footer patterns across pages
     final repeatingHeaders = _detectRepeatingTexts(
-      paragraphs.where((p) => p.boundingBox.top < 85.0),
+      paragraphs.where((p) => p.boundingBox.top <= headerZoneThreshold),
       minOccurrences: math.min(2, totalPages),
     );
 
     final repeatingFooters = _detectRepeatingTexts(
-      paragraphs.where((p) => p.boundingBox.top > defaultPageHeight - 75.0),
+      paragraphs.where((p) => p.boundingBox.bottom >= footerZoneThreshold),
       minOccurrences: math.min(2, totalPages),
     );
 
@@ -35,7 +49,7 @@ class SemanticClassifier {
         para: para,
         bodyFontSize: bodyFontSize,
         bodyLeftMargin: bodyLeftMargin,
-        pageHeight: defaultPageHeight,
+        pageHeight: effectivePageHeight,
         repeatingHeaders: repeatingHeaders,
         repeatingFooters: repeatingFooters,
       );
@@ -64,9 +78,29 @@ class SemanticClassifier {
     final lineCount = para.lineCount;
 
     // A. Running Headers (top zone)
-    if (top < 80.0) {
-      if (repeatingHeaders.contains(text) ||
-          (fontSize <= bodyFontSize && lineCount == 1 && text.length < 80)) {
+    final headerThreshold = math.min(65.0, pageHeight * 0.10);
+    if (top <= headerThreshold) {
+      final isStandalonePageNum = RegExp(
+        r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*|hal\.?\s*\d+|[ivxlcdm]+)$',
+        caseSensitive: false,
+      ).hasMatch(text);
+      if (isStandalonePageNum) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.pageNumber,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.98,
+        );
+      }
+
+      final isAllUpperShort = text.length <= 50 &&
+          text == text.toUpperCase() &&
+          RegExp(r'[A-Z]').hasMatch(text) &&
+          !text.endsWith(',') &&
+          !text.endsWith(';');
+
+      if (repeatingHeaders.contains(text) || isAllUpperShort) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningHeader,
           text: text,
@@ -78,7 +112,8 @@ class SemanticClassifier {
     }
 
     // B. Footnotes (bottom region of page with smaller font size and index marker)
-    if (top > pageHeight - 160.0 && fontSize < bodyFontSize * 0.95) {
+    final footnoteThreshold = pageHeight - 160.0;
+    if (top > footnoteThreshold && fontSize < bodyFontSize * 0.95) {
       if (RegExp(r'^(\*|\d+[\.\)]|\[\d+\]|\(\d+\))\s+').hasMatch(text)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.footnote,
@@ -91,8 +126,13 @@ class SemanticClassifier {
     }
 
     // C. Page Numbers and Footers (bottom zone)
-    if (bottom > pageHeight - 65.0 || top > pageHeight - 70.0) {
-      if (RegExp(r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*-)$', caseSensitive: false).hasMatch(text)) {
+    final footerThreshold = math.max(pageHeight - 75.0, pageHeight * 0.88);
+    if (bottom >= footerThreshold || top >= footerThreshold) {
+      final isStandalonePageNum = RegExp(
+        r'^(page\s+\d+(\s+of\s+\d+)?|\d+|-\s*\d+\s*|hal\.?\s*\d+|[ivxlcdm]+)$',
+        caseSensitive: false,
+      ).hasMatch(text);
+      if (isStandalonePageNum) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.pageNumber,
           text: text,
@@ -101,7 +141,8 @@ class SemanticClassifier {
           confidence: 0.98,
         );
       }
-      if (repeatingFooters.contains(text) || (fontSize <= bodyFontSize && lineCount <= 2)) {
+      if (repeatingFooters.contains(text) ||
+          (fontSize <= bodyFontSize && lineCount <= 2 && text.length <= 60)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningFooter,
           text: text,
