@@ -67,6 +67,7 @@ class OriginalPdfReader extends StatefulWidget {
   final VoidCallback? onToggleViewMode;
   final VoidCallback? onRelinkPdf;
   final VoidCallback? onRemoveBook;
+  final Map<int, List<Rect>>? searchHighlights;
 
   const OriginalPdfReader({
     super.key,
@@ -83,6 +84,7 @@ class OriginalPdfReader extends StatefulWidget {
     this.onToggleViewMode,
     this.onRelinkPdf,
     this.onRemoveBook,
+    this.searchHighlights,
   });
 
   @override
@@ -1460,10 +1462,27 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                 alignment: Alignment.center,
                 child: AspectRatio(
                   aspectRatio: cached.width / cached.height,
-                  child: RawImage(
-                    image: cached.image,
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.medium,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      RawImage(
+                        image: cached.image,
+                        fit: BoxFit.fill,
+                        filterQuality: FilterQuality.medium,
+                      ),
+                      if (widget.searchHighlights != null &&
+                          widget.searchHighlights![pageNumber] != null &&
+                          widget.searchHighlights![pageNumber]!.isNotEmpty)
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: PdfSearchHighlightPainter(
+                              normalizedBoxes:
+                                  widget.searchHighlights![pageNumber]!,
+                              isDark: widget.theme.isDark,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               )
@@ -2318,5 +2337,56 @@ class _PdfErrorView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Custom painter for rendering precision golden bounding-box overlays for search highlights on PDF pages.
+class PdfSearchHighlightPainter extends CustomPainter {
+  final List<Rect> normalizedBoxes;
+  final bool isDark;
+
+  const PdfSearchHighlightPainter({
+    required this.normalizedBoxes,
+    this.isDark = false,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (normalizedBoxes.isEmpty || size.width <= 0 || size.height <= 0) return;
+
+    final fillPaint = Paint()
+      ..color = isDark
+          ? const Color(0xFFFFB300).withValues(alpha: 0.38)
+          : const Color(0xFFFF9500).withValues(alpha: 0.32)
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = isDark
+          ? const Color(0xFFFFD54F).withValues(alpha: 0.85)
+          : const Color(0xFFF57C00).withValues(alpha: 0.85)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    for (final normBox in normalizedBoxes) {
+      final rect = Rect.fromLTWH(
+        normBox.left * size.width,
+        normBox.top * size.height,
+        normBox.width * size.width,
+        normBox.height * size.height,
+      );
+
+      final paddedRect = rect.inflate(1.5);
+      final rrect =
+          RRect.fromRectAndRadius(paddedRect, const Radius.circular(3.0));
+
+      canvas.drawRRect(rrect, fillPaint);
+      canvas.drawRRect(rrect, borderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant PdfSearchHighlightPainter oldDelegate) {
+    return oldDelegate.normalizedBoxes != normalizedBoxes ||
+        oldDelegate.isDark != isDark;
   }
 }

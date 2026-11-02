@@ -75,6 +75,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
 
   late final ReadingNavigationHistory _navigationHistory;
   List<ActiveSearchMatch> _activeSearchMatches = [];
+  Map<int, List<Rect>> _activePdfSearchHighlights = {};
   List<InBookSearchResult> _searchResults = [];
   int _currentSearchMatchIndex = 0;
   String _activeSearchQuery = '';
@@ -214,7 +215,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       // Switching from Reflowable to Original PDF:
       // Map active reflowable anchor node to its source PDF page
       int targetPdfPage = _pdfPage;
-      if (_readerDocument != null) {
+      if (_showSearchTraversal &&
+          _searchResults.isNotEmpty &&
+          _currentSearchMatchIndex < _searchResults.length) {
+        final match = _searchResults[_currentSearchMatchIndex];
+        targetPdfPage = match.sourcePdfPage;
+        if (match.boundingBoxes.isNotEmpty) {
+          _activePdfSearchHighlights = {
+            match.sourcePdfPage: match.boundingBoxes,
+          };
+        }
+      } else if (_readerDocument != null) {
         final currentAnchorId = _activeAnchorNodeId ??
             _reflowableKey.currentState?.activeAnchorNodeId;
         if (currentAnchorId != null) {
@@ -240,8 +251,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       // Map current PDF page to first matching node in Reflowable reader
       String? targetAnchorId;
       int targetChapter = _reflowableChapter;
+      int targetCharOffset = 0;
 
-      if (_readerDocument != null && _readerDocument!.chapters.isNotEmpty) {
+      if (_showSearchTraversal &&
+          _searchResults.isNotEmpty &&
+          _currentSearchMatchIndex < _searchResults.length) {
+        final match = _searchResults[_currentSearchMatchIndex];
+        targetAnchorId = match.nodeId;
+        targetChapter = match.chapterIndex;
+        targetCharOffset = match.startOffset;
+      } else if (_readerDocument != null &&
+          _readerDocument!.chapters.isNotEmpty) {
         for (int chIdx = 0; chIdx < _readerDocument!.chapters.length; chIdx++) {
           final ch = _readerDocument!.chapters[chIdx];
           for (final node in ch.nodes) {
@@ -282,7 +302,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       if (targetAnchorId != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _reflowableKey.currentState?.jumpToAnchor(targetAnchorId!, 0);
+            _reflowableKey.currentState?.jumpToAnchor(
+              targetAnchorId!,
+              targetCharOffset,
+            );
           }
         });
       }
@@ -462,14 +485,22 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   }
 
   void _openBookSearchDialog() {
-    if (_document == null && _readerDocument == null) return;
+    final ocrProgress = ref.read(ocrQueueProgressStreamProvider).valueOrNull;
+    final isThisBookOcrRunning = ocrProgress != null &&
+        ocrProgress.bookId == widget.book.id &&
+        ocrProgress.isRunning;
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withAlpha(120),
       builder: (_) => BookSearchDialog(
+        bookId: widget.book.id,
+        pdfPath: _currentPdfPath,
+        dbService: ref.read(databaseServiceProvider),
         readerDocument: _readerDocument,
         document: _document,
         theme: ref.read(readingThemeStateProvider),
+        isOcrRunning: isThisBookOcrRunning,
         onNavigateToResult: (result) {
           _handleSearchResultSelected(result);
         },
@@ -499,27 +530,34 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         isActive: true,
       ),
     ];
+    if (result.boundingBoxes.isNotEmpty) {
+      _activePdfSearchHighlights = {
+        result.sourcePdfPage: result.boundingBoxes,
+      };
+    } else {
+      _activePdfSearchHighlights = {};
+    }
     _showSearchTraversal = true;
 
-    // Cache or fetch all matches for traversal
-    final doc =
-        _readerDocument ??
-        (_document != null
-            ? ReflowableEngine.normalizeDocument(_document!)
-            : null);
-    if (doc != null) {
-      InBookSearchEngine.search(document: doc, query: result.matchedText).then((
-        allFound,
-      ) {
-        if (mounted) {
-          setState(() {
-            _searchResults = allFound;
-            final foundIdx = allFound.indexWhere((r) => r.id == result.id);
-            if (foundIdx != -1) _currentSearchMatchIndex = foundIdx;
-          });
-        }
-      });
-    }
+    // Cache or fetch all matches for traversal from indexed book
+    final dbService = ref.read(databaseServiceProvider);
+    InBookSearchEngine.searchIndexedBook(
+      bookId: widget.book.id,
+      dbService: dbService,
+      query: result.matchedText,
+      readerDocument: _readerDocument ??
+          (_document != null
+              ? ReflowableEngine.normalizeDocument(_document!)
+              : null),
+    ).then((allFound) {
+      if (mounted) {
+        setState(() {
+          _searchResults = allFound;
+          final foundIdx = allFound.indexWhere((r) => r.id == result.id);
+          if (foundIdx != -1) _currentSearchMatchIndex = foundIdx;
+        });
+      }
+    });
 
     if (_readingMode == ReadingMode.reflowable) {
       _reflowableKey.currentState?.jumpToAnchor(
@@ -549,6 +587,13 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           isActive: true,
         ),
       ];
+      if (result.boundingBoxes.isNotEmpty) {
+        _activePdfSearchHighlights = {
+          result.sourcePdfPage: result.boundingBoxes,
+        };
+      } else {
+        _activePdfSearchHighlights = {};
+      }
     });
 
     if (_readingMode == ReadingMode.reflowable) {
@@ -1046,6 +1091,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               setState(() {
                 _showSearchTraversal = false;
                 _activeSearchMatches = [];
+                _activePdfSearchHighlights = {};
               });
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.enter) {
@@ -1183,6 +1229,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                           scanEnhancementConfigProvider(widget.book.id),
                         ),
                         showControls: _showControls,
+                        searchHighlights: _activePdfSearchHighlights,
                         onTapContent: _toggleControls,
                         onSwitchToReflowable: _document != null
                             ? () => _setReadingMode(ReadingMode.reflowable)
@@ -1265,6 +1312,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         setState(() {
                           _showSearchTraversal = false;
                           _activeSearchMatches = [];
+                          _activePdfSearchHighlights = {};
                         });
                       },
                     ),

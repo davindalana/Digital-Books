@@ -618,6 +618,37 @@ class DatabaseService {
     final result = await query.getSingle();
     return result.read(count) ?? 0;
   }
+
+  // --- Book Search Pages ---
+  Future<int> insertSearchPage(BookSearchPagesCompanion page) {
+    return db.into(db.bookSearchPages).insertOnConflictUpdate(page);
+  }
+
+  Future<BookSearchPage?> getSearchPage(String bookId, int pageIndex) {
+    return (db.select(db.bookSearchPages)
+          ..where((t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex)))
+        .getSingleOrNull();
+  }
+
+  Future<List<BookSearchPage>> getSearchPagesForBook(String bookId) {
+    return (db.select(db.bookSearchPages)
+          ..where((t) => t.bookId.equals(bookId))
+          ..orderBy([(t) => OrderingTerm(expression: t.pageIndex, mode: OrderingMode.asc)]))
+        .get();
+  }
+
+  Future<int> deleteSearchPagesForBook(String bookId) {
+    return (db.delete(db.bookSearchPages)..where((t) => t.bookId.equals(bookId))).go();
+  }
+
+  Future<int> getIndexedSearchPageCount(String bookId) async {
+    final count = db.bookSearchPages.id.count();
+    final query = db.selectOnly(db.bookSearchPages)
+      ..addColumns([count])
+      ..where(db.bookSearchPages.bookId.equals(bookId));
+    final result = await query.getSingle();
+    return result.read(count) ?? 0;
+  }
 }
 
 class BookWithProgress {

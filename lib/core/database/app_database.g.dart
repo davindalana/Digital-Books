@@ -4237,6 +4237,623 @@ class OcrPagesCompanion extends UpdateCompanion<OcrPage> {
   }
 }
 
+class $BookSearchPagesTable extends BookSearchPages
+    with TableInfo<$BookSearchPagesTable, BookSearchPage> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BookSearchPagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bookIdMeta = const VerificationMeta('bookId');
+  @override
+  late final GeneratedColumn<String> bookId = GeneratedColumn<String>(
+    'book_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES books (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _pageIndexMeta = const VerificationMeta(
+    'pageIndex',
+  );
+  @override
+  late final GeneratedColumn<int> pageIndex = GeneratedColumn<int>(
+    'page_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _plainTextMeta = const VerificationMeta(
+    'plainText',
+  );
+  @override
+  late final GeneratedColumn<String> plainText = GeneratedColumn<String>(
+    'plain_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rawTextMeta = const VerificationMeta(
+    'rawText',
+  );
+  @override
+  late final GeneratedColumn<String> rawText = GeneratedColumn<String>(
+    'raw_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _geometryJsonMeta = const VerificationMeta(
+    'geometryJson',
+  );
+  @override
+  late final GeneratedColumn<String> geometryJson = GeneratedColumn<String>(
+    'geometry_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isOcrMeta = const VerificationMeta('isOcr');
+  @override
+  late final GeneratedColumn<bool> isOcr = GeneratedColumn<bool>(
+    'is_ocr',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_ocr" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _fileHashMeta = const VerificationMeta(
+    'fileHash',
+  );
+  @override
+  late final GeneratedColumn<String> fileHash = GeneratedColumn<String>(
+    'file_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _indexVersionMeta = const VerificationMeta(
+    'indexVersion',
+  );
+  @override
+  late final GeneratedColumn<int> indexVersion = GeneratedColumn<int>(
+    'index_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _indexedAtMeta = const VerificationMeta(
+    'indexedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> indexedAt = GeneratedColumn<DateTime>(
+    'indexed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    bookId,
+    pageIndex,
+    plainText,
+    rawText,
+    geometryJson,
+    isOcr,
+    fileHash,
+    indexVersion,
+    indexedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'book_search_pages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BookSearchPage> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('book_id')) {
+      context.handle(
+        _bookIdMeta,
+        bookId.isAcceptableOrUnknown(data['book_id']!, _bookIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bookIdMeta);
+    }
+    if (data.containsKey('page_index')) {
+      context.handle(
+        _pageIndexMeta,
+        pageIndex.isAcceptableOrUnknown(data['page_index']!, _pageIndexMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pageIndexMeta);
+    }
+    if (data.containsKey('plain_text')) {
+      context.handle(
+        _plainTextMeta,
+        plainText.isAcceptableOrUnknown(data['plain_text']!, _plainTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_plainTextMeta);
+    }
+    if (data.containsKey('raw_text')) {
+      context.handle(
+        _rawTextMeta,
+        rawText.isAcceptableOrUnknown(data['raw_text']!, _rawTextMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rawTextMeta);
+    }
+    if (data.containsKey('geometry_json')) {
+      context.handle(
+        _geometryJsonMeta,
+        geometryJson.isAcceptableOrUnknown(
+          data['geometry_json']!,
+          _geometryJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_geometryJsonMeta);
+    }
+    if (data.containsKey('is_ocr')) {
+      context.handle(
+        _isOcrMeta,
+        isOcr.isAcceptableOrUnknown(data['is_ocr']!, _isOcrMeta),
+      );
+    }
+    if (data.containsKey('file_hash')) {
+      context.handle(
+        _fileHashMeta,
+        fileHash.isAcceptableOrUnknown(data['file_hash']!, _fileHashMeta),
+      );
+    }
+    if (data.containsKey('index_version')) {
+      context.handle(
+        _indexVersionMeta,
+        indexVersion.isAcceptableOrUnknown(
+          data['index_version']!,
+          _indexVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('indexed_at')) {
+      context.handle(
+        _indexedAtMeta,
+        indexedAt.isAcceptableOrUnknown(data['indexed_at']!, _indexedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_indexedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BookSearchPage map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BookSearchPage(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      bookId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}book_id'],
+      )!,
+      pageIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}page_index'],
+      )!,
+      plainText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plain_text'],
+      )!,
+      rawText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}raw_text'],
+      )!,
+      geometryJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}geometry_json'],
+      )!,
+      isOcr: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_ocr'],
+      )!,
+      fileHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_hash'],
+      ),
+      indexVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}index_version'],
+      )!,
+      indexedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}indexed_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BookSearchPagesTable createAlias(String alias) {
+    return $BookSearchPagesTable(attachedDatabase, alias);
+  }
+}
+
+class BookSearchPage extends DataClass implements Insertable<BookSearchPage> {
+  final String id;
+  final String bookId;
+  final int pageIndex;
+  final String plainText;
+  final String rawText;
+  final String geometryJson;
+  final bool isOcr;
+  final String? fileHash;
+  final int indexVersion;
+  final DateTime indexedAt;
+  const BookSearchPage({
+    required this.id,
+    required this.bookId,
+    required this.pageIndex,
+    required this.plainText,
+    required this.rawText,
+    required this.geometryJson,
+    required this.isOcr,
+    this.fileHash,
+    required this.indexVersion,
+    required this.indexedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['book_id'] = Variable<String>(bookId);
+    map['page_index'] = Variable<int>(pageIndex);
+    map['plain_text'] = Variable<String>(plainText);
+    map['raw_text'] = Variable<String>(rawText);
+    map['geometry_json'] = Variable<String>(geometryJson);
+    map['is_ocr'] = Variable<bool>(isOcr);
+    if (!nullToAbsent || fileHash != null) {
+      map['file_hash'] = Variable<String>(fileHash);
+    }
+    map['index_version'] = Variable<int>(indexVersion);
+    map['indexed_at'] = Variable<DateTime>(indexedAt);
+    return map;
+  }
+
+  BookSearchPagesCompanion toCompanion(bool nullToAbsent) {
+    return BookSearchPagesCompanion(
+      id: Value(id),
+      bookId: Value(bookId),
+      pageIndex: Value(pageIndex),
+      plainText: Value(plainText),
+      rawText: Value(rawText),
+      geometryJson: Value(geometryJson),
+      isOcr: Value(isOcr),
+      fileHash: fileHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileHash),
+      indexVersion: Value(indexVersion),
+      indexedAt: Value(indexedAt),
+    );
+  }
+
+  factory BookSearchPage.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BookSearchPage(
+      id: serializer.fromJson<String>(json['id']),
+      bookId: serializer.fromJson<String>(json['bookId']),
+      pageIndex: serializer.fromJson<int>(json['pageIndex']),
+      plainText: serializer.fromJson<String>(json['plainText']),
+      rawText: serializer.fromJson<String>(json['rawText']),
+      geometryJson: serializer.fromJson<String>(json['geometryJson']),
+      isOcr: serializer.fromJson<bool>(json['isOcr']),
+      fileHash: serializer.fromJson<String?>(json['fileHash']),
+      indexVersion: serializer.fromJson<int>(json['indexVersion']),
+      indexedAt: serializer.fromJson<DateTime>(json['indexedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'bookId': serializer.toJson<String>(bookId),
+      'pageIndex': serializer.toJson<int>(pageIndex),
+      'plainText': serializer.toJson<String>(plainText),
+      'rawText': serializer.toJson<String>(rawText),
+      'geometryJson': serializer.toJson<String>(geometryJson),
+      'isOcr': serializer.toJson<bool>(isOcr),
+      'fileHash': serializer.toJson<String?>(fileHash),
+      'indexVersion': serializer.toJson<int>(indexVersion),
+      'indexedAt': serializer.toJson<DateTime>(indexedAt),
+    };
+  }
+
+  BookSearchPage copyWith({
+    String? id,
+    String? bookId,
+    int? pageIndex,
+    String? plainText,
+    String? rawText,
+    String? geometryJson,
+    bool? isOcr,
+    Value<String?> fileHash = const Value.absent(),
+    int? indexVersion,
+    DateTime? indexedAt,
+  }) => BookSearchPage(
+    id: id ?? this.id,
+    bookId: bookId ?? this.bookId,
+    pageIndex: pageIndex ?? this.pageIndex,
+    plainText: plainText ?? this.plainText,
+    rawText: rawText ?? this.rawText,
+    geometryJson: geometryJson ?? this.geometryJson,
+    isOcr: isOcr ?? this.isOcr,
+    fileHash: fileHash.present ? fileHash.value : this.fileHash,
+    indexVersion: indexVersion ?? this.indexVersion,
+    indexedAt: indexedAt ?? this.indexedAt,
+  );
+  BookSearchPage copyWithCompanion(BookSearchPagesCompanion data) {
+    return BookSearchPage(
+      id: data.id.present ? data.id.value : this.id,
+      bookId: data.bookId.present ? data.bookId.value : this.bookId,
+      pageIndex: data.pageIndex.present ? data.pageIndex.value : this.pageIndex,
+      plainText: data.plainText.present ? data.plainText.value : this.plainText,
+      rawText: data.rawText.present ? data.rawText.value : this.rawText,
+      geometryJson: data.geometryJson.present
+          ? data.geometryJson.value
+          : this.geometryJson,
+      isOcr: data.isOcr.present ? data.isOcr.value : this.isOcr,
+      fileHash: data.fileHash.present ? data.fileHash.value : this.fileHash,
+      indexVersion: data.indexVersion.present
+          ? data.indexVersion.value
+          : this.indexVersion,
+      indexedAt: data.indexedAt.present ? data.indexedAt.value : this.indexedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookSearchPage(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('plainText: $plainText, ')
+          ..write('rawText: $rawText, ')
+          ..write('geometryJson: $geometryJson, ')
+          ..write('isOcr: $isOcr, ')
+          ..write('fileHash: $fileHash, ')
+          ..write('indexVersion: $indexVersion, ')
+          ..write('indexedAt: $indexedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    bookId,
+    pageIndex,
+    plainText,
+    rawText,
+    geometryJson,
+    isOcr,
+    fileHash,
+    indexVersion,
+    indexedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BookSearchPage &&
+          other.id == this.id &&
+          other.bookId == this.bookId &&
+          other.pageIndex == this.pageIndex &&
+          other.plainText == this.plainText &&
+          other.rawText == this.rawText &&
+          other.geometryJson == this.geometryJson &&
+          other.isOcr == this.isOcr &&
+          other.fileHash == this.fileHash &&
+          other.indexVersion == this.indexVersion &&
+          other.indexedAt == this.indexedAt);
+}
+
+class BookSearchPagesCompanion extends UpdateCompanion<BookSearchPage> {
+  final Value<String> id;
+  final Value<String> bookId;
+  final Value<int> pageIndex;
+  final Value<String> plainText;
+  final Value<String> rawText;
+  final Value<String> geometryJson;
+  final Value<bool> isOcr;
+  final Value<String?> fileHash;
+  final Value<int> indexVersion;
+  final Value<DateTime> indexedAt;
+  final Value<int> rowid;
+  const BookSearchPagesCompanion({
+    this.id = const Value.absent(),
+    this.bookId = const Value.absent(),
+    this.pageIndex = const Value.absent(),
+    this.plainText = const Value.absent(),
+    this.rawText = const Value.absent(),
+    this.geometryJson = const Value.absent(),
+    this.isOcr = const Value.absent(),
+    this.fileHash = const Value.absent(),
+    this.indexVersion = const Value.absent(),
+    this.indexedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BookSearchPagesCompanion.insert({
+    required String id,
+    required String bookId,
+    required int pageIndex,
+    required String plainText,
+    required String rawText,
+    required String geometryJson,
+    this.isOcr = const Value.absent(),
+    this.fileHash = const Value.absent(),
+    this.indexVersion = const Value.absent(),
+    required DateTime indexedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       bookId = Value(bookId),
+       pageIndex = Value(pageIndex),
+       plainText = Value(plainText),
+       rawText = Value(rawText),
+       geometryJson = Value(geometryJson),
+       indexedAt = Value(indexedAt);
+  static Insertable<BookSearchPage> custom({
+    Expression<String>? id,
+    Expression<String>? bookId,
+    Expression<int>? pageIndex,
+    Expression<String>? plainText,
+    Expression<String>? rawText,
+    Expression<String>? geometryJson,
+    Expression<bool>? isOcr,
+    Expression<String>? fileHash,
+    Expression<int>? indexVersion,
+    Expression<DateTime>? indexedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bookId != null) 'book_id': bookId,
+      if (pageIndex != null) 'page_index': pageIndex,
+      if (plainText != null) 'plain_text': plainText,
+      if (rawText != null) 'raw_text': rawText,
+      if (geometryJson != null) 'geometry_json': geometryJson,
+      if (isOcr != null) 'is_ocr': isOcr,
+      if (fileHash != null) 'file_hash': fileHash,
+      if (indexVersion != null) 'index_version': indexVersion,
+      if (indexedAt != null) 'indexed_at': indexedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BookSearchPagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? bookId,
+    Value<int>? pageIndex,
+    Value<String>? plainText,
+    Value<String>? rawText,
+    Value<String>? geometryJson,
+    Value<bool>? isOcr,
+    Value<String?>? fileHash,
+    Value<int>? indexVersion,
+    Value<DateTime>? indexedAt,
+    Value<int>? rowid,
+  }) {
+    return BookSearchPagesCompanion(
+      id: id ?? this.id,
+      bookId: bookId ?? this.bookId,
+      pageIndex: pageIndex ?? this.pageIndex,
+      plainText: plainText ?? this.plainText,
+      rawText: rawText ?? this.rawText,
+      geometryJson: geometryJson ?? this.geometryJson,
+      isOcr: isOcr ?? this.isOcr,
+      fileHash: fileHash ?? this.fileHash,
+      indexVersion: indexVersion ?? this.indexVersion,
+      indexedAt: indexedAt ?? this.indexedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (bookId.present) {
+      map['book_id'] = Variable<String>(bookId.value);
+    }
+    if (pageIndex.present) {
+      map['page_index'] = Variable<int>(pageIndex.value);
+    }
+    if (plainText.present) {
+      map['plain_text'] = Variable<String>(plainText.value);
+    }
+    if (rawText.present) {
+      map['raw_text'] = Variable<String>(rawText.value);
+    }
+    if (geometryJson.present) {
+      map['geometry_json'] = Variable<String>(geometryJson.value);
+    }
+    if (isOcr.present) {
+      map['is_ocr'] = Variable<bool>(isOcr.value);
+    }
+    if (fileHash.present) {
+      map['file_hash'] = Variable<String>(fileHash.value);
+    }
+    if (indexVersion.present) {
+      map['index_version'] = Variable<int>(indexVersion.value);
+    }
+    if (indexedAt.present) {
+      map['indexed_at'] = Variable<DateTime>(indexedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BookSearchPagesCompanion(')
+          ..write('id: $id, ')
+          ..write('bookId: $bookId, ')
+          ..write('pageIndex: $pageIndex, ')
+          ..write('plainText: $plainText, ')
+          ..write('rawText: $rawText, ')
+          ..write('geometryJson: $geometryJson, ')
+          ..write('isOcr: $isOcr, ')
+          ..write('fileHash: $fileHash, ')
+          ..write('indexVersion: $indexVersion, ')
+          ..write('indexedAt: $indexedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4251,6 +4868,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $OcrPagesTable ocrPages = $OcrPagesTable(this);
+  late final $BookSearchPagesTable bookSearchPages = $BookSearchPagesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4264,6 +4884,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     collections,
     bookCollections,
     ocrPages,
+    bookSearchPages,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4315,6 +4936,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('ocr_pages', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'books',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('book_search_pages', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4468,6 +5096,26 @@ final class $$BooksTableReferences
     ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_ocrPagesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$BookSearchPagesTable, List<BookSearchPage>>
+  _bookSearchPagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.bookSearchPages,
+    aliasName: 'books__id__book_search_pages__book_id',
+  );
+
+  $$BookSearchPagesTableProcessedTableManager get bookSearchPagesRefs {
+    final manager = $$BookSearchPagesTableTableManager(
+      $_db,
+      $_db.bookSearchPages,
+    ).filter((f) => f.bookId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _bookSearchPagesRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -4688,6 +5336,31 @@ class $$BooksTableFilterComposer extends Composer<_$AppDatabase, $BooksTable> {
           }) => $$OcrPagesTableFilterComposer(
             $db: $db,
             $table: $db.ocrPages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> bookSearchPagesRefs(
+    Expression<bool> Function($$BookSearchPagesTableFilterComposer f) f,
+  ) {
+    final $$BookSearchPagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bookSearchPages,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BookSearchPagesTableFilterComposer(
+            $db: $db,
+            $table: $db.bookSearchPages,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4979,6 +5652,31 @@ class $$BooksTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> bookSearchPagesRefs<T extends Object>(
+    Expression<T> Function($$BookSearchPagesTableAnnotationComposer a) f,
+  ) {
+    final $$BookSearchPagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.bookSearchPages,
+      getReferencedColumn: (t) => t.bookId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BookSearchPagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bookSearchPages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$BooksTableTableManager
@@ -5001,6 +5699,7 @@ class $$BooksTableTableManager
             bool highlightsRefs,
             bool bookCollectionsRefs,
             bool ocrPagesRefs,
+            bool bookSearchPagesRefs,
           })
         > {
   $$BooksTableTableManager(_$AppDatabase db, $BooksTable table)
@@ -5092,6 +5791,7 @@ class $$BooksTableTableManager
                 highlightsRefs = false,
                 bookCollectionsRefs = false,
                 ocrPagesRefs = false,
+                bookSearchPagesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -5102,6 +5802,7 @@ class $$BooksTableTableManager
                     if (highlightsRefs) db.highlights,
                     if (bookCollectionsRefs) db.bookCollections,
                     if (ocrPagesRefs) db.ocrPages,
+                    if (bookSearchPagesRefs) db.bookSearchPages,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -5216,6 +5917,27 @@ class $$BooksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (bookSearchPagesRefs)
+                        await $_getPrefetchedData<
+                          Book,
+                          $BooksTable,
+                          BookSearchPage
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BooksTableReferences
+                              ._bookSearchPagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BooksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bookSearchPagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.bookId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -5243,6 +5965,7 @@ typedef $$BooksTableProcessedTableManager =
         bool highlightsRefs,
         bool bookCollectionsRefs,
         bool ocrPagesRefs,
+        bool bookSearchPagesRefs,
       })
     >;
 typedef $$ChaptersTableCreateCompanionBuilder =
@@ -7935,6 +8658,431 @@ typedef $$OcrPagesTableProcessedTableManager =
       OcrPage,
       PrefetchHooks Function({bool bookId})
     >;
+typedef $$BookSearchPagesTableCreateCompanionBuilder =
+    BookSearchPagesCompanion Function({
+      required String id,
+      required String bookId,
+      required int pageIndex,
+      required String plainText,
+      required String rawText,
+      required String geometryJson,
+      Value<bool> isOcr,
+      Value<String?> fileHash,
+      Value<int> indexVersion,
+      required DateTime indexedAt,
+      Value<int> rowid,
+    });
+typedef $$BookSearchPagesTableUpdateCompanionBuilder =
+    BookSearchPagesCompanion Function({
+      Value<String> id,
+      Value<String> bookId,
+      Value<int> pageIndex,
+      Value<String> plainText,
+      Value<String> rawText,
+      Value<String> geometryJson,
+      Value<bool> isOcr,
+      Value<String?> fileHash,
+      Value<int> indexVersion,
+      Value<DateTime> indexedAt,
+      Value<int> rowid,
+    });
+
+final class $$BookSearchPagesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $BookSearchPagesTable, BookSearchPage> {
+  $$BookSearchPagesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BooksTable _bookIdTable(_$AppDatabase db) =>
+      db.books.createAlias('book_search_pages__book_id__books__id');
+
+  $$BooksTableProcessedTableManager get bookId {
+    final $_column = $_itemColumn<String>('book_id')!;
+
+    final manager = $$BooksTableTableManager(
+      $_db,
+      $_db.books,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bookIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BookSearchPagesTableFilterComposer
+    extends Composer<_$AppDatabase, $BookSearchPagesTable> {
+  $$BookSearchPagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plainText => $composableBuilder(
+    column: $table.plainText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get geometryJson => $composableBuilder(
+    column: $table.geometryJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isOcr => $composableBuilder(
+    column: $table.isOcr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get indexVersion => $composableBuilder(
+    column: $table.indexVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get indexedAt => $composableBuilder(
+    column: $table.indexedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BooksTableFilterComposer get bookId {
+    final $$BooksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableFilterComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSearchPagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $BookSearchPagesTable> {
+  $$BookSearchPagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get pageIndex => $composableBuilder(
+    column: $table.pageIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get plainText => $composableBuilder(
+    column: $table.plainText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rawText => $composableBuilder(
+    column: $table.rawText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get geometryJson => $composableBuilder(
+    column: $table.geometryJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isOcr => $composableBuilder(
+    column: $table.isOcr,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get indexVersion => $composableBuilder(
+    column: $table.indexVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get indexedAt => $composableBuilder(
+    column: $table.indexedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BooksTableOrderingComposer get bookId {
+    final $$BooksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableOrderingComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSearchPagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BookSearchPagesTable> {
+  $$BookSearchPagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get pageIndex =>
+      $composableBuilder(column: $table.pageIndex, builder: (column) => column);
+
+  GeneratedColumn<String> get plainText =>
+      $composableBuilder(column: $table.plainText, builder: (column) => column);
+
+  GeneratedColumn<String> get rawText =>
+      $composableBuilder(column: $table.rawText, builder: (column) => column);
+
+  GeneratedColumn<String> get geometryJson => $composableBuilder(
+    column: $table.geometryJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isOcr =>
+      $composableBuilder(column: $table.isOcr, builder: (column) => column);
+
+  GeneratedColumn<String> get fileHash =>
+      $composableBuilder(column: $table.fileHash, builder: (column) => column);
+
+  GeneratedColumn<int> get indexVersion => $composableBuilder(
+    column: $table.indexVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get indexedAt =>
+      $composableBuilder(column: $table.indexedAt, builder: (column) => column);
+
+  $$BooksTableAnnotationComposer get bookId {
+    final $$BooksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.bookId,
+      referencedTable: $db.books,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BooksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.books,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BookSearchPagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BookSearchPagesTable,
+          BookSearchPage,
+          $$BookSearchPagesTableFilterComposer,
+          $$BookSearchPagesTableOrderingComposer,
+          $$BookSearchPagesTableAnnotationComposer,
+          $$BookSearchPagesTableCreateCompanionBuilder,
+          $$BookSearchPagesTableUpdateCompanionBuilder,
+          (BookSearchPage, $$BookSearchPagesTableReferences),
+          BookSearchPage,
+          PrefetchHooks Function({bool bookId})
+        > {
+  $$BookSearchPagesTableTableManager(
+    _$AppDatabase db,
+    $BookSearchPagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BookSearchPagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BookSearchPagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BookSearchPagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> bookId = const Value.absent(),
+                Value<int> pageIndex = const Value.absent(),
+                Value<String> plainText = const Value.absent(),
+                Value<String> rawText = const Value.absent(),
+                Value<String> geometryJson = const Value.absent(),
+                Value<bool> isOcr = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
+                Value<int> indexVersion = const Value.absent(),
+                Value<DateTime> indexedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BookSearchPagesCompanion(
+                id: id,
+                bookId: bookId,
+                pageIndex: pageIndex,
+                plainText: plainText,
+                rawText: rawText,
+                geometryJson: geometryJson,
+                isOcr: isOcr,
+                fileHash: fileHash,
+                indexVersion: indexVersion,
+                indexedAt: indexedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String bookId,
+                required int pageIndex,
+                required String plainText,
+                required String rawText,
+                required String geometryJson,
+                Value<bool> isOcr = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
+                Value<int> indexVersion = const Value.absent(),
+                required DateTime indexedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BookSearchPagesCompanion.insert(
+                id: id,
+                bookId: bookId,
+                pageIndex: pageIndex,
+                plainText: plainText,
+                rawText: rawText,
+                geometryJson: geometryJson,
+                isOcr: isOcr,
+                fileHash: fileHash,
+                indexVersion: indexVersion,
+                indexedAt: indexedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BookSearchPagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({bookId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (bookId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.bookId,
+                                referencedTable:
+                                    $$BookSearchPagesTableReferences
+                                        ._bookIdTable(db),
+                                referencedColumn:
+                                    $$BookSearchPagesTableReferences
+                                        ._bookIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BookSearchPagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BookSearchPagesTable,
+      BookSearchPage,
+      $$BookSearchPagesTableFilterComposer,
+      $$BookSearchPagesTableOrderingComposer,
+      $$BookSearchPagesTableAnnotationComposer,
+      $$BookSearchPagesTableCreateCompanionBuilder,
+      $$BookSearchPagesTableUpdateCompanionBuilder,
+      (BookSearchPage, $$BookSearchPagesTableReferences),
+      BookSearchPage,
+      PrefetchHooks Function({bool bookId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7955,4 +9103,6 @@ class $AppDatabaseManager {
       $$BookCollectionsTableTableManager(_db, _db.bookCollections);
   $$OcrPagesTableTableManager get ocrPages =>
       $$OcrPagesTableTableManager(_db, _db.ocrPages);
+  $$BookSearchPagesTableTableManager get bookSearchPages =>
+      $$BookSearchPagesTableTableManager(_db, _db.bookSearchPages);
 }

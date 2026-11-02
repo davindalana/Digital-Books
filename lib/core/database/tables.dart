@@ -124,3 +124,23 @@ class OcrPages extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Search index persistence per book page.
+/// Stores normalized searchable text, raw text, and geometry token mappings
+/// for both digital selectable text and OCR recognized text.
+class BookSearchPages extends Table {
+  TextColumn get id => text()(); // '${bookId}_p${pageIndex}'
+  TextColumn get bookId =>
+      text().references(Books, #id, onDelete: KeyAction.cascade)();
+  IntColumn get pageIndex => integer()();
+  TextColumn get plainText => text()();
+  TextColumn get rawText => text()();
+  TextColumn get geometryJson => text()(); // Serialized List<SearchTokenGeometry> JSON
+  BoolColumn get isOcr => boolean().withDefault(const Constant(false))();
+  TextColumn get fileHash => text().nullable()();
+  IntColumn get indexVersion => integer().withDefault(const Constant(1))();
+  DateTimeColumn get indexedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

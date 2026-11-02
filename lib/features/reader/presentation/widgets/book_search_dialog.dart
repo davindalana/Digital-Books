@@ -2,22 +2,32 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/database/database_service.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../domain/engines/in_book_search_engine.dart';
 import '../../domain/models/reader_content.dart';
+import '../../domain/services/book_search_indexer.dart';
 import '../../models/book_document.dart';
 
 class BookSearchDialog extends StatefulWidget {
+  final String? bookId;
+  final String? pdfPath;
+  final DatabaseService? dbService;
   final ReaderDocument? readerDocument;
   final BookDocument? document;
   final ReadingThemeType theme;
+  final bool isOcrRunning;
   final Function(InBookSearchResult result) onNavigateToResult;
 
   const BookSearchDialog({
     super.key,
+    this.bookId,
+    this.pdfPath,
+    this.dbService,
     this.readerDocument,
     this.document,
     required this.theme,
+    this.isOcrRunning = false,
     required this.onNavigateToResult,
   });
 
@@ -30,6 +40,8 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
   final FocusNode _focusNode = FocusNode();
   List<InBookSearchResult> _results = [];
   bool _isSearching = false;
+  bool _isIndexing = false;
+  String _indexingProgressText = '';
   int _searchToken = 0;
   Timer? _debounceTimer;
 
@@ -38,8 +50,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
   @override
   void initState() {
     super.initState();
-    _effectiveDoc =
-        widget.readerDocument ??
+    _effectiveDoc = widget.readerDocument ??
         (widget.document != null
             ? ReaderDocument.fromBookDocument(widget.document!)
             : null);
@@ -47,6 +58,54 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
+
+    _checkAndTriggerIndexing();
+  }
+
+  Future<void> _checkAndTriggerIndexing() async {
+    if (widget.bookId == null ||
+        widget.pdfPath == null ||
+        widget.dbService == null) {
+      return;
+    }
+
+    try {
+      final count =
+          await widget.dbService!.getIndexedSearchPageCount(widget.bookId!);
+      if (count == 0 && mounted) {
+        setState(() {
+          _isIndexing = true;
+          _indexingProgressText = 'Menyiapkan indeks...';
+        });
+
+        final indexer = BookSearchIndexer(dbService: widget.dbService!);
+        await indexer.indexBook(
+          bookId: widget.bookId!,
+          pdfPath: widget.pdfPath!,
+          onProgress: (current, total) {
+            if (mounted) {
+              setState(() {
+                _indexingProgressText = '$current / $total hal';
+              });
+            }
+          },
+        );
+
+        if (mounted) {
+          setState(() {
+            _isIndexing = false;
+          });
+          // Re-trigger search if query already typed
+          if (_searchController.text.trim().length >= 2) {
+            _executeSearch(_searchController.text.trim());
+          }
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isIndexing = false);
+      }
+    }
   }
 
   @override
@@ -77,18 +136,25 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
   }
 
   Future<void> _executeSearch(String query) async {
-    if (_effectiveDoc == null) {
-      setState(() => _isSearching = false);
-      return;
-    }
-
     final currentToken = ++_searchToken;
 
-    final found = await InBookSearchEngine.search(
-      document: _effectiveDoc!,
-      query: query,
-      isCancelled: () => currentToken != _searchToken,
-    );
+    List<InBookSearchResult> found = const [];
+
+    if (widget.bookId != null && widget.dbService != null) {
+      found = await InBookSearchEngine.searchIndexedBook(
+        bookId: widget.bookId!,
+        dbService: widget.dbService!,
+        query: query,
+        readerDocument: _effectiveDoc,
+        isCancelled: () => currentToken != _searchToken,
+      );
+    } else if (_effectiveDoc != null) {
+      found = await InBookSearchEngine.search(
+        document: _effectiveDoc!,
+        query: query,
+        isCancelled: () => currentToken != _searchToken,
+      );
+    }
 
     if (!mounted || currentToken != _searchToken) return;
 
@@ -118,14 +184,14 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              width: 600,
-              height: 650,
+              width: 580,
+              height: 620,
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF1E1E22).withAlpha(240)
-                    : const Color(0xFFF9F9FB).withAlpha(245),
+                    ? const Color(0xFF1E1E1E).withAlpha(235)
+                    : Colors.white.withAlpha(240),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isDark
@@ -134,71 +200,61 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 90 : 30),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
+                    color: Colors.black.withAlpha(isDark ? 100 : 40),
+                    blurRadius: 32,
+                    offset: const Offset(0, 16),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  // Top Search Input Bar
+                  // Search Input Header
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 16, 14, 12),
                     child: Row(
                       children: [
+                        Icon(
+                          Icons.search_rounded,
+                          color: const Color(0xFF007AFF),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
-                          child: Container(
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.white.withAlpha(20)
-                                  : Colors.black.withAlpha(12),
-                              borderRadius: BorderRadius.circular(12),
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _focusNode,
+                            onChanged: _onQueryChanged,
+                            style: TextStyle(
+                              color: widget.theme.textColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w400,
                             ),
-                            child: TextField(
-                              controller: _searchController,
-                              focusNode: _focusNode,
-                              onChanged: _onQueryChanged,
-                              style: TextStyle(
-                                color: widget.theme.textColor,
-                                fontSize: 14,
+                            decoration: InputDecoration(
+                              hintText: 'Cari kata atau frasa dalam buku...',
+                              hintStyle: TextStyle(
+                                color: widget.theme.secondaryTextColor
+                                    .withAlpha(140),
+                                fontSize: 16,
                               ),
-                              decoration: InputDecoration(
-                                hintText: 'Cari kata, karakter, atau frasa...',
-                                hintStyle: TextStyle(
-                                  color: widget.theme.secondaryTextColor
-                                      .withAlpha(160),
-                                  fontSize: 13,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  color: widget.theme.secondaryTextColor,
-                                  size: 20,
-                                ),
-                                suffixIcon: _searchController.text.isNotEmpty
-                                    ? IconButton(
-                                        icon: Icon(
-                                          Icons.clear,
-                                          color:
-                                              widget.theme.secondaryTextColor,
-                                          size: 18,
-                                        ),
-                                        onPressed: () {
-                                          _searchController.clear();
-                                          _onQueryChanged('');
-                                        },
-                                      )
-                                    : null,
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 11,
-                                ),
-                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        if (_searchController.text.isNotEmpty)
+                          IconButton(
+                            icon: Icon(
+                              Icons.clear_rounded,
+                              color: widget.theme.secondaryTextColor,
+                              size: 18,
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              _onQueryChanged('');
+                            },
+                          ),
+                        const SizedBox(width: 6),
                         IconButton(
                           icon: Icon(
                             Icons.close,
@@ -210,6 +266,42 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                       ],
                     ),
                   ),
+
+                  // OCR or Indexing status pill
+                  if (_isIndexing || widget.isOcrRunning)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 6,
+                      ),
+                      color: const Color(0xFF007AFF).withAlpha(isDark ? 30 : 20),
+                      child: Row(
+                        children: [
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.8,
+                              color: Color(0xFF007AFF),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _isIndexing
+                                  ? 'Menyiapkan indeks pencarian ($_indexingProgressText)...'
+                                  : 'OCR sedang berjalan di latar belakang. Hasil pencarian terus diperbarui.',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF007AFF),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // Divider with result count & loading spinner
                   Container(
@@ -227,8 +319,8 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                           _searchController.text.trim().length < 2
                               ? 'Ketik minimal 2 karakter untuk mencari'
                               : (_isSearching
-                                    ? 'Mencari...'
-                                    : '${_results.length} hasil ditemukan'),
+                                  ? 'Mencari...'
+                                  : '${_results.length} hasil ditemukan'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -269,7 +361,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Cari di seluruh bab dokumen',
+              'Cari di seluruh bab & halaman dokumen',
               style: TextStyle(
                 color: widget.theme.secondaryTextColor,
                 fontSize: 14,
@@ -304,7 +396,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
               'Periksa ejaan kata atau coba kata kunci lain',
               style: TextStyle(
                 color: widget.theme.secondaryTextColor,
-                fontSize: 12.5,
+                fontSize: 12,
               ),
             ),
           ],
@@ -315,14 +407,15 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: _results.length,
-      separatorBuilder: (context, index) => Divider(
+      separatorBuilder: (_, _) => Divider(
         height: 1,
         indent: 18,
         endIndent: 18,
-        color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(8),
+        color: isDark ? Colors.white.withAlpha(15) : Colors.black.withAlpha(12),
       ),
       itemBuilder: (context, index) {
         final res = _results[index];
+
         return InkWell(
           onTap: () {
             Navigator.of(context).pop();
@@ -333,7 +426,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Chapter & Page Badge
+                // Chapter & Page Badge Row
                 Row(
                   children: [
                     Container(
@@ -356,6 +449,52 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                         ),
                       ),
                     ),
+                    if (res.isOcr) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF34C759,
+                          ).withAlpha(isDark ? 45 : 30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'OCR',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF34C759),
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (res.isCrossPage) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFFF9500,
+                          ).withAlpha(isDark ? 45 : 30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Lanjut Halaman',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFFF9500),
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     Text(
                       'hal. ${res.sourcePdfPage}',
