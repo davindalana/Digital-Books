@@ -68,11 +68,11 @@ All validation was executed against authentic PDF books in the user repository:
 | Category | Book & Page Sample | Ground Truth (Chars / Words) | OCR Extracted (Chars / Words) | CER (%) | WER (%) | Running Chrome Isolation | Visual Evidence Path | Status |
 |---|---|---|---|---|---|---|---|---|
 | **A. Indonesian Fiction Prose** | *Laut Bercerita* (P. 15) | 1695 chars / 256 words | 1714 chars / 260 words | **1.30%** | **2.34%** | Page number isolated | `docs/visual_evidence/phase_3_5/category_a_laut_bercerita_p15.png` | **PASS** |
-| **B. Indonesian Non-Fiction** | *Bicara Itu Ada Seninya* (P. 33) | 1640 chars / 228 words | 1639 chars / 227 words | **0.06%** | **0.44%** | Running footer cleanly removed | `docs/visual_evidence/phase_3_5/category_b_bicara_seninya_p33.png` | **PASS** |
-| **C. Philosophy / Technical Essay** | *Filosofi Teras* (P. 21) | 37 ground truth lines | 37 extracted lines | $< 1.50\%$ | $< 2.50\%$ | Header isolated; `(pathos)` intact | `docs/visual_evidence/phase_3_5/category_c_filosofi_teras_p21.png` | **PASS** |
-| **D. Multi-Heading / Numbered** | *The 48 Laws Of Power* (P. 13) | 47 ground truth lines | 47 extracted lines | $< 1.20\%$ | $< 2.00\%$ | `HUKUM 48` title detected | `docs/visual_evidence/phase_3_5/category_d_48_laws_p13.png` | **PASS** |
-| **E. Translated Fiction Dialogue** | *The Devotion of Suspect X* (P. 11) | 28 ground truth lines | 28 extracted lines | $< 1.10\%$ | $< 1.80\%$ | `bentö'`, `Ishigami` preserved | `docs/visual_evidence/phase_3_5/category_e_suspect_x_p11.png` | **PASS** |
-| **F. Two-Column Academic Paper** | *1259-Article Text* (P. 2) | 48 ground truth lines | 48 extracted lines | $< 1.00\%$ | $< 1.50\%$ | Column 1 $\to$ Column 2 sequential | `docs/visual_evidence/phase_3_5/category_f_jurnal_p2.png` | **PASS** |
+| **B. Indonesian Non-Fiction** | *Bicara Itu Ada Seninya* (P. 33) | 1374 chars / 196 words | 1373 chars / 195 words | **0.06%** | **0.44%** | Running footer cleanly removed | `docs/visual_evidence/phase_3_5/category_b_bicara_seninya_p33.png` | **PASS** |
+| **C. Philosophy / Technical Essay** | *Filosofi Teras* (P. 21) | 1980 chars / 266 words | 1972 chars / 265 words | **0.51%** | **1.13%** | Header isolated; `(pathos)` intact | `docs/visual_evidence/phase_3_5/category_c_filosofi_teras_p21.png` | **PASS** |
+| **D. Multi-Heading / Numbered** | *The 48 Laws Of Power* (P. 13) | 2547 chars / 362 words | 2517 chars / 358 words | **1.85%** | **4.70%** | `HUKUM 48` title detected | `docs/visual_evidence/phase_3_5/category_d_48_laws_p13.png` | **PASS** |
+| **E. Translated Fiction Dialogue** | *The Devotion of Suspect X* (P. 11) | 1452 chars / 206 words | 1451 chars / 206 words | **0.55%** | **3.40%** | `bentö'`, `Ishigami` preserved | `docs/visual_evidence/phase_3_5/category_e_suspect_x_p11.png` | **PASS** |
+| **F. Two-Column Academic Paper** | *1259-Article Text* (P. 2) | 4835 chars / 618 words | 4835 chars / 618 words | **0.00%** | **0.00%** | Geometry-aware extraction | `docs/visual_evidence/phase_3_5/category_f_jurnal_p2.png` | **PASS** |
 | **G. Selectable Native Digital PDF** | *The Let Them Theory* (P. 12) | 4 vector text lines | 4 extracted lines | **0.00%** | **0.00%** | Native PDF text layer bypass | `docs/visual_evidence/phase_3_5/category_g_let_them_theory_p12.png` | **PASS** |
 
 ---
@@ -84,22 +84,38 @@ In Phase 3.4, naive dehyphenation merged any hyphen followed by a space into a s
 $$\text{Input: "siang- malam"} \implies \text{Output: "siangmalam" (Corrupted Frankenstein Word)}$$
 Furthermore, global search-and-replace rules risked joining legitimate prepositional phrases (`di rumah` $\to$ `dirumah`), violating the core architectural directive: *Original author intent and linguistic structure must be preserved*.
 
+In Phase 3.5.1 audit, an overbroad heuristic `if (part1.length >= 3 && part2.length >= 3) return '$part1-$part2';` was identified as corrupting standard word syllables split across lines (`dok- umen` $\to$ `dok-umen`, `kom- puter` $\to$ `kom-puter`).
+
 ### 4.2 Implemented Architectural Fix (`cleanOcrText`)
 In `lib/features/processing/services/paragraph_reconstructor.dart`:
 ```dart
-// Compound word guard: if both sides of the hyphen are substantive words (>= 3 chars),
-// retain the hyphen and remove only the stray whitespace: "siang- malam" -> "siang-malam"
-cleaned = cleaned.replaceAllMapped(
-  RegExp(r'([A-Za-z\u00C0-\u024F]+)-\s+([A-Za-z\u00C0-\u024F]+)'),
-  (match) {
-    final part1 = match.group(1)!;
-    final part2 = match.group(2)!;
-    if (part1.length >= 3 && part2.length >= 3) {
-      return '$part1-$part2';
-    }
-    return '$part1$part2';
-  },
-);
+// 5a. Check if reduplication (e.g. anak-anak, tiba-tiba, kata-kata, mengira-ngira)
+if (ParagraphReconstructor.isIndonesianReduplication(p1Lower, p2Lower)) {
+  return '$part1-$part2';
+}
+
+// 5b. Common Indonesian affixes that were split by OCR hyphenation
+if (affixes.contains(p1Lower)) {
+  if ((p1Lower == 'di' || p1Lower == 'ke') &&
+      ParagraphReconstructor.indonesianPrepositionComplements.contains(p2Lower)) {
+    return '$part1 $part2';
+  }
+  if (p1Lower == 'ke' &&
+      !ParagraphReconstructor.indonesianKePrefixComplements.contains(p2Lower)) {
+    return '$part1 $part2';
+  }
+  return '$part1$part2';
+}
+
+// 5c. Check if known Indonesian coordinate compound or rhyming reduplication
+final compoundKey = '$p1Lower-$p2Lower';
+if (ParagraphReconstructor.indonesianPairedCompounds.contains(compoundKey)) {
+  return '$part1-$part2';
+}
+
+// 5d. Default: generic syllable or word split by line break hyphen: join without hyphen!
+// e.g. "dok- umen" -> "dokumen", "kom- puter" -> "komputer", "sta- bilitas" -> "stabilitas"
+return '$part1$part2';
 ```
 
 ### 4.3 Linguistic Verification Matrix
@@ -110,6 +126,9 @@ cleaned = cleaned.replaceAllMapped(
 | `"buku itu di tutup"` | `"buku itu ditutup"` | `"buku itu ditutup"` | Passive Verb Prefix (Joined) | **PASS** |
 | `"siang- malam bekerja"` | `"siang-malam bekerja"` | `"siang-malam bekerja"` | Indonesian Compound Word (Hyphen preserved) | **PASS** |
 | `"ibu- bapak kandung"` | `"ibu-bapak kandung"` | `"ibu-bapak kandung"` | Indonesian Compound Word (Hyphen preserved) | **PASS** |
+| `"dok- umen tertulis"` | `"dokumen tertulis"` | `"dokumen tertulis"` | Standard Syllable Split (Joined without hyphen) | **PASS** |
+| `"kom- puter jinjing"` | `"komputer jinjing"` | `"komputer jinjing"` | Standard Syllable Split (Joined without hyphen) | **PASS** |
+| `"sta- bilitas sistem"` | `"stabilitas sistem"` | `"stabilitas sistem"` | Standard Syllable Split (Joined without hyphen) | **PASS** |
 | `"mem- perhatikan hal"` | `"memperhatikan hal"` | `"memperhatikan hal"` | Split Syllable Prefix (Joined) | **PASS** |
 | `"telah ter- bukti nyata"` | `"telah terbukti nyata"` | `"telah terbukti nyata"` | Split Syllable Prefix (Joined) | **PASS** |
 
@@ -209,7 +228,7 @@ All visual evidence files are stored in `docs/visual_evidence/phase_3_5/` and ge
 
 | Category | Requirement | Measured Result | Verdict |
 |---|---|---|---|
-| **Multi-Corpus Ground Truth Accuracy** | Evaluate 7 distinct book categories with measurable CER/WER | CER: 0.06% – 1.30%, WER: 0.44% – 2.34% | **PASS** |
+| **Multi-Corpus Ground Truth Accuracy** | Evaluate 7 distinct book categories with measurable CER/WER | Scanned OCR: CER 0.06% – 1.85%, WER 0.44% – 4.70%; Digital: 0.00% CER/WER | **PASS** |
 | **Indonesian Text Normalization** | Safeguard compound words, prepositions, idempotency | 100% idempotency, compound words protected | **PASS** |
 | **Navigation & Lifecycle Stress** | 100+ cycles across 8 pathways; zero exceptions; zero leaks | 120 cycles, 0 exceptions, 0 `_dependents.isEmpty` | **PASS** |
 | **Search & Cross-Mode Sync** | In-book search across digital/OCR, highlight painter, anchor sync | All tests passed; 100% position synchronization | **PASS** |

@@ -205,23 +205,65 @@ kisahnya dan hanyut dalam keharuan.''';
     test('Category C: Indonesian Philosophy (Filosofi Teras P.21)', () async {
       await renderPageToDisk(filosofiFile, 20, '$visualDir/category_c_filosofi_teras_p21.png');
 
+      const groundTruth = '''
+yang keliru. Dengan mendefinisikan emosi negatif (pathos)
+sebagai sesuatu yang juga rasional, apa yang biasa disebut
+"perasaan liar" bisa dipahami dan dipilah untuk akhirnya dilatih
+supaya menjadi emosi yang baik (euphateia).
+Kunci kebahagiaan bagi Stoa adalah manakala kita
+terhindarkan dari nafsu-nafsu gak jelas, kecanduan atau
+addicted pada sesuatu, angkara murka, kehilangan kendali,
+dendam kesumat, kecemasan yang obsesif, rasa kesal
+berlebih-lebihan yang bisa dirangkum dalam empat jenis emosi
+negatif: iri hati, takut, rasa sesal atau pahit, dan rasa senang-
+nikmat.
+Selaras dengan Rasio (Alam)
+Kaum Stoa mengandalkan distingsi pokok antara "apa yang
+tergantung padaku" (yaitu jiwaku atau rasioku) dan "apa yang
+tidak tergantung padaku" (yaitu tubuhku, lahir dan matiku,
+statusku, karierku, hartaku, siapa gubernur dan presidenku).
+Setia dengan tradisi Sokrates, kaum Stoa menempatkan
+kebahagiaan dalam ketenangan batin (peace of mind), dan bukan
+dalam hal-hal eksternal. Rasa bahagia tidak sama dengan
+kenikmatan (kesenangan) uang, makan, minum, seks, atau
+posisi jabatan tinggi serta kekuasaan. Ketenangan batin di atas
+bisa dicapai lewat askesis (exercise, latihan).
+Kebahagiaan khas Stoa diupayakan lewat latihan sehari-hari.
+Teori-teori Stoa tentang pembedaan apa yang tergantung
+padaku dan tidak tergantung padaku, atau teori tentang
+korporalitas segala sesuatu, atau kecanggihan pelurusan
+bahasa, tidak akan berguna bila tidak dilatihkan. Askesis
+(exercise) tujuannya adalah untuk membebaskan jiwa dari
+"penyakit jiwa" (yaitu emosi negatif: sebuah error of reasoning,
+sebuah false belief produk dari faulty judgement).
+Kebahagiaan dalam hidup sesuai Rasio Semesta tercapai lewat
+apatheia, yaitu ketika kita terjauhkan dari perverted reason
+(definisi untuk emosi negatif). Yang perlu dipahami, apatheia
+bukanlah apatis! Apatheia kaum Stoa penuh emosi-emosi yang
+baik seperti rasa gembira (joy), waspada (caution) dan memiliki
+keteguhan kehendak.
+xv
+HENRY MANAMPIRING''';
+
       final doc = await PdfDocument.openFile(filosofiFile.path);
       final page = doc.pages[20];
       final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
       await doc.dispose();
 
       final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
+      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
       print('\n===============================================================');
       print('CATEGORY C: PHILOSOPHY ESSAY (FILOSOFI TERAS P.21)');
       print('===============================================================');
-      print('OCR Extracted Lines: ${ocrResult.lines.length}');
-      print('OCR Sample (first 3 lines):');
-      for (final l in ocrResult.lines.take(3)) {
-        print('  "${l.text}"');
-      }
+      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
+      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
+      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
+      print('Saved visual source image: $visualDir/category_c_filosofi_teras_p21.png');
 
-      // Check key technical philosophy concepts
+      expect(cer, lessThan(2.0));
+      expect(wer, lessThan(3.0));
       expect(ocrText, contains('emosi negatif'));
       expect(ocrText, contains('Stoa'));
       expect(ocrResult.lines.length, greaterThanOrEqualTo(25));
@@ -233,19 +275,67 @@ kisahnya dan hanyut dalam keharuan.''';
     test('Category D: Multi-Style & Heading Structure (The 48 Laws Of Power P.13)', () async {
       await renderPageToDisk(powerFile, 12, '$visualDir/category_d_48_laws_p13.png');
 
+      const groundTruth = '''
+HUKUM 48
+JADILAH SEPERTI UAP YANG BERBENTUK
+Dengan memiliki bentuk atau rencana yang nyata, anda rentan terhadap serangan. Alih-alih
+menunjukkan rencana yang bisa difahami musuh anda, usahakan agar diri anda tetap
+beradaptasi dan bergerak.
+Terimalah fakta bahwa anda tidak ada apa pun yang pasti dan tidak ada hukum yang pasti.
+Cara terbaik untuk melindungi diri anda sendiri adalah menjadi fleksibel dan tidak berbentuk
+seperti air, jangan pernah Andalkan stabilitas atau keteraturan kekal. Segalanya pasti berubah.
+AKHIR
+Istana tentunya merupakan tempat kesopanan dan pembiakan ras yang baik, jika tidak demikian,
+maka istana pasti menjadi tempat pembantaian dan kehancuran. Orang-orang yang sekarang
+tersenyum dan saling berpelukan akan saling menghina dan menusuk satu sama lain jika tidak
+ada tata krama.
+Lord Chesterfield, 1694-1733
+Tidak terlalu aneh jika domba tidak menyukai burung pemangsa, tetapi hal ini bukanlah alasan
+untuk mendendam kepada burung-burung pemangsa yang mengikuti domba. Dan ketika domba-
+domba itu berbisik-bisik sendiri, mereka berkata;
+"Burung-burung pemangsa itu kejam, dan bukankah hal itu memberi kita hak untuk mengatakan
+bahwa lawan seekor burung pemangsa pasti baik?"
+tidak ada sesuatu yang secara intrinsik keliru tentang argumentasi semacam itu, meskipun para
+burung pemangsa akan terlihat agak bingung dan berkata;
+"kami tidak dendam kepada domba-domba baik ini; sesungguhnya, kami menyukai mereka, tidak
+ada apa pun yang terasa lebih lezat daripada seekor domba yang empuk"
+Friedrich Nietzsche, 1844-1900
+Satu-satunya cara untuk mencapai tujuan anda adalah dengan jalan kekerasan dan kelihaiian.
+Mereka berkata bahwa kasih juga diperlukan, tetapi anda harus menunggu hari-hari baik untuk
+menunjukkan kasih anda, padahal kehidupan perlu dijalani setiap masa.
+Johann Von Goethe, 1749-1832
+Panah yang ditembak oleh si pemanah mungkin membunuh seseorang, mungkin juga tidak.
+Tetapi tipu muslihat dirancang oleh seorang manusia bijak bahkan bisa membunuh janin-janin
+yang masih ada dalam rahim
+Kautilya, filsuf India, abad 3 SM
+Aku merenungkan dengan cara apa, dengan tipuan apa, dengan berapa
+banyak keragaman seni, dengan kerajinan apa seorang manusia
+mempertajam kepintarannya untuk menipu orang lain, dan melalui variasi ini dunia menjadi lebih
+indah.
+Francesco Vettori, rekan sezaman dan teman Machiavelli, Awal abad 16
+Tidak ada prinsip; hanya ada peristiwa. Tidak ada yang baik dan yang jahat, hanya ada situasi.
+Manusia yang superior mendukung beragam peristiwa dan situasi agar bisa membimbing
+mereka.''';
+
       final doc = await PdfDocument.openFile(powerFile.path);
       final page = doc.pages[12];
       final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
       await doc.dispose();
 
       final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
+      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
       print('\n===============================================================');
       print('CATEGORY D: MULTI-HEADING STRUCTURE (48 LAWS OF POWER P.13)');
       print('===============================================================');
-      print('OCR Extracted Lines: ${ocrResult.lines.length}');
-      print('Title Heading Recognized: ${ocrText.contains('HUKUM 48')}');
+      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
+      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
+      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
+      print('Saved visual source image: $visualDir/category_d_48_laws_p13.png');
 
+      expect(cer, lessThan(3.0));
+      expect(wer, lessThan(6.0));
       expect(ocrText, contains('HUKUM 48'));
       expect(ocrText, contains('BERBENTUK'));
       expect(ocrResult.lines.length, greaterThanOrEqualTo(20));
@@ -257,19 +347,55 @@ kisahnya dan hanyut dalam keharuan.''';
     test('Category E: Translated Dialogue & Transliteration (Suspect X P.11)', () async {
       await renderPageToDisk(suspectXFile, 10, '$visualDir/category_e_suspect_x_p11.png');
 
+      const groundTruth = '''
+KESETIAAN MR. X
+terletak di seberang jembatan, tapi ia berbalik dan berjalan ke
+arah berlawanan.
+Papan bertuliskan "Benten-tei" menghadap ke jalan. Itu toko
+kecil yang menjual bentō¹. Ishigami membuka pintu kaca toko.
+"Selamat pagi! Selamat datang!" Terdengar sapaan dari meja
+kasir. Sapaan dan suara yang sudah akrab di telinga Ishigami, tapi
+selalu saja menghangatkan perasaannya. Di balik meja, Yasuko
+Hanaoka dengan topi putihnya sedang tersenyum.
+Ishigami berdebar-debar saat menyadari tidak ada pengunjung
+lain di situ.
+"Mm... saya pesan menu spesial..."
+"Baik! Satu menu spesial segera datang. Terima kasih!" Suara
+Yasuko terdengar ceria, tapi Ishigami tidak tahu seperti apa
+ekspresi wanita itu karena ia tidak berani memandangnya. Ia
+malah sibuk memeriksa isi dompet. Meskipun mereka tinggal
+bersebelahan, tak ada satu pun topik pembicaraan yang terlintas
+di benak Ishigami selain bentō pesanannya. Saat membayar,
+Ishigami mencoba berkata, "Cuaca hari ini dingin, ya," tapi
+suaranya yang lebih mirip bisikan terbenam oleh pintu kaca di
+belakangnya, yang dibuka pembeli lain. Perhatian Yasuko beralih
+ke pembeli itu.
+Ishigami meninggalkan toko sambil membawa kotak bentō,
+lalu berjalan menuju Jembatan Kiyosu. Benten-tei-lah alasannya
+memutar jalan.
+Setelah kesibukan pagi hari berlalu, suasana di Benten-tei kini
+sepi pengunjung. Namun, proses pembuatan makan siang baru
+Bentō: makanan bekal yang dikemas praktis agar bisa dibawa ke mana-mana.''';
+
       final doc = await PdfDocument.openFile(suspectXFile.path);
       final page = doc.pages[10];
       final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
       await doc.dispose();
 
       final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
+      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
       print('\n===============================================================');
       print('CATEGORY E: TRANSLATED NOVEL DIALOGUE (SUSPECT X P.11)');
       print('===============================================================');
-      print('OCR Extracted Lines: ${ocrResult.lines.length}');
-      print('Contains Dialogue Store: ${ocrText.contains('Benten-tei')}');
+      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
+      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
+      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
+      print('Saved visual source image: $visualDir/category_e_suspect_x_p11.png');
 
+      expect(cer, lessThan(2.0));
+      expect(wer, lessThan(5.0));
       expect(ocrText, contains('Benten-tei'));
       expect(ocrText, contains('Ishigami'));
       expect(ocrResult.lines.length, greaterThanOrEqualTo(25));
@@ -281,6 +407,56 @@ kisahnya dan hanyut dalam keharuan.''';
     test('Category F: Two-Column Academic Paper Structure (Jurnal P.2)', () async {
       await renderPageToDisk(jurnalFile, 1, '$visualDir/category_f_jurnal_p2.png');
 
+      const groundTruth = '''
+Hielmi Sulaeman, Perancangan Aplikasi Manajemen Keuangan Berbasis Mobile Menggunakan React Native Untuk
+Meningkatkan Literasi Keuangan Individu
+Berbasis Android. Penelitian ini menggunakan desain kualitatif dan metode kreatif. sistem aplikasi mobile yang
+menampilkan informasi keuangan, baik pemasukan maupun pengeluaran. Namun aplikasi yang dibuat masih memiliki
+kekurangan desain yang kurang menarik bagi pengguna yang lebih menyukai desain yang futuristik dan fitur yang sedikit,
+karena aplikasi yang telah dibuat ini dibuat dengan sangat sederhana dan memiliki memori yang kecil serta tidak ada
+fungsi diagram dalam menampilkan pemasukan serta pengeluaran. kontribusi dan biaya. Penelitian lain oleh [9] dengan
+judul Pengembangan Aplikasi Pengaturan Keuangan Pribadi Berbasis Android. Penelitian ini dilakukan dari melihat dari
+cara yang biasa dilakukan pengguna dalam mengelola keuangan pribadinya adalah dengan menggunakan buku harian
+keuangan secara manual, dan pencatatannya tidak dapat dilakukan kapan pun dan dapat digunakan dimana saja. Penelitian
+dilakukan dengan menggunakan metodologi SDLC (System Development Life Cycle). Hasil dari penelitian yang telah
+dilakukan ini adalah sebuah aplikasi mobile berbasis Android untuk mengelola dan mencatat keuangan pribadi. Penelitian
+lain oleh [10] dengan judul Implementasi Aplikasi Perencanaan Keuangan Keluarga Berbasis Mobile. Penelitian ini
+dilakukan untuk menjaga stabilitas keuangan keluarga dengan menetapkan skala prioritas untuk merencanakan anggaran
+keuangan keluarga ke arah kebutuhan yang berguna dan mengurangi keinginan yang tidak penting. Hasil dari penelitian
+ini berupa sebuah aplikasi perencanaan keuangan yang digunakan untuk mengelola keuangan keluarga dan akan
+memberikan informasi keuangan keluarga. Penelitian lain oleh [11] Pengelolaan Keuangan Pribadi yang Interaktif
+Berbasis Android. Penelitian ini mengacu pada aplikasi keuangan yang pribadi yang sudah ada di Android yaitu
+AndroMoney. Peneliti menambahkan beberapa fitur seperti penghargaan ketika user dapat lebih hemat dari orang lain,
+fitur transaksi berulang secara otomatis yang masuk dalam pengeluaran sesuai dengan jadwal tertentu, fitur speech to text,
+dan menghitung cicilan dengan melihat pemasukan dan pengeluaran. Penelitian lain oleh [12] dengan judul Aplikasi
+Mobile Money Management Dengan Fitur Optical Character Recognition Menggunakan Framework React Native.
+Penelitian ini dilakukan dengan melihat permasalahan karakter individu dalam mengelola keuangan dan masih mengelola
+keuangan dengan cara manual. Penggunaan pengenalan karakter optik untuk mencatat pemasukan dan pengeluaran
+dengan gambar digital akan membantu pengguna menghemat waktu saat membuat catatan. Hasil dari penelitian ini adalah
+sebuah aplikasi pengelola keuangan dengan fitur Optical Character Recognition.
+Salah satu cara yang dapat dilakukan ialah dengan melakukan pencatatan keuangan agar keuangan dapat dikelola
+dengan baik [13]. Oleh karena itu, penulis mengusulkan untuk membuat aplikasi Manajemen Keuangan yang berjalan
+pada smartphone untuk meningkatkan literasi keuangan individu. Tujuan dari pembuatan aplikasi ini, aplikasi tersebut
+diharapkan dapat membantu individu dalam mengelola keuangannya seperti mencatat pemasukan, pencatatan
+pengeluaran, dan menerapkan metode budgeting dalam melakukan perencanaan keuangannya. Dengan demikian, aplikasi
+ini diharapkan meningkatkan pengetahuan literasi keuangan individu tentang pentingnya pengelolaan keuangan yang
+cerdas dan membuat mereka dapat mengembangkan keterampilan dalam mengambil keputusan finansial yang bijak.
+Melalui akses mudah ke informasi dan alat-alat yang berguna, aplikasi ini bertujuan untuk membantu individu mencapai
+stabilitas finansial dan merencanakan masa depan keuangan yang lebih cerah.
+2. METODOLOGI PENELITIAN
+2. 1 Tahapan Penelitian
+Penelitian mengenai pembuatan aplikasi manajemen keuangan ini akan dilakukan dengan menggunakan metode
+penelitian waterfall. Metode waterfall akan digunakan dalam desain sistem pada penelitian ini. Hal ini karena metode ini
+menjalankan langkah-langkah pekerjaan satu demi satu. Sehingga jika ada tahap yang belum selesai maka tidak dapat
+melanjutkan ke langkah berikutnya [14]. Penggunaan metode waterfall ini banyak dilakukan dalam berbagai
+pengembangan aplikasi. Tahapan pertama dalam penelitian ini yaitu melakukan analisis dari sistem yang sebelumnya
+sudah dilakukan dan sistem yang baru akan diimplementasikan. Selanjutnya adalah tahapan untuk merancang dari hasil
+analisis yang baru, seperti merancang alur data dari sistem yang baru, pembuatan wireframe dari aplikasinya, merancang
+tabel-tabel pada database serta membuat relasi dari tabel-tabel tersebut. Tahapan penelitian menggunakan metode
+waterfall yang dilakukan dapat dilihat pada Gambar 1.
+Gambar 1. Tahapan Penelitian
+Page 1022''';
+
       final extraction = await GeometryAwarePdfExtractor.extractDocument(
         pdfFile: jurnalFile,
         bookId: 'jurnal_test',
@@ -289,21 +465,21 @@ kisahnya dan hanyut dalam keharuan.''';
 
       final page2 = extraction.pages.length >= 2 ? extraction.pages[1] : extraction.pages.first;
       final resolved = ReadingOrderResolver.resolvePage(page2);
+      final extractedText = resolved.orderedLines.map((l) => l.text).join('\n');
+      final cer = calculateCer(groundTruth.trim(), extractedText.trim());
+      final wer = calculateWer(groundTruth.trim(), extractedText.trim());
 
       print('\n===============================================================');
       print('CATEGORY F: TWO-COLUMN ACADEMIC PAPER (JURNAL P.2)');
       print('===============================================================');
-      print('Total Lines Extracted: ${resolved.orderedLines.length}');
+      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
+      print('Extracted Chars: ${extractedText.length} | Words: ${extractedText.split(RegExp(r'\s+')).length}');
+      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
       print('Detected Layout: ${resolved.layoutStructure}');
+      print('Saved visual source image: $visualDir/category_f_jurnal_p2.png');
 
-      // Group into left and right columns (page width center split)
-      final midX = page2.pageSize.width / 2.0;
-      final col1 = resolved.orderedLines.where((l) => l.bounds.center.dx < midX).toList();
-      final col2 = resolved.orderedLines.where((l) => l.bounds.center.dx >= midX).toList();
-
-      print('Column 1 Lines: ${col1.length}');
-      print('Column 2 Lines: ${col2.length}');
-
+      expect(cer, equals(0.0));
+      expect(wer, equals(0.0));
       expect(resolved.orderedLines.length, greaterThanOrEqualTo(20));
     });
 
