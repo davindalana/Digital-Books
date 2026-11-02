@@ -207,26 +207,60 @@ class PaginationEngine {
       final text = node.text.trim();
       if (text.isEmpty) continue;
 
-      final textStyle = node.type == ContentNodeType.heading
-          ? typography.headingStyle(level: node.level)
-          : (node.type == ContentNodeType.quote
-                ? typography.quoteStyle()
-                : (node.type == ContentNodeType.footnote
-                    ? typography.bodyStyle().copyWith(
-                        fontSize: typography.fontSize * 0.85,
-                        fontStyle: FontStyle.italic,
-                      )
-                    : typography.bodyStyle()));
+      final TextStyle textStyle;
+      switch (node.type) {
+        case ContentNodeType.documentTitle:
+          textStyle = typography.headingStyle(level: 1).copyWith(
+                fontSize: typography.fontSize * 1.5,
+                fontWeight: FontWeight.bold,
+              );
+          break;
+        case ContentNodeType.heading:
+          textStyle = typography.headingStyle(level: node.level);
+          break;
+        case ContentNodeType.sectionHeading:
+          textStyle = typography.headingStyle(level: 2).copyWith(
+                fontSize: typography.fontSize * 1.15,
+                fontWeight: FontWeight.bold,
+              );
+          break;
+        case ContentNodeType.quote:
+          textStyle = typography.quoteStyle();
+          break;
+        case ContentNodeType.footnote:
+          textStyle = typography.bodyStyle().copyWith(
+                fontSize: typography.fontSize * 0.85,
+                fontStyle: FontStyle.italic,
+              );
+          break;
+        case ContentNodeType.caption:
+          textStyle = typography.bodyStyle().copyWith(
+                fontSize: typography.fontSize * 0.85,
+                fontStyle: FontStyle.italic,
+              );
+          break;
+        case ContentNodeType.copyrightBlock:
+        case ContentNodeType.metadataBlock:
+          textStyle = typography.bodyStyle();
+          break;
+        default:
+          textStyle = typography.bodyStyle();
+          break;
+      }
 
       // Orphan heading prevention:
-      // If block is a heading, verify that the heading AND at least 2 lines of following text fit.
+      // If block is a heading, verify that the heading AND at least 3 lines of following text fit.
       // If not, break to the next page immediately so heading does not sit alone at the bottom.
-      if (node.type == ContentNodeType.heading) {
+      final isHeadingNode = node.type == ContentNodeType.heading ||
+          node.type == ContentNodeType.sectionHeading ||
+          node.type == ContentNodeType.documentTitle;
+
+      if (isHeadingNode) {
         final headingHeight = _measureTextHeight(text, textStyle, contentWidth);
         final minHeadingBudget =
             headingHeight +
-            (typography.fontSize * typography.lineSpacing * 2) +
-            typography.paragraphSpacing;
+            (typography.fontSize * typography.lineSpacing * 3.0) +
+            (typography.paragraphSpacing * 2.0);
 
         if (currentUsedHeight + minHeadingBudget > availableHeight &&
             currentPageSlices.isNotEmpty) {
@@ -269,11 +303,28 @@ class PaginationEngine {
           contentWidth,
         );
 
-        final nodePadding = node.type == ContentNodeType.footnote
-            ? (4.0 + (typography.paragraphSpacing * 0.6))
-            : (node.type == ContentNodeType.quote
-                ? (8.0 + typography.paragraphSpacing)
-                : typography.paragraphSpacing);
+        final double nodePadding;
+        switch (node.type) {
+          case ContentNodeType.footnote:
+          case ContentNodeType.caption:
+            nodePadding = 4.0 + (typography.paragraphSpacing * 0.5);
+            break;
+          case ContentNodeType.orderedList:
+          case ContentNodeType.unorderedList:
+          case ContentNodeType.listItem:
+            nodePadding = typography.paragraphSpacing * 0.6;
+            break;
+          case ContentNodeType.quote:
+            nodePadding = 8.0 + typography.paragraphSpacing;
+            break;
+          case ContentNodeType.copyrightBlock:
+          case ContentNodeType.metadataBlock:
+            nodePadding = 6.0 + (typography.paragraphSpacing * 0.8);
+            break;
+          default:
+            nodePadding = typography.paragraphSpacing;
+            break;
+        }
 
         final requiredBudget = fullHeight + nodePadding;
         if (requiredBudget <= remainingHeightBudget ||

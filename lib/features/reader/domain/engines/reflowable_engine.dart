@@ -36,11 +36,41 @@ class ReflowableEngine {
 
         ContentNodeType nodeType;
         switch (b.type) {
+          case BlockType.documentTitle:
+            nodeType = ContentNodeType.documentTitle;
+            break;
           case BlockType.heading:
             nodeType = ContentNodeType.heading;
             break;
+          case BlockType.sectionHeading:
+            nodeType = ContentNodeType.sectionHeading;
+            break;
           case BlockType.quote:
             nodeType = ContentNodeType.quote;
+            break;
+          case BlockType.orderedList:
+            nodeType = ContentNodeType.orderedList;
+            break;
+          case BlockType.unorderedList:
+            nodeType = ContentNodeType.unorderedList;
+            break;
+          case BlockType.listItem:
+            nodeType = ContentNodeType.listItem;
+            break;
+          case BlockType.footnote:
+            nodeType = ContentNodeType.footnote;
+            break;
+          case BlockType.caption:
+            nodeType = ContentNodeType.caption;
+            break;
+          case BlockType.copyrightBlock:
+            nodeType = ContentNodeType.copyrightBlock;
+            break;
+          case BlockType.metadataBlock:
+            nodeType = ContentNodeType.metadataBlock;
+            break;
+          case BlockType.table:
+            nodeType = ContentNodeType.table;
             break;
           case BlockType.image:
             nodeType = ContentNodeType.image;
@@ -48,10 +78,7 @@ class ReflowableEngine {
           case BlockType.pageBreak:
             nodeType = ContentNodeType.pageBreak;
             break;
-          case BlockType.footnote:
-            nodeType = ContentNodeType.footnote;
-            break;
-          default:
+          case BlockType.paragraph:
             nodeType = ContentNodeType.paragraph;
             break;
         }

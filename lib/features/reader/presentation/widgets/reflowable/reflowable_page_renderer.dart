@@ -151,6 +151,286 @@ class ReflowablePageRenderer extends StatelessWidget {
         .where((sm) => sm.nodeId == node.id)
         .toList();
 
+    // Document Title Node
+    if (node.type == ContentNodeType.documentTitle) {
+      final style = typography.headingStyle(
+        level: 1,
+        color: theme.textColor,
+      ).copyWith(
+        fontSize: typography.fontSize * 1.45,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Column(
+          children: [
+            SelectableText.rich(
+              richSpan,
+              textAlign: TextAlign.center,
+              contextMenuBuilder: (ctx, editableTextState) =>
+                  _buildContextMenu(ctx, editableTextState, slice),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              width: 50,
+              height: 2,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Section Heading Node (H2 / Subheadings)
+    if (node.type == ContentNodeType.sectionHeading) {
+      final style = typography.headingStyle(
+        level: 2,
+        color: theme.textColor,
+      ).copyWith(
+        fontSize: typography.fontSize * 1.15,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.3,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 14.0, bottom: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 3.5,
+              height: typography.fontSize * 1.15,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: SelectableText.rich(
+                richSpan,
+                textAlign: typography.textAlign,
+                contextMenuBuilder: (ctx, editableTextState) =>
+                    _buildContextMenu(ctx, editableTextState, slice),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Ordered List Item Node
+    if (node.type == ContentNodeType.orderedList || node.type == ContentNodeType.listItem) {
+      final itemText = slice.textSlice.trim();
+      final match = RegExp(
+        r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s*(.*)$',
+        dotAll: true,
+      ).firstMatch(itemText);
+      final marker = match?.group(1) ?? '•';
+      final content = match?.group(2) ?? itemText;
+
+      final style = typography.bodyStyle(color: theme.textColor);
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: content,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 12.0,
+          right: 4.0,
+          bottom: typography.paragraphSpacing * 0.5,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              constraints: const BoxConstraints(minWidth: 26),
+              margin: const EdgeInsets.only(right: 8, top: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withAlpha(theme.isDark ? 30 : 20),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFFD4AF37).withAlpha(theme.isDark ? 80 : 60),
+                  width: 0.8,
+                ),
+              ),
+              child: Text(
+                marker,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: typography.fontSize * 0.75,
+                  fontWeight: FontWeight.bold,
+                  color: theme.isDark ? const Color(0xFFE5C058) : const Color(0xFF996515),
+                ),
+              ),
+            ),
+            Expanded(
+              child: SelectableText.rich(
+                richSpan,
+                textAlign: typography.textAlign,
+                contextMenuBuilder: (ctx, editableTextState) =>
+                    _buildContextMenu(ctx, editableTextState, slice),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Unordered List Item Node
+    if (node.type == ContentNodeType.unorderedList) {
+      final style = typography.bodyStyle(color: theme.textColor);
+      final rawText = slice.textSlice.trim();
+      final bulletMatch = RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s*(.*)$', dotAll: true).firstMatch(rawText);
+      final content = bulletMatch?.group(2) ?? rawText;
+
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: content,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 12.0,
+          right: 4.0,
+          bottom: typography.paragraphSpacing * 0.5,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(left: 6, right: 12, top: 7),
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFFD4AF37),
+                shape: BoxShape.circle,
+              ),
+            ),
+            Expanded(
+              child: SelectableText.rich(
+                richSpan,
+                textAlign: typography.textAlign,
+                contextMenuBuilder: (ctx, editableTextState) =>
+                    _buildContextMenu(ctx, editableTextState, slice),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Caption Node
+    if (node.type == ContentNodeType.caption) {
+      final style = typography.bodyStyle(
+        color: theme.secondaryTextColor,
+      ).copyWith(
+        fontSize: typography.fontSize * 0.85,
+        fontStyle: FontStyle.italic,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: Center(
+          child: SelectableText.rich(
+            richSpan,
+            textAlign: TextAlign.center,
+            contextMenuBuilder: (ctx, editableTextState) =>
+                _buildContextMenu(ctx, editableTextState, slice),
+          ),
+        ),
+      );
+    }
+
+    // Copyright / Metadata Block Node
+    if (node.type == ContentNodeType.copyrightBlock || node.type == ContentNodeType.metadataBlock) {
+      final style = typography.bodyStyle(
+        color: theme.secondaryTextColor,
+      ).copyWith(
+        fontSize: typography.fontSize * 0.82,
+        letterSpacing: 0.2,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: theme.isDark ? Colors.white.withAlpha(20) : Colors.black.withAlpha(15),
+            ),
+          ),
+          child: SelectableText.rich(
+            richSpan,
+            textAlign: TextAlign.left,
+            contextMenuBuilder: (ctx, editableTextState) =>
+                _buildContextMenu(ctx, editableTextState, slice),
+          ),
+        ),
+      );
+    }
+
     // Heading Node
     if (node.type == ContentNodeType.heading) {
       final style = typography.headingStyle(

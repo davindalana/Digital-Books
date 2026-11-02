@@ -92,6 +92,20 @@ class ReflowableReaderContainerState
     }
   }
 
+  @override
+  void didUpdateWidget(covariant ReflowableReaderContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialAnchorNodeId != null &&
+        widget.initialAnchorNodeId != oldWidget.initialAnchorNodeId) {
+      _activeAnchorNodeId = widget.initialAnchorNodeId;
+      _activeCharOffset = widget.initialCharOffset;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        jumpToAnchor(widget.initialAnchorNodeId!, widget.initialCharOffset);
+      });
+    }
+  }
+
   void nextPage() {
     final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
     if (mode == ReflowableLayoutMode.paginated) {
