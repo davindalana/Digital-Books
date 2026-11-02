@@ -178,8 +178,8 @@ for (path, page) in testDocs {
 let encoder = JSONEncoder()
 encoder.outputFormatting = .prettyPrinted
 if let data = try? encoder.encode(reports), let jsonStr = String(data: data, encoding: .utf8) {
-    let outUrl = URL(fileURLWithPath: "tool/scanned_pdf_spike/benchmark_enhancement_results.json")
+    let outUrl = URL(fileURLWithPath: "archive/research/scanned_pdf_spike/benchmark_enhancement_results.json")
     try? jsonStr.write(to: outUrl, atomically: true, encoding: .utf8)
-    print("\nEnhancement benchmark saved to: tool/scanned_pdf_spike/benchmark_enhancement_results.json")
+    print("\nEnhancement benchmark saved to: archive/research/scanned_pdf_spike/benchmark_enhancement_results.json")
 }
 
