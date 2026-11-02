@@ -80,6 +80,31 @@ class ParagraphReconstructor {
     caseSensitive: false,
   );
 
+  /// Location, direction, spatial, and temporal nouns that follow preposition "di" or "ke"
+  /// and MUST ALWAYS remain separate words (never joined into a single word).
+  static const Set<String> indonesianPrepositionComplements = {
+    // Spatial & location nouns
+    'rumah', 'kantor', 'sekolah', 'pasar', 'kampus', 'toko', 'gedung', 'kamar', 'ruang',
+    'jalan', 'gang', 'lorong', 'kota', 'desa', 'dusun', 'kampung', 'negeri', 'negara',
+    'darat', 'laut', 'pantai', 'gunung', 'sungai', 'danau', 'pulau', 'bumi', 'dunia',
+    'meja', 'kursi', 'lemari', 'pintu', 'jendela', 'sudut', 'tepi', 'ujung', 'pangkal',
+    'tempat', 'lokasi', 'posisi', 'daerah', 'wilayah', 'kawasan', 'lingkungan',
+    'seberang', 'sekeliling', 'sekitar', 'sebelah', 'antara', 'tengah', 'samping',
+    'depan', 'belakang', 'atas', 'bawah', 'dalam', 'luar', 'balik', 'muka', 'hadapan',
+    // Pointers & pronouns
+    'sini', 'situ', 'sana', 'mana', 'mana-mana',
+    // Temporal nouns
+    'hari', 'pagi', 'siang', 'sore', 'malam', 'senja', 'subuh', 'fajar',
+    'saat', 'waktu', 'masa', 'kala', 'ketika', 'zaman', 'musim',
+    'minggu', 'pekan', 'bulan', 'tahun', 'abad',
+  };
+
+  /// Common Indonesian ordinal numbers and nouns taking the 'ke-' prefix.
+  static const Set<String> indonesianKePrefixComplements = {
+    'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh',
+    'sebelas', 'seratus', 'seribu', 'tua', 'kasih', 'hendak',
+  };
+
   /// Reconstructs paragraphs across all pages of a document.
   static List<ReconstructedParagraph> reconstructDocument(
     List<PageReadingOrderResult> pageResults,
@@ -413,6 +438,15 @@ class ReconstructedParagraphBuilder {
           'peng', 'meng', 'meny', 'pen', 'pem'
         };
         if (affixes.contains(p1Lower)) {
+          // Strictly protect Indonesian prepositional phrases: "di rumah", "ke rumah", "di mana", "di sini"
+          if ((p1Lower == 'di' || p1Lower == 'ke') &&
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(p2Lower)) {
+            return '$part1 $part2';
+          }
+          if (p1Lower == 'ke' &&
+              !ParagraphReconstructor.indonesianKePrefixComplements.contains(p2Lower)) {
+            return '$part1 $part2';
+          }
           return '$part1$part2';
         }
 
@@ -421,14 +455,22 @@ class ReconstructedParagraphBuilder {
       },
     );
 
-    // 6. Fix Indonesian passive prefixes split with space:
+    // 6. Fix Indonesian passive prefix 'di-' split with space before transitive verbs:
     // e.g. "di tutup" -> "ditutup", "di tendang" -> "ditendang", "di dorong" -> "didorong"
+    // CRITICAL: Explicitly verbs only. NEVER matches prepositional complements (di rumah, di mana, di sini).
     s = s.replaceAllMapped(
       RegExp(
-        r'\b(di|ke)\s+(tutup|tendang|dorong|buka|baca|tulis|temukan|lakukan|buat|ambil|dengar|paksa|belah|tarik|giring|sebut|terima|kirim|lihat|rasakan|hadapi|tunjuk|mulai|tambah|kurang|nyatakan|pastikan)\b',
+        r'\bdi\s+('
+        r'tutup|tendang|dorong|buka|baca|tulis|temukan|lakukan|buat|ambil|dengar|'
+        r'paksa|belah|tarik|giring|sebut|terima|kirim|lihat|rasakan|hadapi|tunjuk|'
+        r'mulai|tambah|kurang|nyatakan|pastikan|kenal|pahami|ketahui|sadari|alami|'
+        r'kira|sangka|anggap|duga|ingat|lupa|harapkan|butuhkan|perlukan|'
+        r'bentuk|susun|bangun|ubah|ganti|pasang|atur|kelola|rawat|jaga|'
+        r'tahan|lepas|tinggal|buang|simpan|taruh|letakkan|jadikan'
+        r')\b',
         caseSensitive: false,
       ),
-      (m) => '${m.group(1)}${m.group(2)}',
+      (m) => 'di${m.group(1)}',
     );
 
     // 7. Multiple spaces collapsing
@@ -470,6 +512,10 @@ class ReconstructedParagraphBuilder {
               (p1Lower.startsWith('meng') && p1Lower.substring(4) == p2Lower) ||
               (p1Lower.startsWith('ber') && p1Lower.substring(3) == p2Lower);
 
+          // Is it an Indonesian preposition complement across lines? (e.g. di- \n rumah)
+          final isPrepositionSplit = (p1Lower == 'di' || p1Lower == 'ke') &&
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(p2Lower);
+
           final currentBufferStr = buffer.toString();
           final lastHyphenIdx = currentBufferStr.lastIndexOf(
             RegExp(r'[-\u2010\u2013\u2014]'),
@@ -479,6 +525,8 @@ class ReconstructedParagraphBuilder {
             buffer.write(currentBufferStr.substring(0, lastHyphenIdx));
             if (isRedup) {
               buffer.write('-$text');
+            } else if (isPrepositionSplit) {
+              buffer.write(' $text');
             } else {
               buffer.write(text);
             }

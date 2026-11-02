@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import '../../processing/services/paragraph_reconstructor.dart';
 import '../../reader/models/book_document.dart';
 
 class BookTextNormalizer {
@@ -385,6 +386,9 @@ class BookTextNormalizer {
                   firstWord.toLowerCase().startsWith(lastWord.toLowerCase()) ||
                   lastWord.toLowerCase().endsWith(firstWord.toLowerCase()))) {
             joined = '$base-$firstWord';
+          } else if ((lastWord.toLowerCase() == 'di' || lastWord.toLowerCase() == 'ke') &&
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(firstWord.toLowerCase())) {
+            joined = '$base $firstWord';
           } else {
             joined = '$base$firstWord';
           }

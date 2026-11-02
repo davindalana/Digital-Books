@@ -318,7 +318,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                   child: MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
+                      behavior: HitTestBehavior.opaque,
                       onTap: previousPage,
                     ),
                   ),
@@ -333,7 +333,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                   child: MouseRegion(
                     cursor: SystemMouseCursors.click,
                     child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
+                      behavior: HitTestBehavior.opaque,
                       onTap: nextPage,
                     ),
                   ),
@@ -346,7 +346,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                   top: 50,
                   bottom: 50,
                   child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
+                    behavior: HitTestBehavior.opaque,
                     onTap: widget.onTapContent,
                   ),
                 ),

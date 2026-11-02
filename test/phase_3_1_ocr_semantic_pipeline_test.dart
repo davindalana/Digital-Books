@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print, depend_on_referenced_packages
 
 import 'dart:io';
+import 'dart:ui' show Rect;
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ import 'package:digital_books/core/utils/file_storage_service.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
+import 'package:digital_books/features/processing/services/paragraph_reconstructor.dart';
+import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/reader/models/book_document.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
@@ -161,6 +164,136 @@ void main() {
           print(
             'First block sample: "${allBlocks.first.text.substring(0, allBlocks.first.text.length.clamp(0, 80))}..."',
           );
+        },
+      );
+
+      test(
+        'Strict Indonesian Preposition vs Passive Prefix and Morphology Normalization',
+        () {
+          // 1. Passive prefix: di + verb -> ditutup, ditendang, didorong, dibaca, ditulis
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Pintu itu di tutup rapat.'),
+            equals('Pintu itu ditutup rapat.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Aku di tendang ke depan.'),
+            equals('Aku ditendang ke depan.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Buku ini di baca banyak orang.'),
+            equals('Buku ini dibaca banyak orang.'),
+          );
+
+          // 2. Preposition complements: MUST NEVER BE JOINED
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Kami tinggal di rumah itu.'),
+            equals('Kami tinggal di rumah itu.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Di manakah aku berada?'),
+            equals('Di manakah aku berada?'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Kami berada di atas mobil.'),
+            equals('Kami berada di atas mobil.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Buku disimpan di dalam lemari.'),
+            equals('Buku disimpan di dalam lemari.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Dia sedang bekerja di kantor.'),
+            equals('Dia sedang bekerja di kantor.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Mereka pergi ke sekolah.'),
+            equals('Mereka pergi ke sekolah.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Ke manakah engkau akan pergi?'),
+            equals('Ke manakah engkau akan pergi?'),
+          );
+
+          // 3. Stray hyphens and spaces on prepositional complements
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Berada di- rumah kakek.'),
+            equals('Berada di rumah kakek.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Menuju ke- sekolah baru.'),
+            equals('Menuju ke sekolah baru.'),
+          );
+
+          // 4. Stray hyphens and spaces on genuine affixes
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Sebuah peng- alaman membaca.'),
+            equals('Sebuah pengalaman membaca.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Membeli se- buah buku.'),
+            equals('Membeli sebuah buku.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Hari ke- dua pekan ini.'),
+            equals('Hari kedua pekan ini.'),
+          );
+
+          // 5. Reduplication preservation
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Anak- anak bermain di taman.'),
+            equals('Anak-anak bermain di taman.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Tiba- tiba terdengar suara.'),
+            equals('Tiba-tiba terdengar suara.'),
+          );
+          expect(
+            ReconstructedParagraphBuilder.cleanOcrText('Untuk mengira- ngira lokasi.'),
+            equals('Untuk mengira-ngira lokasi.'),
+          );
+
+          // 6. Cross-line dehyphenation preserving prepositions vs joining verbs
+          const prepLine1 = ExtractedTextLine(
+            text: 'Ia sedang berada di-',
+            bounds: Rect.fromLTWH(50, 100, 200, 14),
+            lineIndex: 0,
+            pageIndex: 0,
+            fontSize: 12,
+          );
+          const prepLine2 = ExtractedTextLine(
+            text: 'rumah paman.',
+            bounds: Rect.fromLTWH(50, 120, 150, 14),
+            lineIndex: 1,
+            pageIndex: 0,
+            fontSize: 12,
+          );
+
+          final prepBuilder = ReconstructedParagraphBuilder(prepLine1);
+          prepBuilder.appendLine(prepLine2);
+          final prepParagraph = prepBuilder.build();
+          expect(prepParagraph.text, equals('Ia sedang berada di rumah paman.'));
+          expect(prepParagraph.text.contains('dirumah'), isFalse);
+
+          // And cross-line verb joining:
+          const verbLine1 = ExtractedTextLine(
+            text: 'Pintu itu di-',
+            bounds: Rect.fromLTWH(50, 100, 150, 14),
+            lineIndex: 0,
+            pageIndex: 0,
+            fontSize: 12,
+          );
+          const verbLine2 = ExtractedTextLine(
+            text: 'tutup oleh penjaga.',
+            bounds: Rect.fromLTWH(50, 120, 180, 14),
+            lineIndex: 1,
+            pageIndex: 0,
+            fontSize: 12,
+          );
+
+          final verbBuilder = ReconstructedParagraphBuilder(verbLine1);
+          verbBuilder.appendLine(verbLine2);
+          final verbParagraph = verbBuilder.build();
+          expect(verbParagraph.text, equals('Pintu itu ditutup oleh penjaga.'));
         },
       );
     },

@@ -4,7 +4,11 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
+import 'package:digital_books/features/processing/services/paragraph_reconstructor.dart';
+import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
+import 'package:digital_books/features/processing/services/geometry_aware_pdf_extractor.dart';
 
 /// Calculates Levenshtein edit distance between two strings or token sequences.
 int levenshteinDistance<T>(List<T> a, List<T> b) {
@@ -226,6 +230,164 @@ kisahnya dan hanyut dalam keharuan.''';
       // Check key character and dialogue tokens
       expect(ocrText, contains('Benten-tei'));
       expect(ocrResult.lines.length, greaterThanOrEqualTo(20));
+    });
+
+    // -------------------------------------------------------------------------
+    // Ground Truth Sample 4: Sentence Completeness & Paragraph Reconstruction Audit
+    // -------------------------------------------------------------------------
+    test('4. Sentence Completeness & Paragraph Boundary Accuracy on Laut Bercerita P.15', () async {
+      final doc = await PdfDocument.openFile(lautFile.path);
+      final page = doc.pages[14]; // Page 15
+      final ocrResult = await ocrService.processPdfPage(
+        page,
+        scale: 1.5,
+        languages: const ['id-ID', 'en-US'],
+      );
+      await doc.dispose();
+
+      // Convert OCR lines into ExtractedTextLine
+      final extractedLines = ocrResult.lines.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final l = entry.value;
+        return ExtractedTextLine(
+          bounds: l.box,
+          text: l.text,
+          fontSize: 12.0,
+          lineIndex: idx,
+          pageIndex: 14,
+        );
+      }).toList();
+
+      final pageReadingOrder = PageReadingOrderResult(
+        pageIndex: 14,
+        orderedLines: extractedLines,
+        layoutStructure: PageLayoutStructure.singleColumn,
+        columnConfidence: 1.0,
+      );
+
+      final paragraphs = ParagraphReconstructor.reconstructDocument([pageReadingOrder]);
+      expect(paragraphs.isNotEmpty, isTrue);
+
+      final combinedText = paragraphs.map((p) => p.text).join('\n\n');
+
+      // Ground truth sentences on Laut Bercerita Page 15:
+      final expectedSentences = [
+        'Setelah lebih dari sejam kami berada di atas mobil dengan mata yang masih ditutup dan tangan terikat, akhirnya si Manusia Pohon menarikku keluar mobil dan bersama yang lain menggiringku ke sebuah tempat, udara terbuka.',
+        'Aku ditendang agar berjalan dengan lekas.',
+        'Jalan semakin menanjak dan aku mendengar debur ombak yang pecah.',
+        'Aku bisa mencium aroma asin laut di antara angin yang mengacak rambut.',
+        'Sekali lagi, suara ombak yang deras itu pecah tak seirama.',
+        'Di manakah aku?',
+        'Apakah kami masih di wilayah Jakarta?',
+        'Karena aku sering berhenti untuk mengira-ngira lokasi, sebuah tangan besar mendorong punggungku agar aku berjalan lebih cepat.',
+        'Setelah berjalan cukup jauh, kini salah satu dari mereka berteriak agar aku menaiki sebuah speedboat.',
+        'Bau asin laut kembali menusuk cuping hidungku.',
+        'Kudengar seseorang menyalakan motor speedboat itu.',
+        'Seseorang yang lain sekali lagi menendang punggungku agar aku berlutut.',
+        'Sial!',
+        'Perlahan aku mencoba duduk dan tampaknya mereka tak keberatan.',
+        'Begitu saja perahu motor itu melaju.',
+        'Meski wajahku masih tertutup karung, aku masih bisa merasakan cipratan air laut.',
+        'Debar jantung semakin menggedor-gedor dada seolah ia siap mencelat keluar, tetapi aku mencoba menghadapi suara permukaan laut yang dibelah perahu motor itu.',
+        'Tak terlalu lama, perahu motor terasa melambat.',
+        'Aku dipaksa turun.',
+      ];
+
+      int completeSentences = 0;
+      for (final s in expectedSentences) {
+        // Normalize spaces in both
+        final normS = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+        final normCombined = combinedText.replaceAll(RegExp(r'\s+'), ' ');
+        if (normCombined.contains(normS) || normCombined.contains(normS.substring(0, (normS.length * 0.85).toInt()))) {
+          completeSentences++;
+        }
+      }
+
+      final sentenceCompletenessRate = (completeSentences / expectedSentences.length) * 100.0;
+
+      print('\n===============================================================');
+      print('SENTENCE COMPLETENESS & MORPHOLOGY RECONSTRUCTION AUDIT');
+      print('===============================================================');
+      print('Total Ground Truth Sentences: ${expectedSentences.length}');
+      print('Sentences Extracted Intact:   $completeSentences / ${expectedSentences.length}');
+      print('Sentence Completeness Rate:   ${sentenceCompletenessRate.toStringAsFixed(1)}%');
+      print('Paragraphs Reconstructed:     ${paragraphs.length}');
+
+      // Audit Indonesian Prepositions vs Passive Affixes:
+      expect(combinedText, contains('di atas mobil'), reason: 'Preposition "di atas" must remain separate');
+      expect(combinedText, contains('di antara angin'), reason: 'Preposition "di antara" must remain separate');
+      expect(combinedText, contains('Di manakah'), reason: 'Preposition "Di manakah" must remain separate');
+      expect(combinedText, contains('di wilayah Jakarta'), reason: 'Preposition "di wilayah" must remain separate');
+      expect(combinedText, contains('di tempat tujuan'), reason: 'Preposition "di tempat" must remain separate');
+      expect(combinedText, contains('di tepi tebing'), reason: 'Preposition "di tepi" must remain separate');
+      expect(combinedText, contains('ditutup'), reason: 'Passive verb "ditutup" must be joined');
+      expect(combinedText, contains('ditendang'), reason: 'Passive verb "ditendang" must be joined');
+      expect(combinedText, contains('mendorong'), reason: 'Active verb "mendorong" must be intact');
+      expect(combinedText, contains('dibelah'), reason: 'Passive verb "dibelah" must be joined');
+      expect(combinedText, contains('dipaksa'), reason: 'Passive verb "dipaksa" must be joined');
+      expect(combinedText, contains('mengira-ngira'), reason: 'Reduplication "mengira-ngira" must be preserved');
+
+      expect(sentenceCompletenessRate, greaterThanOrEqualTo(85.0));
+    });
+
+    // -------------------------------------------------------------------------
+    // Ground Truth Sample 5: Two-Column Academic Paper Reading Order & Column Ordering
+    // -------------------------------------------------------------------------
+    test('5. Two-Column Reading Order & Column Ordering Accuracy Audit', () async {
+      final academicPdf = File('test/fixtures/corpus/04_two_column_academic.pdf');
+      expect(academicPdf.existsSync(), isTrue);
+
+      final extraction = await GeometryAwarePdfExtractor.extractDocument(
+        pdfFile: academicPdf,
+        bookId: 'academic_test',
+      );
+      expect(extraction.pages.isNotEmpty, isTrue);
+
+      final resolved = ReadingOrderResolver.resolvePage(extraction.pages.first);
+      expect(resolved.layoutStructure, equals(PageLayoutStructure.twoColumn));
+
+      // Separate lines into Column 1 vs Column 2 based on midpoint x
+      final pageWidth = extraction.pages.first.pageSize.width;
+      final midX = pageWidth / 2.0;
+
+      final orderedLines = resolved.orderedLines;
+      int col1Count = 0;
+      int col2Count = 0;
+      int interleavingViolations = 0;
+      bool hasTransitionedToCol2 = false;
+
+      for (final line in orderedLines) {
+        // Skip full-width header/title lines
+        if (line.bounds.width > pageWidth * 0.6) continue;
+
+        final isCol1 = line.bounds.left < midX;
+        final isCol2 = line.bounds.left >= midX;
+
+        if (isCol1) {
+          col1Count++;
+          if (hasTransitionedToCol2) {
+            interleavingViolations++;
+          }
+        } else if (isCol2) {
+          col2Count++;
+          hasTransitionedToCol2 = true;
+        }
+      }
+
+      final columnOrderingAccuracy = interleavingViolations == 0 ? 100.0 : 0.0;
+
+      print('\n===============================================================');
+      print('TWO-COLUMN READING ORDER & COLUMN ORDERING ACCURACY AUDIT');
+      print('===============================================================');
+      print('Total Ordered Lines:          ${orderedLines.length}');
+      print('Column 1 Lines:               $col1Count');
+      print('Column 2 Lines:               $col2Count');
+      print('Interleaving Violations:      $interleavingViolations');
+      print('Column Ordering Accuracy:     ${columnOrderingAccuracy.toStringAsFixed(1)}%');
+
+      expect(columnOrderingAccuracy, equals(100.0), reason: 'Two-column layout must never interleave lines across columns');
+      expect(col1Count, greaterThan(5));
+      expect(col2Count, greaterThan(5));
     });
   });
 }
