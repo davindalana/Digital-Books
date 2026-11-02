@@ -1,0 +1,127 @@
+{
+  "category": "Hybrid Mixed PDF",
+  "document": "test/fixtures/corpus/09_hybrid_mixed.pdf",
+  "note": "Document contains 3 heterogeneous pages: Page 1 (Native Vector Text), Page 2 (Scanned Raster Image), Page 3 (Native Vector Text + Embedded Figure). 15 ground-truth queries cover all accessible content without synthetic bloating.",
+  "queries": [
+    {
+      "id": "hyb_01",
+      "query": "Hybrid Document",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_02",
+      "query": "Native Text",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_03",
+      "query": "regular vector text",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_04",
+      "query": "Embedded Chart",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_05",
+      "query": "Caption for the chart",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_06",
+      "query": "vector",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_07",
+      "query": "Chart",
+      "type": "repeated_word",
+      "expectedCount": 2,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_08",
+      "query": "Page 3:",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_09",
+      "query": "text.",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_10",
+      "query": "chart above.",
+      "type": "page_end",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_11",
+      "query": "Hybrid Document - Page 1",
+      "type": "page_start",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_12",
+      "query": "nonexistent_term",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_13",
+      "query": "artificial_intelligence",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_14",
+      "query": "blockchain",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "hyb_15",
+      "query": "xyz_absent_123",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    }
+  ]
+}

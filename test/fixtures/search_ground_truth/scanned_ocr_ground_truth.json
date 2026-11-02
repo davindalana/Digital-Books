@@ -1,0 +1,246 @@
+{
+  "category": "Scanned OCR PDF",
+  "document": "Laut Bercerita (p.15) + Bicara Itu Ada Seninya (p.33) + Kesetiaan Mr X (p.11)",
+  "queries": [
+    {
+      "id": "ocr_01",
+      "query": "speedboat",
+      "type": "unique_word",
+      "expectedCount": 2,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_02",
+      "query": "Aristoteles",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [33],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_03",
+      "query": "Yasuko",
+      "type": "unique_word",
+      "expectedCount": 2,
+      "expectedPages": [11],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_04",
+      "query": "Benten-tei",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [11],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_05",
+      "query": "laut",
+      "type": "repeated_word",
+      "expectedCount": 6,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_06",
+      "query": "ombak",
+      "type": "repeated_word",
+      "expectedCount": 2,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_07",
+      "query": "komunikasi",
+      "type": "repeated_word",
+      "expectedCount": 2,
+      "expectedPages": [33],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_08",
+      "query": "Manusia Pohon",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_09",
+      "query": "debur ombak",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_10",
+      "query": "udara terbuka",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_11",
+      "query": "kotak bento",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [11],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_12",
+      "query": "cipratan air laut",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_13",
+      "query": "ethos, pathos, logos",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [33],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_14",
+      "query": "Sial!",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_15",
+      "query": "Di manakah aku?",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_16",
+      "query": "sebuah tangan",
+      "type": "hyphenated_line_break",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_17",
+      "query": "se-buah tangan",
+      "type": "hyphenated_line_break",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_18",
+      "query": "Setelah lebih dari sejam",
+      "type": "page_start",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_19",
+      "query": "melambat",
+      "type": "page_end",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_20",
+      "query": "Jakarta",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_21",
+      "query": "pembebasan",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_22",
+      "query": "perahu motor",
+      "type": "phrase",
+      "expectedCount": 3,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_23",
+      "query": "bau asin",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_24",
+      "query": "angin laut",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_25",
+      "query": "debar jantung",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [15],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_26",
+      "query": "pesawat_terbang_boeing",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_27",
+      "query": "antariksa_luar",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_28",
+      "query": "superkomputer",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_29",
+      "query": "kecerdasan_buatan_llm",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "ocr_30",
+      "query": "token_gaib_tidak_ada",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    }
+  ]
+}

@@ -56,8 +56,8 @@ void main() {
   });
 
   group('Phase 3.1.1 — Database Migration, Referential Integrity, & Recovery Audit', () {
-    test('1. Schema v4 Table Integrity & Foreign Key Cascade Audit', () async {
-      expect(db.schemaVersion, greaterThanOrEqualTo(4));
+    test('1. Schema v5 Table Integrity & Foreign Key Cascade Audit', () async {
+      expect(db.schemaVersion, equals(5));
 
       // 1. Insert a parent book
       final now = DateTime.now();

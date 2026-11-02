@@ -1,0 +1,246 @@
+{
+  "category": "Digital Vector PDF",
+  "document": "test/fixtures/corpus/05_headers_footers.pdf + 01_single_column_novel.pdf",
+  "queries": [
+    {
+      "id": "dig_01",
+      "query": "destiny",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_02",
+      "query": "parchment",
+      "type": "unique_word",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_03",
+      "query": "violin",
+      "type": "repeated_word",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_04",
+      "query": "melancholy",
+      "type": "repeated_word",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_05",
+      "query": "Holmes",
+      "type": "repeated_word",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_06",
+      "query": "stormy night",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_07",
+      "query": "ancient estate",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_08",
+      "query": "Investigation Continues",
+      "type": "phrase",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_09",
+      "query": "low, melancholy tune",
+      "type": "phrase",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_10",
+      "query": "pondered the case",
+      "type": "phrase",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_11",
+      "query": "gates!",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_12",
+      "query": "Section 1:",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_13",
+      "query": "Section 2:",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [2],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_14",
+      "query": "Section 3:",
+      "type": "punctuation",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_15",
+      "query": "dancing shadows",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_16",
+      "query": "stone hearth",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_17",
+      "query": "heavy iron",
+      "type": "phrase",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_18",
+      "query": "Section 1",
+      "type": "page_start",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_19",
+      "query": "Section 3",
+      "type": "page_start",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_20",
+      "query": "pondered the",
+      "type": "page_end",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_21",
+      "query": "SHERLOCK HOLMES",
+      "type": "chrome_header_footer",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": true
+    },
+    {
+      "id": "dig_22",
+      "query": "THE ADVENTURES OF",
+      "type": "chrome_header_footer",
+      "expectedCount": 3,
+      "expectedPages": [1, 2, 3],
+      "shouldBeFiltered": true
+    },
+    {
+      "id": "dig_23",
+      "query": "Page 1 of 3",
+      "type": "chrome_header_footer",
+      "expectedCount": 1,
+      "expectedPages": [1],
+      "shouldBeFiltered": true
+    },
+    {
+      "id": "dig_24",
+      "query": "Page 2 of 3",
+      "type": "chrome_header_footer",
+      "expectedCount": 1,
+      "expectedPages": [2],
+      "shouldBeFiltered": true
+    },
+    {
+      "id": "dig_25",
+      "query": "Page 3 of 3",
+      "type": "chrome_header_footer",
+      "expectedCount": 1,
+      "expectedPages": [3],
+      "shouldBeFiltered": true
+    },
+    {
+      "id": "dig_26",
+      "query": "submarines",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_27",
+      "query": "quantum_physics",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_28",
+      "query": "antariksa",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_29",
+      "query": "cyberpunk_2077",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    },
+    {
+      "id": "dig_30",
+      "query": "nonexistent_token_xyz",
+      "type": "negative",
+      "expectedCount": 0,
+      "expectedPages": [],
+      "shouldBeFiltered": false
+    }
+  ]
+}

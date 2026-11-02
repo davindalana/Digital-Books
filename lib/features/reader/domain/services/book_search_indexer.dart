@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' show Rect, Size;
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/database_service.dart';
@@ -145,6 +146,13 @@ class BookSearchIndexer {
     return newlyIndexed;
   }
 
+  /// Visible for testing OCR lines bounding-box processing and token geometry alignment.
+  @visibleForTesting
+  static ({String plainText, String rawText, List<SearchTokenGeometry> tokens})
+      processOcrLinesForTesting(List<OcrLine> lines, Size pageSize) {
+    return _processOcrLines(lines, pageSize);
+  }
+
   /// Processes Apple Vision OCR lines into normalized dehyphenated plainText and token geometries.
   static ({String plainText, String rawText, List<SearchTokenGeometry> tokens})
       _processOcrLines(List<OcrLine> lines, Size pageSize) {
@@ -173,17 +181,26 @@ class BookSearchIndexer {
       final words = lineText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
       if (words.isEmpty) continue;
 
+      final totalLineLen = lineText.isNotEmpty ? lineText.length : 1;
+      int charCursor = 0;
+
       for (int wIdx = 0; wIdx < words.length; wIdx++) {
         var word = words[wIdx];
         final isLastWordInLine = (wIdx == words.length - 1);
         final isFirstWordInLine = (wIdx == 0);
 
-        // Approximate horizontal sub-box for word within line bounding box
-        final wordFraction = words.isNotEmpty ? 1.0 / words.length : 1.0;
+        // Calculate character-weighted horizontal bounds for proportional accuracy
+        final wordCharStart = lineText.indexOf(word, charCursor);
+        final effectiveStart = wordCharStart != -1 ? wordCharStart : charCursor;
+        charCursor = effectiveStart + word.length;
+
+        final wordFractionStart = effectiveStart / totalLineLen;
+        final wordFractionWidth = word.length / totalLineLen;
+
         final wordBox = Rect.fromLTWH(
-          (line.box.left + (wIdx * wordFraction * line.box.width)).clamp(0.0, 1.0),
+          (line.box.left + (wordFractionStart * line.box.width)).clamp(0.0, 1.0),
           line.box.top.clamp(0.0, 1.0),
-          (line.box.width * wordFraction).clamp(0.0, 1.0),
+          (wordFractionWidth * line.box.width).clamp(0.0, 1.0),
           line.box.height.clamp(0.0, 1.0),
         );
 
