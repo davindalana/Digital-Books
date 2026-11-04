@@ -76,7 +76,7 @@ class ParagraphReconstructor {
 
   /// Chapter header markers
   static final RegExp _chapterHeaderRegex = RegExp(
-    r'^(chapter|bab|bagian|part|act|hukum)\s+([0-9ivxlcdm]+|[a-z]+)',
+    r'^(chapter|bab|bagian|part|act|hukum)\s*([0-9ivxlcdm]+|[a-z]+)',
     caseSensitive: false,
   );
 
@@ -362,8 +362,17 @@ class ParagraphReconstructor {
         currentTrimmed == currentTrimmed.toUpperCase() &&
         RegExp(r'[A-Z]').hasMatch(currentTrimmed) &&
         !RegExp(r'^\d+$').hasMatch(currentTrimmed);
-    if (isPrevAllCapTitle || isCurrAllCapTitle) {
+    if (isPrevAllCapTitle != isCurrAllCapTitle) {
       return true;
+    }
+    if (isPrevAllCapTitle && isCurrAllCapTitle) {
+      if (prevPage != currentPage) return true;
+      final verticalGap = currentLine.bounds.top - prevLine.bounds.bottom;
+      final maxAllowedGap = math.max(currentLine.fontSize * 2.2, 70.0);
+      if (verticalGap > maxAllowedGap) return true;
+      final fontDiff = (currentLine.fontSize - prevLine.fontSize).abs();
+      if (fontDiff >= 2.0) return true;
+      return false; // consecutive lines of the same multi-line title
     }
 
     // 5. Significant Left Margin Indentation or Block Quote offset:
@@ -395,7 +404,11 @@ class ParagraphReconstructor {
       final verticalGap = currentLine.bounds.top - prevLine.bounds.bottom;
 
       // If gap is noticeably larger than modal line spacing (e.g. > 1.35x), it's a paragraph break
-      final threshold = math.max(modalLineGap * 1.35, 5.5);
+      // For large heading/title lines, scale the allowed vertical gap to the font size
+      final isTitleLines = isPrevAllCapTitle && isCurrAllCapTitle;
+      final threshold = isTitleLines
+          ? math.max(currentLine.fontSize * 1.6, 45.0)
+          : math.max(modalLineGap * 1.35, 5.5);
       if (verticalGap > threshold) {
         return true;
       }

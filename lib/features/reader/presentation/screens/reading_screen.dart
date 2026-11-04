@@ -338,18 +338,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             _progressPercentage = progress.progressPercentage;
             if (widget.initialMode == null &&
                 progress.lastReadingMode != null) {
-              if (progress.lastReadingMode == 'reflowable_scrolling') {
+              if (progress.lastReadingMode == 'reflowable_scrolling' ||
+                  progress.lastReadingMode == 'reflowable_paginated') {
+                // Book Mode is always paginated — ignore any saved scrolling preference.
                 _readingMode = ReadingMode.reflowable;
-                ref
-                    .read(reflowableLayoutModeProvider(widget.book.id).notifier)
-                    .state = ReflowableLayoutMode
-                    .scrolling;
-              } else if (progress.lastReadingMode == 'reflowable_paginated') {
-                _readingMode = ReadingMode.reflowable;
-                ref
-                    .read(reflowableLayoutModeProvider(widget.book.id).notifier)
-                    .state = ReflowableLayoutMode
-                    .paginated;
               } else {
                 final restoredMode = ReadingMode.values
                     .where((m) => m.name == progress.lastReadingMode)
@@ -1712,8 +1704,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         );
                       }
 
-                      // If document is null, allow triggering OCR directly from reader bar
-                      if (_document == null && !isCompact) {
+                      // If document is null or contains only raw fallback image pages (scanned PDF), allow triggering OCR directly from reader bar
+                      final needsOcr = _document == null ||
+                          (widget.book.isScanned &&
+                              _document!.chapters.isNotEmpty &&
+                              _document!.chapters.every(
+                                (c) => c.blocks.every((b) => b.type == BlockType.image),
+                              ));
+                      if (needsOcr && !isCompact) {
                         return Tooltip(
                           message:
                               'Mulai Pengenalan Teks Latar Belakang (OCR) agar dapat membaca dalam mode Teks / Reflowable',
@@ -1816,49 +1814,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                     const SizedBox(width: 4),
                   ],
 
-                  // Reflowable Layout Mode Toggle (Paginated vs Continuous Scrolling)
-                  if (readingMode == ReadingMode.reflowable)
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final layoutMode = ref.watch(
-                          reflowableLayoutModeProvider(widget.book.id),
-                        );
-                        return IconButton(
-                          tooltip: layoutMode == ReflowableLayoutMode.paginated
-                              ? 'Beralih ke Gulir Vertikal'
-                              : 'Beralih ke Halaman (Paginated)',
-                          icon: Icon(
-                            layoutMode == ReflowableLayoutMode.paginated
-                                ? Icons.view_headline_rounded
-                                : Icons.view_carousel_outlined,
-                            color: activeTheme.textColor,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            final current = ref.read(
-                              reflowableLayoutModeProvider(widget.book.id),
-                            );
-                            final next =
-                                current == ReflowableLayoutMode.paginated
-                                ? ReflowableLayoutMode.scrolling
-                                : ReflowableLayoutMode.paginated;
-                            ref
-                                    .read(
-                                      reflowableLayoutModeProvider(
-                                        widget.book.id,
-                                      ).notifier,
-                                    )
-                                    .state =
-                                next;
-                            _saveProgress(
-                              chapter: _reflowableChapter,
-                              position: _reflowablePosition,
-                              percentage: _progressPercentage,
-                            );
-                          },
-                        );
-                      },
-                    ),
+                  // Book Mode is always paginated — scrolling/paginated toggle removed.
 
                   // 1-Page vs 2-Page Slide Toggle in Reflowable Mode
                   if (readingMode == ReadingMode.reflowable &&

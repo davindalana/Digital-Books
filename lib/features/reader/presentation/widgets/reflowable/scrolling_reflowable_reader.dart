@@ -331,25 +331,62 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         final readMins = ReflowableEngine.estimateChapterReadingMinutes(
           chapter,
         );
+
+        final title = item.chapterTitle.trim();
+        final babMatch = RegExp(
+          r'^(bab|chapter|bagian)\s*([0-9ivxlcdm]+|[a-z]+)\s*[:\-–—]?\s*(.*)$',
+          caseSensitive: false,
+        ).firstMatch(title);
+
+        String? overlineText;
+        String mainTitleText = title;
+
+        if (babMatch != null) {
+          final prefix = babMatch.group(1)!.toUpperCase();
+          final num = babMatch.group(2)!.toUpperCase();
+          final remainder = babMatch.group(3)?.trim() ?? '';
+          overlineText = '$prefix $num';
+          mainTitleText = remainder.isNotEmpty ? remainder : '$prefix $num';
+        } else if (title.toLowerCase().contains('bagian awal') ||
+            title.toLowerCase().contains('front matter') ||
+            title.toLowerCase().contains('halaman judul')) {
+          overlineText = 'BAGIAN AWAL';
+          mainTitleText = title;
+        } else if (title.toLowerCase().contains('prolog') ||
+            title.toLowerCase().contains('kata pengantar') ||
+            title.toLowerCase().contains('prakata') ||
+            title.toLowerCase().contains('daftar isi') ||
+            title.toLowerCase().contains('testimoni')) {
+          overlineText = 'PENDAHULUAN';
+          mainTitleText = title;
+        } else if (title.toLowerCase().contains('epilog') ||
+            title.toLowerCase().contains('penutup') ||
+            title.toLowerCase().contains('kesimpulan') ||
+            title.toLowerCase().contains('daftar pustaka')) {
+          overlineText = 'BAGIAN AKHIR';
+          mainTitleText = title;
+        }
+
         return Padding(
           padding: const EdgeInsets.only(top: 24, bottom: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'BAB ${item.chapterIndex + 1}',
-                style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.bold,
-                  color: widget.theme.isDark
-                      ? const Color(0xFFD4AF37)
-                      : const Color(0xFFB8860B),
+              if (overlineText != null)
+                Text(
+                  overlineText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2.0,
+                    fontWeight: FontWeight.bold,
+                    color: widget.theme.isDark
+                        ? const Color(0xFFD4AF37)
+                        : const Color(0xFFB8860B),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
+              if (overlineText != null) const SizedBox(height: 6),
               Text(
-                item.chapterTitle,
+                mainTitleText,
                 style: widget.typography.headingStyle(
                   level: 1,
                   color: widget.theme.textColor,
@@ -434,6 +471,55 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     final searchMatchesForNode = widget.searchMatches
         .where((sm) => sm.nodeId == node.id)
         .toList();
+
+    if (node.type == ContentNodeType.sectionHeading) {
+      final style = widget.typography.headingStyle(
+        level: 2,
+        color: widget.theme.textColor,
+      ).copyWith(
+        fontSize: widget.typography.fontSize * 1.15,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.3,
+      );
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: node.text,
+        sliceStartOffset: 0,
+        sliceEndOffset: node.text.length,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: widget.theme,
+        onHighlightTap: widget.onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 18.0, bottom: 10.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 3.5,
+              height: widget.typography.fontSize * 1.15,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: widget.theme.isDark
+                    ? const Color(0xFFD4AF37)
+                    : const Color(0xFFB8860B),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Expanded(
+              child: SelectableText.rich(
+                richSpan,
+                textAlign: widget.typography.textAlign,
+                contextMenuBuilder: (ctx, state) =>
+                    _buildContextMenu(ctx, state, node),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (node.type == ContentNodeType.heading) {
       final style = widget.typography.headingStyle(

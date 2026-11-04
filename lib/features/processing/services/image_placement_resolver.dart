@@ -134,7 +134,7 @@ class ImagePlacementResolver {
           RegExp(r'(diagram|denah|blueprint|map|peta|chart)', caseSensitive: false)
               .hasMatch(captionText)) {
         role = ImageSemanticRole.diagram;
-      } else if (img.isCover && captionText == null && imgArea > pageArea * 0.4) {
+      } else if ((img.isCover || img.sourcePage == 0) && captionText == null && imgArea > pageArea * 0.4) {
         role = ImageSemanticRole.coverImage;
       } else if (imgArea > pageArea * 0.65) {
         role = ImageSemanticRole.fullPageIllustration;

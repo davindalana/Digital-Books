@@ -38,6 +38,13 @@ class AppDatabase extends _$AppDatabase {
         GeneratedColumn column,
       ) async {
         try {
+          final existing = await customSelect(
+            'PRAGMA table_info("${table.actualTableName}");',
+          ).get();
+          final exists = existing.any(
+            (row) => row.read<String>('name') == column.name,
+          );
+          if (exists) return;
           await m.addColumn(table, column);
         } catch (e) {
           if (!e.toString().contains('duplicate column name')) {
@@ -48,6 +55,11 @@ class AppDatabase extends _$AppDatabase {
 
       Future<void> createTableSafe(TableInfo table) async {
         try {
+          final existing = await customSelect(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name = ?;",
+            variables: [Variable.withString(table.actualTableName)],
+          ).get();
+          if (existing.isNotEmpty) return;
           await m.createTable(table);
         } catch (e) {
           if (!e.toString().contains('already exists')) {

@@ -48,8 +48,19 @@ class SemanticDocumentReconstructor {
     );
 
     // Filter chrome (running headers/footers/page numbers) from reader content stream
-    // but retain footnotes, quotes, headings, paragraphs, and images
-    final contentBlocks = integratedBlocks.where((b) => !b.isChrome).toList();
+    // but retain footnotes, quotes, headings, paragraphs, and images.
+    // Explicitly filter out cover images so cover is not rendered inside body chapters.
+    final contentBlocks = integratedBlocks.where((b) {
+      if (b.isChrome) return false;
+      if (b.type == SemanticBlockType.image) {
+        final role = b.metadata['role'] as String?;
+        if (role == ImageSemanticRole.coverImage.name ||
+            (b.sourcePageIndex == 0 && (role == null || role == ImageSemanticRole.coverImage.name))) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
 
     // Partition content into chapters based on detected H1 headings
     final chapters = _buildChapters(contentBlocks, title);
@@ -93,9 +104,10 @@ class SemanticDocumentReconstructor {
     }
 
     final chapters = <BookChapter>[];
-    String currentTitle = defaultTitle;
+    String currentTitle = 'Bagian Awal';
     final currentBookBlocks = <BookBlock>[];
     int chapterIdx = 0;
+    bool hasSeenFirstH1 = false;
 
     for (final block in blocks) {
       if (block.type == SemanticBlockType.heading1) {
@@ -105,13 +117,14 @@ class SemanticDocumentReconstructor {
             BookChapter(
               id: const Uuid().v4(),
               index: chapterIdx++,
-              title: currentTitle,
+              title: hasSeenFirstH1 ? currentTitle : 'Bagian Awal',
               blocks: List.from(currentBookBlocks),
             ),
           );
           currentBookBlocks.clear();
         }
         currentTitle = block.text.trim();
+        hasSeenFirstH1 = true;
       }
 
       currentBookBlocks.add(block.toBookBlock());
@@ -122,7 +135,7 @@ class SemanticDocumentReconstructor {
         BookChapter(
           id: const Uuid().v4(),
           index: chapterIdx,
-          title: currentTitle,
+          title: hasSeenFirstH1 ? currentTitle : defaultTitle,
           blocks: List.from(currentBookBlocks),
         ),
       );

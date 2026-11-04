@@ -8,10 +8,10 @@ import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
-import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 import 'highlight_interaction_sheet.dart';
 import 'paginated_reflowable_reader.dart';
-import 'scrolling_reflowable_reader.dart';
+// scrolling_reflowable_reader.dart intentionally not imported:
+// Book Mode is always horizontal paginated.
 
 class ReflowableReaderContainer extends ConsumerStatefulWidget {
   final String bookId;
@@ -63,8 +63,7 @@ class ReflowableReaderContainerState
     extends ConsumerState<ReflowableReaderContainer> {
   final GlobalKey<PaginatedReflowableReaderState> _paginatedKey =
       GlobalKey<PaginatedReflowableReaderState>();
-  final GlobalKey<ScrollingReflowableReaderState> _scrollingKey =
-      GlobalKey<ScrollingReflowableReaderState>();
+  // _scrollingKey removed: Book Mode is always paginated.
 
   String? _activeAnchorNodeId;
   int _activeCharOffset = 0;
@@ -107,44 +106,25 @@ class ReflowableReaderContainerState
   }
 
   void nextPage() {
-    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
-    if (mode == ReflowableLayoutMode.paginated) {
-      _paginatedKey.currentState?.nextPage();
-    }
+    _paginatedKey.currentState?.nextPage();
   }
 
   void previousPage() {
-    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
-    if (mode == ReflowableLayoutMode.paginated) {
-      _paginatedKey.currentState?.previousPage();
-    }
+    _paginatedKey.currentState?.previousPage();
   }
 
   void jumpToPage(int pageNumber) {
-    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
-    if (mode == ReflowableLayoutMode.paginated) {
-      _paginatedKey.currentState?.jumpToPage(pageNumber);
-    }
+    _paginatedKey.currentState?.jumpToPage(pageNumber);
   }
 
   void jumpToAnchor(String nodeId, [int charOffset = 0]) {
     _activeAnchorNodeId = nodeId;
     _activeCharOffset = charOffset;
-    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
-    if (mode == ReflowableLayoutMode.paginated) {
-      _paginatedKey.currentState?.jumpToAnchor(nodeId, charOffset);
-    } else {
-      _scrollingKey.currentState?.scrollToAnchor(nodeId);
-    }
+    _paginatedKey.currentState?.jumpToAnchor(nodeId, charOffset);
   }
 
   void jumpToChapter(int chapterIndex) {
-    final mode = ref.read(reflowableLayoutModeProvider(widget.bookId));
-    if (mode == ReflowableLayoutMode.paginated) {
-      _paginatedKey.currentState?.jumpToChapter(chapterIndex);
-    } else {
-      _scrollingKey.currentState?.jumpToChapter(chapterIndex);
-    }
+    _paginatedKey.currentState?.jumpToChapter(chapterIndex);
   }
 
   Future<void> _handleHighlightCreated({
@@ -250,52 +230,34 @@ class ReflowableReaderContainerState
 
   @override
   Widget build(BuildContext context) {
-    final layoutMode = ref.watch(reflowableLayoutModeProvider(widget.bookId));
+    // Book Mode is always paginated — no layout mode switch needed.
     final highlightsStream = ref.watch(
       bookHighlightsStreamProvider(widget.bookId),
     );
     final effectiveHighlights =
         widget.customHighlights ?? highlightsStream.value ?? const [];
 
-    final Widget content;
-    if (layoutMode == ReflowableLayoutMode.scrolling) {
-      content = ScrollingReflowableReader(
-        key: _scrollingKey,
-        document: widget.document,
-        theme: widget.theme,
-        typography: widget.typography,
-        initialAnchorNodeId: _activeAnchorNodeId,
-        initialChapterIndex: _currentChapter,
-        highlights: effectiveHighlights,
-        searchMatches: widget.searchMatches,
-        onTapContent: widget.onTapContent,
-        onProgressChanged: _handleProgressChanged,
-        onHighlightCreated: _handleHighlightCreated,
-        onHighlightTap: _handleHighlightTap,
-      );
-    } else {
-      content = PaginatedReflowableReader(
-        key: _paginatedKey,
-        document: widget.document,
-        theme: widget.theme,
-        typography: widget.typography,
-        initialPageIndex: _currentPage > 0 ? _currentPage - 1 : 0,
-        initialAnchorNodeId: _activeAnchorNodeId,
-        initialCharOffset: _activeCharOffset,
-        highlights: effectiveHighlights,
-        searchMatches: widget.searchMatches,
-        onTapContent: widget.onTapContent,
-        onProgressChanged: (ch, page, pct, anchor, offset) {
-          _handleProgressChanged(ch, page, pct, anchor, offset);
-        },
-        onTotalPagesCalculated: (total) {
-          _totalPages = total;
-          widget.onTotalPagesCalculated?.call(total);
-        },
-        onHighlightCreated: _handleHighlightCreated,
-        onHighlightTap: _handleHighlightTap,
-      );
-    }
+    final Widget content = PaginatedReflowableReader(
+      key: _paginatedKey,
+      document: widget.document,
+      theme: widget.theme,
+      typography: widget.typography,
+      initialPageIndex: _currentPage > 0 ? _currentPage - 1 : 0,
+      initialAnchorNodeId: _activeAnchorNodeId,
+      initialCharOffset: _activeCharOffset,
+      highlights: effectiveHighlights,
+      searchMatches: widget.searchMatches,
+      onTapContent: widget.onTapContent,
+      onProgressChanged: (ch, page, pct, anchor, offset) {
+        _handleProgressChanged(ch, page, pct, anchor, offset);
+      },
+      onTotalPagesCalculated: (total) {
+        _totalPages = total;
+        widget.onTotalPagesCalculated?.call(total);
+      },
+      onHighlightCreated: _handleHighlightCreated,
+      onHighlightTap: _handleHighlightTap,
+    );
 
     return Container(color: widget.theme.backgroundColor, child: content);
   }
