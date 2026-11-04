@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:digital_books/core/database/app_database.dart';
@@ -69,6 +70,14 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
   int get currentPageIndex => _currentPageIndex;
   List<PaginatedPage> get pages => _pages;
 
+  bool get canGoPrevious => _currentPageIndex > 0;
+  bool get canGoNext {
+    if (_pages.isEmpty) return false;
+    final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
+    final step = isTwoPage ? 2 : 1;
+    return _currentPageIndex + step < _pages.length;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -128,17 +137,20 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
   }
 
   void nextPage() {
-    if (_isNavigating || _pages.isEmpty) return;
+    if (_isNavigating || _pages.isEmpty || !canGoNext) return;
     final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
     final step = isTwoPage ? 2 : 1;
     final nextIndex = _currentPageIndex + step;
+    final target = (isTwoPage && nextIndex % 2 != 0)
+        ? nextIndex - 1
+        : nextIndex;
 
-    if (nextIndex < _pages.length) {
+    if (target < _pages.length) {
       _isNavigating = true;
       setState(() {
-        _currentPageIndex = nextIndex;
+        _currentPageIndex = target;
       });
-      _onPageSelected(nextIndex);
+      _onPageSelected(target);
       _navTimer?.cancel();
       _navTimer = Timer(const Duration(milliseconds: 150), () {
         if (mounted) _isNavigating = false;
@@ -147,17 +159,20 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
   }
 
   void previousPage() {
-    if (_isNavigating || _pages.isEmpty) return;
+    if (_isNavigating || _pages.isEmpty || !canGoPrevious) return;
     final isTwoPage = widget.typography.twoPageSpread && _lastWidth >= 850.0;
     final step = isTwoPage ? 2 : 1;
-    final prevIndex = _currentPageIndex - step;
+    final prevIndex = math.max(0, _currentPageIndex - step);
+    final target = (isTwoPage && prevIndex % 2 != 0)
+        ? math.max(0, prevIndex - 1)
+        : prevIndex;
 
-    if (prevIndex >= 0) {
+    if (target >= 0) {
       _isNavigating = true;
       setState(() {
-        _currentPageIndex = prevIndex;
+        _currentPageIndex = target;
       });
-      _onPageSelected(prevIndex);
+      _onPageSelected(target);
       _navTimer?.cancel();
       _navTimer = Timer(const Duration(milliseconds: 150), () {
         if (mounted) _isNavigating = false;
@@ -212,8 +227,11 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final page = _pages[pageIndex];
 
     if (page.slices.isNotEmpty) {
-      _activeAnchorNodeId = page.slices.first.node.id;
-      _activeCharOffset = page.slices.first.startCharOffset;
+      if (_activeAnchorNodeId == null ||
+          !page.containsAnchor(_activeAnchorNodeId!, _activeCharOffset)) {
+        _activeAnchorNodeId = page.slices.first.node.id;
+        _activeCharOffset = page.slices.first.startCharOffset;
+      }
     }
 
     final total = _pages.length;
@@ -297,60 +315,164 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
             const SingleActivator(LogicalKeyboardKey.arrowRight): nextPage,
             const SingleActivator(LogicalKeyboardKey.arrowLeft): previousPage,
             const SingleActivator(LogicalKeyboardKey.space): nextPage,
+            const SingleActivator(LogicalKeyboardKey.space, shift: true):
+                previousPage,
           },
           child: Focus(
             autofocus: true,
-            child: Stack(
-              children: [
-                // Page Content
-                Positioned.fill(
-                  child: isTwoPage
-                      ? _buildTwoPageSpread(width, height, _currentPageIndex)
-                      : _buildSinglePage(width, height, _currentPageIndex),
-                ),
-
-                // Left 15% tap -> Previous Page
-                Positioned(
-                  left: 0,
-                  top: 50,
-                  bottom: 50,
-                  width: math.max(48.0, width * 0.15),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: previousPage,
+            child: Listener(
+              onPointerSignal: (pointerSignal) {
+                if (pointerSignal is PointerScrollEvent) {
+                  if (pointerSignal.scrollDelta.dx > 25) {
+                    nextPage();
+                  } else if (pointerSignal.scrollDelta.dx < -25) {
+                    previousPage();
+                  }
+                }
+              },
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragEnd: (details) {
+                  final vx = details.primaryVelocity ?? 0;
+                  if (vx < -200) {
+                    nextPage();
+                  } else if (vx > 200) {
+                    previousPage();
+                  }
+                },
+                child: Stack(
+                  children: [
+                    // Page Content
+                    Positioned.fill(
+                      child: isTwoPage
+                          ? _buildTwoPageSpread(
+                              width,
+                              height,
+                              _currentPageIndex,
+                            )
+                          : _buildSinglePage(width, height, _currentPageIndex),
                     ),
-                  ),
-                ),
 
-                // Right 15% tap -> Next Page
-                Positioned(
-                  right: 0,
-                  top: 50,
-                  bottom: 50,
-                  width: math.max(48.0, width * 0.15),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: nextPage,
+                    // Left 15% tap -> Previous Page
+                    Positioned(
+                      left: 0,
+                      top: 50,
+                      bottom: 50,
+                      width: math.max(48.0, width * 0.15),
+                      child: MouseRegion(
+                        cursor: canGoPrevious
+                            ? SystemMouseCursors.click
+                            : SystemMouseCursors.basic,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: canGoPrevious ? previousPage : null,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                // Center 70% tap -> Toggle Controls
-                Positioned(
-                  left: math.max(48.0, width * 0.15),
-                  right: math.max(48.0, width * 0.15),
-                  top: 50,
-                  bottom: 50,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: widget.onTapContent,
-                  ),
+                    // Right 15% tap -> Next Page
+                    Positioned(
+                      right: 0,
+                      top: 50,
+                      bottom: 50,
+                      width: math.max(48.0, width * 0.15),
+                      child: MouseRegion(
+                        cursor: canGoNext
+                            ? SystemMouseCursors.click
+                            : SystemMouseCursors.basic,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: canGoNext ? nextPage : null,
+                        ),
+                      ),
+                    ),
+
+                    // Center 70% tap -> Toggle Controls
+                    Positioned(
+                      left: math.max(48.0, width * 0.15),
+                      right: math.max(48.0, width * 0.15),
+                      top: 50,
+                      bottom: 50,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: widget.onTapContent,
+                      ),
+                    ),
+
+                    // Desktop Left Chevron Control
+                    if (canGoPrevious)
+                      Positioned(
+                        left: 12,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: previousPage,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: widget.theme.isDark
+                                      ? Colors.white.withAlpha(16)
+                                      : Colors.black.withAlpha(10),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: widget.theme.secondaryTextColor
+                                        .withAlpha(30),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.chevron_left_rounded,
+                                  size: 24,
+                                  color: widget.theme.textColor.withAlpha(190),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Desktop Right Chevron Control
+                    if (canGoNext)
+                      Positioned(
+                        right: 12,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: nextPage,
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: widget.theme.isDark
+                                      ? Colors.white.withAlpha(16)
+                                      : Colors.black.withAlpha(10),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: widget.theme.secondaryTextColor
+                                        .withAlpha(30),
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 24,
+                                  color: widget.theme.textColor.withAlpha(190),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -362,7 +484,9 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final page = _pages[index];
     final effectiveMargin = (width < 400.0)
         ? 18.0
-        : (width < 650.0 ? 24.0 : math.max(32.0, widget.typography.horizontalMargin));
+        : (width < 650.0
+              ? 24.0
+              : math.max(32.0, widget.typography.horizontalMargin));
     final contentWidth = (width - (effectiveMargin * 2.0)).clamp(160.0, 680.0);
 
     return Center(
@@ -396,7 +520,9 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final double halfWidth = (width - spineWidth) / 2.0;
     final effectiveMargin = (halfWidth < 400.0)
         ? 18.0
-        : (halfWidth < 650.0 ? 24.0 : math.max(32.0, widget.typography.horizontalMargin));
+        : (halfWidth < 650.0
+              ? 24.0
+              : math.max(32.0, widget.typography.horizontalMargin));
     final contentWidth = (halfWidth - (effectiveMargin * 2.0)).clamp(
       160.0,
       620.0,

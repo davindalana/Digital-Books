@@ -761,10 +761,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       final dbService = ref.read(databaseServiceProvider);
       String modeStr = _readingMode.name;
       if (_readingMode == ReadingMode.reflowable) {
-        final layout = ref.read(reflowableLayoutModeProvider(widget.book.id));
-        modeStr = layout == ReflowableLayoutMode.scrolling
-            ? 'reflowable_scrolling'
-            : 'reflowable_paginated';
+        modeStr = 'reflowable_paginated';
       }
 
       dbService.upsertProgress(
@@ -1705,11 +1702,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       }
 
                       // If document is null or contains only raw fallback image pages (scanned PDF), allow triggering OCR directly from reader bar
-                      final needsOcr = _document == null ||
+                      final needsOcr =
+                          _document == null ||
                           (widget.book.isScanned &&
                               _document!.chapters.isNotEmpty &&
                               _document!.chapters.every(
-                                (c) => c.blocks.every((b) => b.type == BlockType.image),
+                                (c) => c.blocks.every(
+                                  (b) => b.type == BlockType.image,
+                                ),
                               ));
                       if (needsOcr && !isCompact) {
                         return Tooltip(

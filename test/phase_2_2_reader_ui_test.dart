@@ -332,10 +332,6 @@ void main() {
         }
 
         // 1. Open in Paginated mode
-        container
-                .read(reflowableLayoutModeProvider('book_sync_test').notifier)
-                .state =
-            ReflowableLayoutMode.paginated;
         await tester.pumpWidget(buildContainer());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
@@ -344,7 +340,7 @@ void main() {
         expect(find.byType(PaginatedReflowableReader), findsOneWidget);
         expect(find.byType(ScrollingReflowableReader), findsNothing);
 
-        // 2. Switch to Scrolling mode
+        // 2. Book Mode strictly remains Paginated even if legacy provider was set
         container
                 .read(reflowableLayoutModeProvider('book_sync_test').notifier)
                 .state =
@@ -353,19 +349,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(ScrollingReflowableReader), findsOneWidget);
-        expect(find.byType(PaginatedReflowableReader), findsNothing);
-        expect(tester.takeException(), isNull);
-
-        // 3. Switch back to Paginated mode
-        container
-                .read(reflowableLayoutModeProvider('book_sync_test').notifier)
-                .state =
-            ReflowableLayoutMode.paginated;
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.pump(const Duration(milliseconds: 300));
-
+        // Strict requirement: ScrollingReflowableReader is NEVER rendered in Book Mode
+        expect(find.byType(ScrollingReflowableReader), findsNothing);
         expect(find.byType(PaginatedReflowableReader), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
