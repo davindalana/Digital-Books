@@ -264,7 +264,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         targetAnchorId = match.nodeId;
         targetChapter = match.chapterIndex;
         targetCharOffset = match.startOffset;
-      } else if (_readerDocument != null && _readerDocument!.chapters.isNotEmpty) {
+      } else if (_readerDocument != null &&
+          _readerDocument!.chapters.isNotEmpty) {
         for (int chIdx = 0; chIdx < _readerDocument!.chapters.length; chIdx++) {
           final ch = _readerDocument!.chapters[chIdx];
           for (final node in ch.nodes) {
@@ -305,7 +306,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       if (targetAnchorId != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            _reflowableKey.currentState?.jumpToAnchor(targetAnchorId!, targetCharOffset);
+            _reflowableKey.currentState?.jumpToAnchor(
+              targetAnchorId!,
+              targetCharOffset,
+            );
           }
         });
       }
@@ -504,8 +508,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
 
   void _openAnnotationsSheet() async {
     final dbService = ref.read(databaseServiceProvider);
-    final rawAnnotations =
-        await dbService.getAnnotationsForBook(widget.book.id);
+    final rawAnnotations = await dbService.getAnnotationsForBook(
+      widget.book.id,
+    );
 
     // Resolve anchors using AnchorResolutionService against current document
     final resolvedAnnotations = rawAnnotations.map((ann) {
@@ -582,6 +587,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       context: context,
       barrierColor: Colors.black.withAlpha(120),
       builder: (_) => BookSearchDialog(
+        bookId: widget.book.id,
+        pdfPath: _currentPdfPath,
+        dbService: ref.read(databaseServiceProvider),
         readerDocument: _readerDocument,
         document: _document,
         theme: ref.read(readingThemeStateProvider),
@@ -614,6 +622,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         isActive: true,
       ),
     ];
+    if (result.boundingBoxes.isNotEmpty) {
+      _activePdfSearchHighlights = {result.sourcePdfPage: result.boundingBoxes};
+    }
     _showSearchTraversal = true;
 
     // Cache or fetch all matches for traversal
@@ -664,6 +675,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           isActive: true,
         ),
       ];
+      if (result.boundingBoxes.isNotEmpty) {
+        _activePdfSearchHighlights = {
+          result.sourcePdfPage: result.boundingBoxes,
+        };
+      }
     });
 
     if (_readingMode == ReadingMode.reflowable) {
@@ -1155,6 +1171,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               setState(() {
                 _showSearchTraversal = false;
                 _activeSearchMatches = [];
+                _activePdfSearchHighlights = {};
               });
               return KeyEventResult.handled;
             } else if (event.logicalKey == LogicalKeyboardKey.enter) {
@@ -1378,6 +1395,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                           setState(() {
                             _showSearchTraversal = false;
                             _activeSearchMatches = [];
+                            _activePdfSearchHighlights = {};
                           });
                         },
                       ),
