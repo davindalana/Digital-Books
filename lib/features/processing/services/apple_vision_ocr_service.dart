@@ -19,6 +19,14 @@ class AppleVisionOcrService {
     if (customBinaryPath != null && File(customBinaryPath!).existsSync()) {
       return customBinaryPath!;
     }
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      final bundleBin = File('${exeDir.path}/vision_ocr');
+      if (bundleBin.existsSync()) return bundleBin.path;
+      final resourceBin = File('${exeDir.parent.path}/Resources/vision_ocr');
+      if (resourceBin.existsSync()) return resourceBin.path;
+    } catch (_) {}
+
     final relativeBin = File('bin/vision_ocr');
     if (relativeBin.existsSync()) {
       return relativeBin.absolute.path;
@@ -27,6 +35,11 @@ class AppleVisionOcrService {
     if (rootBin.existsSync()) {
       return rootBin.path;
     }
+    const knownProjectBin =
+        '/Users/davindalana/Documents/Project/Digital Books/bin/vision_ocr';
+    if (File(knownProjectBin).existsSync()) {
+      return knownProjectBin;
+    }
     return 'bin/vision_ocr';
   }
 
@@ -34,6 +47,13 @@ class AppleVisionOcrService {
   String get swiftSourcePath {
     final rel = File('macos/tools/vision_ocr.swift');
     if (rel.existsSync()) return rel.absolute.path;
+    final rootSrc = File(
+      '${Directory.current.path}/macos/tools/vision_ocr.swift',
+    );
+    if (rootSrc.existsSync()) return rootSrc.path;
+    const knownSrc =
+        '/Users/davindalana/Documents/Project/Digital Books/macos/tools/vision_ocr.swift';
+    if (File(knownSrc).existsSync()) return knownSrc;
     return '${Directory.current.path}/macos/tools/vision_ocr.swift';
   }
 
@@ -121,7 +141,8 @@ class AppleVisionOcrService {
           height: 0,
           durationMs: 0,
           lines: const [],
-          error: 'Vision OCR process exited with code ${res.exitCode}: ${res.stderr}',
+          error:
+              'Vision OCR process exited with code ${res.exitCode}: ${res.stderr}',
         );
       }
 
@@ -162,10 +183,7 @@ class AppleVisionOcrService {
     final renderW = (page.width * scale).round();
     final renderH = (page.height * scale).round();
 
-    final pdfImage = await page.render(
-      width: renderW,
-      height: renderH,
-    );
+    final pdfImage = await page.render(width: renderW, height: renderH);
     if (pdfImage == null) {
       return OcrPageResult(
         imagePath: '',
@@ -182,7 +200,11 @@ class AppleVisionOcrService {
     final tempImgFile = File('${tempDir.path}/page_${page.pageNumber}.png');
 
     try {
-      final pngBytes = await _bgraToPng(pdfImage.pixels, pdfImage.width, pdfImage.height);
+      final pngBytes = await _bgraToPng(
+        pdfImage.pixels,
+        pdfImage.width,
+        pdfImage.height,
+      );
       pdfImage.dispose();
       await tempImgFile.writeAsBytes(pngBytes);
 
@@ -201,7 +223,11 @@ class AppleVisionOcrService {
     }
   }
 
-  static Future<Uint8List> _bgraToPng(Uint8List bgra, int width, int height) async {
+  static Future<Uint8List> _bgraToPng(
+    Uint8List bgra,
+    int width,
+    int height,
+  ) async {
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
     final completer = Completer<ui.Image>();

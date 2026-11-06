@@ -17,7 +17,8 @@ class SemanticClassifier {
     final detectedMaxY = paragraphs
         .map((p) => p.boundingBox.bottom)
         .reduce(math.max);
-    final effectivePageHeight = (defaultPageHeight > 0 &&
+    final effectivePageHeight =
+        (defaultPageHeight > 0 &&
             (defaultPageHeight - detectedMaxY).abs() < 180)
         ? defaultPageHeight
         : math.max(defaultPageHeight, detectedMaxY + 20.0);
@@ -54,9 +55,12 @@ class SemanticClassifier {
     final tocPageIndices = <int>{};
     for (final pageIdx in paragraphsByPage.keys) {
       final paras = paragraphsByPage[pageIdx]!;
-      final hasTocHeader = paras.any((p) =>
-          RegExp(r'^(daftar isi|table of contents|contents)\b', caseSensitive: false)
-              .hasMatch(p.text.trim()));
+      final hasTocHeader = paras.any(
+        (p) => RegExp(
+          r'^(daftar isi|table of contents|contents)\b',
+          caseSensitive: false,
+        ).hasMatch(p.text.trim()),
+      );
       final dottedCount = paras
           .where((p) => p.text.contains('..') || p.text.contains('--'))
           .length;
@@ -81,7 +85,9 @@ class SemanticClassifier {
           if (norm != null && chapPara == null) {
             chapPara = p;
           } else if (p.text.length >= 2 &&
-              (p.text == p.text.toUpperCase() || p.isBold || p.fontSize > bodyFontSize * 1.1) &&
+              (p.text == p.text.toUpperCase() ||
+                  p.isBold ||
+                  p.fontSize > bodyFontSize * 1.1) &&
               !RegExp(r'^\d+$').hasMatch(p.text.trim()) &&
               p.boundingBox.top < effectivePageHeight * 0.60) {
             titleParas.add(p);
@@ -90,7 +96,9 @@ class SemanticClassifier {
 
         if (chapPara != null && titleParas.isNotEmpty) {
           final normHeader = normalizeChapterHeader(chapPara.text)!;
-          titleParas.sort((a, b) => a.boundingBox.top.compareTo(b.boundingBox.top));
+          titleParas.sort(
+            (a, b) => a.boundingBox.top.compareTo(b.boundingBox.top),
+          );
           final fullTitle = titleParas.map((t) => t.text.trim()).join(' ');
           final fusedText = normHeader.contains(':')
               ? normHeader
@@ -114,7 +122,12 @@ class SemanticClassifier {
             text: fusedText,
             startPageIndex: pageIdx,
             endPageIndex: pageIdx,
-            boundingBox: Rect.fromLTRB(fusedLeft, fusedTop, fusedRight, fusedBottom),
+            boundingBox: Rect.fromLTRB(
+              fusedLeft,
+              fusedTop,
+              fusedRight,
+              fusedBottom,
+            ),
             fontSize: math.max(chapPara.fontSize, titleParas.first.fontSize),
             fontStyles: [
               ...chapPara.fontStyles,
@@ -122,7 +135,8 @@ class SemanticClassifier {
             ],
             isBold: true,
             isItalic: false,
-            lineCount: chapPara.lineCount +
+            lineCount:
+                chapPara.lineCount +
                 titleParas.fold(0, (sum, t) => sum + t.lineCount),
             sourceLines: [
               ...chapPara.sourceLines,
@@ -146,12 +160,16 @@ class SemanticClassifier {
       // Prologue / Preface subtitle fusion on the same page
       if (pageParas.length >= 2) {
         final firstText = pageParas.first.text.trim().toLowerCase();
-        if ((firstText == 'prolog' || firstText == 'prologue' || firstText == 'prakata') &&
+        if ((firstText == 'prolog' ||
+                firstText == 'prologue' ||
+                firstText == 'prakata') &&
+            !pageParas[1].text.trim().endsWith('.') &&
             pageParas[1].text.length >= 8 &&
             pageParas[1].text.length <= 100 &&
             pageParas[1].boundingBox.top < effectivePageHeight * 0.40) {
           final subtitlePara = pageParas[1];
-          final fusedText = '${pageParas.first.text.trim()}: ${subtitlePara.text.trim()}';
+          final fusedText =
+              '${pageParas.first.text.trim()}: ${subtitlePara.text.trim()}';
           final fusedPara = ReconstructedParagraph(
             text: fusedText,
             startPageIndex: pageIdx,
@@ -167,7 +185,10 @@ class SemanticClassifier {
             isBold: true,
             isItalic: false,
             lineCount: pageParas.first.lineCount + subtitlePara.lineCount,
-            sourceLines: [...pageParas.first.sourceLines, ...subtitlePara.sourceLines],
+            sourceLines: [
+              ...pageParas.first.sourceLines,
+              ...subtitlePara.sourceLines,
+            ],
           );
           preparedParagraphs.add(fusedPara);
           for (int i = 2; i < pageParas.length; i++) {
@@ -202,7 +223,8 @@ class SemanticClassifier {
   /// Normalizes chapter header variants (e.g. "BABI", "Bab11", "BAB 1", "Chapter 2")
   /// into standardized Indonesian / English chapter markers, mapping OCR confusions.
   static String? normalizeChapterHeader(String text) {
-    final t = text.trim();
+    // Clean OCR pipe substitutions (| -> I) and normalize whitespace
+    final t = text.trim().replaceAll('|', 'I');
     final match = RegExp(
       r'^(bab|chapter|bagian)\s*([0-9]+|[ivxlcdm]+|satu|dua|tiga|empat|lima|enam|tujuh|delapan|sembilan|sepuluh|l)\b',
       caseSensitive: false,
@@ -214,7 +236,8 @@ class SemanticClassifier {
         ? rawPrefix
         : rawPrefix[0].toUpperCase() + rawPrefix.substring(1).toLowerCase();
     var numPart = match.group(2)!;
-    if (numPart == numPart.toUpperCase() || RegExp(r'^\d+$').hasMatch(numPart)) {
+    if (numPart == numPart.toUpperCase() ||
+        RegExp(r'^\d+$').hasMatch(numPart)) {
       // keep
     } else {
       numPart = numPart.toUpperCase();
@@ -223,7 +246,11 @@ class SemanticClassifier {
     // Map common OCR substitutions
     if (numPart == '11') {
       numPart = 'II';
-    } else if (numPart == '111') {
+    } else if (numPart == '111' ||
+        numPart == 'I1I' ||
+        numPart == '1I1' ||
+        numPart == 'II1' ||
+        numPart == '1II') {
       numPart = 'III';
     } else if (numPart == 'L') {
       numPart = 'I';
@@ -280,8 +307,10 @@ class SemanticClassifier {
     // Handle Table of Contents pages:
     // Only the title "Daftar Isi" is a heading1; all entries on that page are body/toc content.
     if (isTocPage) {
-      if (RegExp(r'^(daftar isi|table of contents|contents)\b', caseSensitive: false)
-          .hasMatch(text)) {
+      if (RegExp(
+        r'^(daftar isi|table of contents|contents)\b',
+        caseSensitive: false,
+      ).hasMatch(text)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading1,
           headingLevel: 1,
@@ -318,7 +347,8 @@ class SemanticClassifier {
         );
       }
 
-      final isAllUpperShort = text.length <= 50 &&
+      final isAllUpperShort =
+          text.length <= 50 &&
           text == text.toUpperCase() &&
           RegExp(r'[A-Z]').hasMatch(text) &&
           !text.endsWith(',') &&
@@ -394,7 +424,10 @@ class SemanticClassifier {
       );
     }
 
-    if (isItalic && fontSize <= bodyFontSize && lineCount <= 2 && isCaptionKeyword) {
+    if (isItalic &&
+        fontSize <= bodyFontSize &&
+        lineCount <= 2 &&
+        isCaptionKeyword) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.caption,
         text: text,
@@ -406,11 +439,14 @@ class SemanticClassifier {
 
     // E. Ordered and Unordered Lists
     final fontRatio = fontSize / bodyFontSize;
-    final isLikelyHeading = (isBold && fontRatio >= 1.10) ||
+    final isLikelyHeading =
+        (isBold && fontRatio >= 1.10) ||
         fontRatio >= 1.25 ||
         (isBold && lineCount == 1 && text.length < 100);
 
-    final orderedMatch = RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+').firstMatch(text);
+    final orderedMatch = RegExp(
+      r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+',
+    ).firstMatch(text);
     if ((para.isOrderedList || orderedMatch != null) && !isLikelyHeading) {
       final marker = orderedMatch?.group(1) ?? '';
       return SemanticReconstructedBlock(
@@ -423,7 +459,9 @@ class SemanticClassifier {
       );
     }
 
-    final unorderedMatch = RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+').firstMatch(text);
+    final unorderedMatch = RegExp(
+      r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+',
+    ).firstMatch(text);
     if (para.isUnorderedList || unorderedMatch != null) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.unorderedListItem,
@@ -452,10 +490,16 @@ class SemanticClassifier {
 
     // G. Block Quotes (significant left indent or italicized long quotation)
     final hasIndent = left >= bodyLeftMargin + 16.0;
-    final isShortAllCapTitle = text.length <= 60 &&
-        text.replaceAll('"', '').trim() == text.replaceAll('"', '').trim().toUpperCase() &&
+    final isShortAllCapTitle =
+        text.length <= 60 &&
+        text.replaceAll('"', '').trim() ==
+            text.replaceAll('"', '').trim().toUpperCase() &&
         RegExp(r'[A-Z]').hasMatch(text);
-    if (hasIndent && !isShortAllCapTitle && (isItalic || para.isDialogue || (text.startsWith('"') && text.length > 50))) {
+    if (hasIndent &&
+        !isShortAllCapTitle &&
+        (isItalic ||
+            para.isDialogue ||
+            (text.startsWith('"') && text.length > 50))) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.quote,
         text: text,
@@ -467,9 +511,9 @@ class SemanticClassifier {
 
     // Direct Chapter Header Check (e.g. "BAB 1: ...", "BAB I: ...", "Chapter 1: ...")
     final normChapter = normalizeChapterHeader(text);
-    final isTocEntry = RegExp(
-      r'(\.{3,}|[-–—]{3,}|\.{2,}\s*[0-9ivxlcdm]+$)',
-    ).hasMatch(text) && (text.contains('..') || text.contains('--'));
+    final isTocEntry =
+        RegExp(r'(\.{3,}|[-–—]{3,}|\.{2,}\s*[0-9ivxlcdm]+$)').hasMatch(text) &&
+        (text.contains('..') || text.contains('--'));
 
     if (!isTocPage && !isTocEntry && normChapter != null) {
       return SemanticReconstructedBlock(
@@ -482,13 +526,17 @@ class SemanticClassifier {
       );
     }
 
-    final isRomanChapter = lineCount == 1 &&
+    final isRomanChapter =
+        lineCount == 1 &&
         top < pageHeight * 0.70 &&
         RegExp(
           r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
         ).hasMatch(text);
 
-    if (!isTocPage && !isTocEntry && isRomanChapter && (fontSize > bodyFontSize * 1.15 || isBold)) {
+    if (!isTocPage &&
+        !isTocEntry &&
+        isRomanChapter &&
+        (fontSize > bodyFontSize * 1.15 || isBold)) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.heading1,
         headingLevel: 1,
@@ -499,8 +547,17 @@ class SemanticClassifier {
       );
     }
 
-    // Cover Page (Page 0) components for multi-page documents
-    if (para.startPageIndex == 0 && totalPages > 1) {
+    // Cover Page (Page 0) components for multi-page documents (unless explicitly a named chapter)
+    final isExplicitChapterOnPage0 =
+        normalizeChapterHeader(text) != null ||
+        RegExp(
+          r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|testimoni)\b',
+          caseSensitive: false,
+        ).hasMatch(text);
+
+    if (para.startPageIndex == 0 &&
+        totalPages > 1 &&
+        !isExplicitChapterOnPage0) {
       return SemanticReconstructedBlock(
         type: SemanticBlockType.documentTitle,
         headingLevel: 1,
@@ -517,25 +574,38 @@ class SemanticClassifier {
     if (lineCount <= 4 && text.length < 180) {
       final fontRatio = fontSize / bodyFontSize;
 
-      final isNamedChapter = RegExp(
-        r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|testimoni|ucapan terima kasih|tentang penulis)\b',
+      final isFusedPrologue = RegExp(
+        r'^(prolog|prologue|prakata|epilog|epilogue)\s*:',
         caseSensitive: false,
       ).hasMatch(text);
 
-      final isRomanChapter = lineCount == 1 &&
+      final isNamedChapter =
+          isFusedPrologue ||
+          (text.length <= 45 &&
+              !text.endsWith('.') &&
+              RegExp(
+                r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|testimoni|ucapan terima kasih|tentang penulis)\b',
+                caseSensitive: false,
+              ).hasMatch(text));
+
+      final isRomanChapter =
+          lineCount == 1 &&
           top < pageHeight * 0.70 &&
           RegExp(
             r'^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|XVIII|XIX|XX)$',
           ).hasMatch(text);
 
-      final isAllCapTitle = lineCount <= 3 &&
+      final isAllCapTitle =
+          lineCount <= 3 &&
           text.length >= 3 &&
           text.length <= 80 &&
-          text.replaceAll('"', '').trim() == text.replaceAll('"', '').trim().toUpperCase() &&
+          text.replaceAll('"', '').trim() ==
+              text.replaceAll('"', '').trim().toUpperCase() &&
           RegExp(r'[A-Z]').hasMatch(text) &&
           !RegExp(r'^\d+$').hasMatch(text);
 
-      final isProminentTitle = fontRatio >= 1.45 ||
+      final isProminentTitle =
+          fontRatio >= 1.45 ||
           (fontRatio >= 1.25 &&
               isAllCapTitle &&
               text.length < 60 &&
@@ -554,7 +624,9 @@ class SemanticClassifier {
       }
 
       // Book / Document Title on leading pages
-      if (para.startPageIndex <= 2 && isAllCapTitle && top < pageHeight * 0.40) {
+      if (para.startPageIndex <= 2 &&
+          isAllCapTitle &&
+          top < pageHeight * 0.40) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.documentTitle,
           headingLevel: 1,
@@ -566,9 +638,11 @@ class SemanticClassifier {
         );
       }
 
-      if (fontRatio >= 1.45 ||
-          (fontRatio >= 1.18 && (isBold || isAllCapTitle) && (normChapter != null || isNamedChapter || isRomanChapter)) ||
-          isProminentTitle) {
+      // True Chapter Markers (explicit BAB, named front/back matter, Roman numerals)
+      if (normChapter != null ||
+          isNamedChapter ||
+          isRomanChapter ||
+          (fontRatio >= 1.60 && para.startPageIndex <= 3)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading1,
           headingLevel: 1,
@@ -579,7 +653,7 @@ class SemanticClassifier {
         );
       }
 
-      // H2: Section heading / Subchapter (1.18x+ body size, or numbered section, or isolated uppercase)
+      // H2: Section heading / Subchapter (all-caps section title, 1.18x+ body size, or numbered section)
       final isSectionPattern = RegExp(
         r'^([0-9ivxlcdm]+\.|\bsection\b|\bhukum\b|[a-z]\.)',
         caseSensitive: false,
@@ -588,6 +662,7 @@ class SemanticClassifier {
       if ((fontRatio >= 1.18 && isBold) ||
           (isBold && isSectionPattern) ||
           isSectionPattern ||
+          isProminentTitle ||
           (isAllCapTitle && top < pageHeight * 0.70)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading2,
@@ -599,12 +674,12 @@ class SemanticClassifier {
         );
       }
 
-      // H3: Sub-section heading / Section lead (bold/italic/title case without terminal punctuation)
+      // H3: Sub-section heading / Section lead (bold/italic/larger font without terminal punctuation)
       final endsWithPunct = RegExp(r'[\.\?!…]\s*$').hasMatch(text);
       if (lineCount <= 2 &&
           text.length <= 80 &&
           !endsWithPunct &&
-          (fontRatio >= 1.05 || isBold || isItalic || (fontSize >= bodyFontSize && top < pageHeight * 0.50))) {
+          (fontRatio >= 1.08 || isBold || isItalic)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.heading3,
           headingLevel: 3,
@@ -639,7 +714,9 @@ class SemanticClassifier {
   }
 
   /// Calculates the modal (most frequent) body font size across paragraphs.
-  static double _detectModalBodyFontSize(List<ReconstructedParagraph> paragraphs) {
+  static double _detectModalBodyFontSize(
+    List<ReconstructedParagraph> paragraphs,
+  ) {
     if (paragraphs.isEmpty) return 11.0;
 
     final fontCounts = <double, int>{};
@@ -662,10 +739,13 @@ class SemanticClassifier {
   }
 
   /// Calculates the modal left margin for body text.
-  static double _detectModalLeftMargin(List<ReconstructedParagraph> paragraphs) {
+  static double _detectModalLeftMargin(
+    List<ReconstructedParagraph> paragraphs,
+  ) {
     if (paragraphs.isEmpty) return 50.0;
 
-    final leftMargins = paragraphs.map((p) => p.boundingBox.left).toList()..sort();
+    final leftMargins = paragraphs.map((p) => p.boundingBox.left).toList()
+      ..sort();
     final mid = leftMargins.length ~/ 2;
     return leftMargins[mid];
   }

@@ -27,8 +27,23 @@ class FileStorageService {
     _lockedPaths.remove(p.canonicalize(path));
   }
 
+  static Directory? customAppBaseDirectory;
+
   static Future<Directory> getAppBaseDirectory() async {
-    final docsDir = await getApplicationDocumentsDirectory();
+    if (customAppBaseDirectory != null) {
+      if (!await customAppBaseDirectory!.exists()) {
+        await customAppBaseDirectory!.create(recursive: true);
+      }
+      return customAppBaseDirectory!;
+    }
+    Directory docsDir;
+    try {
+      docsDir = await getApplicationDocumentsDirectory();
+    } catch (_) {
+      // Fallback for macOS non-sandboxed CLI / test environments
+      final home = Platform.environment['HOME'] ?? Directory.current.path;
+      docsDir = Directory(p.join(home, 'Documents'));
+    }
     final appDir = Directory(p.join(docsDir.path, 'DigitalBooks'));
     if (!await appDir.exists()) {
       await appDir.create(recursive: true);
