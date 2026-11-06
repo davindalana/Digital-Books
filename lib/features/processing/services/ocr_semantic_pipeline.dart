@@ -122,13 +122,17 @@ class OcrSemanticPipeline {
     );
 
     // 5. Generate domain BookDocument
-    final bookDoc = reconstructed.toBookDocument(
-      extraMetadata: {
-        'ocrSource': 'apple_vision_offline',
-        'ocrCompletedPages': completedOcrPages.length,
-        'reconstructedAt': DateTime.now().toIso8601String(),
-      },
-    );
+    final bookDoc = reconstructed
+        .toBookDocument(
+          extraMetadata: {
+            'ocrSource': 'apple_vision_offline',
+            'ocrCompletedPages': completedOcrPages.length,
+            'reconstructedAt': DateTime.now().toIso8601String(),
+          },
+        )
+        // This derivative is always produced from scanned pages: the quality
+        // status is not a reliable indicator that the source PDF had text.
+        .copyWith(isScanned: true);
 
     // 6. Save derivative JSON to storage
     final savedJsonFile = await FileStorageService.saveProcessedBook(

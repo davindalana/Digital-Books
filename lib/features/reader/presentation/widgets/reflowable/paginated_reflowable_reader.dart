@@ -59,12 +59,12 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
   List<PaginatedPage> _pages = [];
   int _currentPageIndex = 0;
   bool _isNavigating = false;
+  Timer? _navTimer;
   double _lastWidth = 0;
   double _lastHeight = 0;
 
   String? _activeAnchorNodeId;
   int _activeCharOffset = 0;
-  Timer? _navTimer;
 
   int get totalPages => _pages.length;
   int get currentPageIndex => _currentPageIndex;
@@ -152,8 +152,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
       });
       _onPageSelected(target);
       _navTimer?.cancel();
-      _navTimer = Timer(const Duration(milliseconds: 150), () {
-        if (mounted) _isNavigating = false;
+      _navTimer = Timer(const Duration(milliseconds: 50), () {
+        if (mounted) {
+          setState(() => _isNavigating = false);
+        }
       });
     }
   }
@@ -174,8 +176,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
       });
       _onPageSelected(target);
       _navTimer?.cancel();
-      _navTimer = Timer(const Duration(milliseconds: 150), () {
-        if (mounted) _isNavigating = false;
+      _navTimer = Timer(const Duration(milliseconds: 50), () {
+        if (mounted) {
+          setState(() => _isNavigating = false);
+        }
       });
     }
   }

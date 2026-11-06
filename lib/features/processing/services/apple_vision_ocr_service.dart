@@ -183,7 +183,14 @@ class AppleVisionOcrService {
     final renderW = (page.width * scale).round();
     final renderH = (page.height * scale).round();
 
-    final pdfImage = await page.render(width: renderW, height: renderH);
+    // NOTE: pdfrx `width`/`height` are a *clip rectangle* in page coordinates,
+    // not an output size. Passing them alone renders the top-left corner at
+    // native scale inside a stretched canvas, which shifts and compresses every
+    // normalised OCR box. `fullWidth`/`fullHeight` scale the whole page instead.
+    final pdfImage = await page.render(
+      fullWidth: renderW.toDouble(),
+      fullHeight: renderH.toDouble(),
+    );
     if (pdfImage == null) {
       return OcrPageResult(
         imagePath: '',

@@ -1400,8 +1400,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       final quality =
                           _document?.metadata['reconstructionQuality']
                               as Map<String, dynamic>?;
+                      // `book.isScanned` only describes the source PDF. Once a
+                      // verified OCR derivative exists, Book Mode quality is
+                      // described by reconstructionQuality; showing the
+                      // "PDF Asli recommended" banner for every scanned book
+                      // hides the fact that the reflowable document is good.
                       final isPoor =
-                          widget.book.isScanned || quality?['status'] == 'poor';
+                          quality?['status'] == 'poor' ||
+                          (quality == null && widget.book.isScanned);
                       final isPartial = quality?['status'] == 'partial';
 
                       if (!isPoor && !isPartial) return const SizedBox.shrink();

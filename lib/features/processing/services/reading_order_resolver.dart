@@ -54,6 +54,27 @@ class ReadingOrderResolver {
       );
     }
 
+    // A table-of-contents page is visually a single column even though its
+    // indented entries and dot leaders can look like two columns to the
+    // geometric partitioner. Keep TOC entries in strict top-to-bottom order.
+    final hasTocHeading = page.lines.any(
+      (l) => RegExp(
+        r'^(daftar isi|table of contents|contents)\b',
+        caseSensitive: false,
+      ).hasMatch(l.text.trim()),
+    );
+    final dottedEntryCount = page.lines
+        .where((l) => l.text.contains('..') || l.text.contains('--'))
+        .length;
+    if (hasTocHeading || dottedEntryCount >= 3) {
+      return PageReadingOrderResult(
+        pageIndex: page.pageIndex,
+        layoutStructure: PageLayoutStructure.singleColumn,
+        orderedLines: _sortLinesSingleColumn(page.lines),
+        columnConfidence: 1.0,
+      );
+    }
+
     final pageWidth = page.pageSize.width > 0
         ? page.pageSize.width
         : page.lines.map((l) => l.bounds.right).reduce(math.max) + 50.0;
@@ -67,12 +88,17 @@ class ReadingOrderResolver {
     final nonChromeLines = <ExtractedTextLine>[];
 
     final topHeaderThreshold = math.min(65.0, pageHeight * 0.10);
-    final bottomFooterThreshold = math.max(pageHeight - 65.0, pageHeight * 0.90);
+    final bottomFooterThreshold = math.max(
+      pageHeight - 65.0,
+      pageHeight * 0.90,
+    );
 
     for (final line in page.lines) {
-      if (line.bounds.bottom <= topHeaderThreshold && line.bounds.height < 25.0) {
+      if (line.bounds.bottom <= topHeaderThreshold &&
+          line.bounds.height < 25.0) {
         headerLines.add(line);
-      } else if (line.bounds.top >= bottomFooterThreshold && line.bounds.height < 25.0) {
+      } else if (line.bounds.top >= bottomFooterThreshold &&
+          line.bounds.height < 25.0) {
         footerLines.add(line);
       } else {
         nonChromeLines.add(line);
@@ -85,7 +111,8 @@ class ReadingOrderResolver {
 
     for (final line in nonChromeLines) {
       final width = line.bounds.width;
-      final spansCenter = line.bounds.left < pageWidth * 0.40 &&
+      final spansCenter =
+          line.bounds.left < pageWidth * 0.40 &&
           line.bounds.right > pageWidth * 0.60;
       final isWide = width >= pageWidth * 0.68;
 
@@ -187,7 +214,10 @@ class ReadingOrderResolver {
       for (final band in bands) {
         final refLine = band.first;
         final overlapTop = math.max(line.bounds.top, refLine.bounds.top);
-        final overlapBottom = math.min(line.bounds.bottom, refLine.bounds.bottom);
+        final overlapBottom = math.min(
+          line.bounds.bottom,
+          refLine.bounds.bottom,
+        );
         final overlapHeight = overlapBottom - overlapTop;
 
         final minHeight = math.min(line.bounds.height, refLine.bounds.height);
@@ -205,8 +235,10 @@ class ReadingOrderResolver {
 
     // Sort bands top-to-bottom by average top coordinate
     bands.sort((a, b) {
-      final aAvg = a.map((l) => l.bounds.top).reduce((v, e) => v + e) / a.length;
-      final bAvg = b.map((l) => l.bounds.top).reduce((v, e) => v + e) / b.length;
+      final aAvg =
+          a.map((l) => l.bounds.top).reduce((v, e) => v + e) / a.length;
+      final bAvg =
+          b.map((l) => l.bounds.top).reduce((v, e) => v + e) / b.length;
       return aAvg.compareTo(bAvg);
     });
 
@@ -257,7 +289,9 @@ class ReadingOrderResolver {
         (l) => l.bounds.left < testX && l.bounds.right > testX,
       );
 
-      if (straddling.isEmpty && leftLines.length >= 2 && rightLines.length >= 2) {
+      if (straddling.isEmpty &&
+          leftLines.length >= 2 &&
+          rightLines.length >= 2) {
         final gLeft = leftLines.map((l) => l.bounds.right).reduce(math.max);
         final gRight = rightLines.map((l) => l.bounds.left).reduce(math.min);
         final gWidth = gRight - gLeft;
@@ -325,4 +359,3 @@ class _TwoColumnPartition {
     required this.confidence,
   });
 }
-

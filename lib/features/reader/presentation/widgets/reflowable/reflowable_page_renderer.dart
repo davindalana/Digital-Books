@@ -94,14 +94,25 @@ class ReflowablePageRenderer extends StatelessWidget {
             const SizedBox(height: 28),
 
           // 2. Main Page Content (Slices)
+          //
+          // Pagination measures text with TextPainter, but SelectableText can
+          // render a few pixels taller on dense pages. Scale the completed page
+          // down by at most a fraction of a percent instead of clipping the last
+          // line. This is a safety net, not a scrolling region: vertical
+          // scrolling remains disabled in Book Mode.
           Expanded(
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: page.slices
-                    .map((slice) => _buildSliceWidget(context, slice))
-                    .toList(),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: contentWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: page.slices
+                      .map((slice) => _buildSliceWidget(context, slice))
+                      .toList(),
+                ),
               ),
             ),
           ),
@@ -153,14 +164,13 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Document Title Node
     if (node.type == ContentNodeType.documentTitle) {
-      final style = typography.headingStyle(
-        level: 1,
-        color: theme.textColor,
-      ).copyWith(
-        fontSize: typography.fontSize * 1.45,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.8,
-      );
+      final style = typography
+          .headingStyle(level: 1, color: theme.textColor)
+          .copyWith(
+            fontSize: typography.fontSize * 1.45,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
         sliceStartOffset: slice.startCharOffset,
@@ -198,14 +208,13 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Section Heading Node (H2 / Subheadings)
     if (node.type == ContentNodeType.sectionHeading) {
-      final style = typography.headingStyle(
-        level: 2,
-        color: theme.textColor,
-      ).copyWith(
-        fontSize: typography.fontSize * 1.15,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.3,
-      );
+      final style = typography
+          .headingStyle(level: 2, color: theme.textColor)
+          .copyWith(
+            fontSize: typography.fontSize * 1.15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
         sliceStartOffset: slice.startCharOffset,
@@ -234,7 +243,7 @@ class ReflowablePageRenderer extends StatelessWidget {
             Expanded(
               child: SelectableText.rich(
                 richSpan,
-                textAlign: typography.textAlign,
+                textAlign: TextAlign.left,
                 contextMenuBuilder: (ctx, editableTextState) =>
                     _buildContextMenu(ctx, editableTextState, slice),
               ),
@@ -245,7 +254,8 @@ class ReflowablePageRenderer extends StatelessWidget {
     }
 
     // Ordered List Item Node
-    if (node.type == ContentNodeType.orderedList || node.type == ContentNodeType.listItem) {
+    if (node.type == ContentNodeType.orderedList ||
+        node.type == ContentNodeType.listItem) {
       final itemText = slice.textSlice.trim();
       final match = RegExp(
         r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s*(.*)$',
@@ -280,10 +290,14 @@ class ReflowablePageRenderer extends StatelessWidget {
               margin: const EdgeInsets.only(right: 8, top: 1),
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37).withAlpha(theme.isDark ? 30 : 20),
+                color: const Color(
+                  0xFFD4AF37,
+                ).withAlpha(theme.isDark ? 30 : 20),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: const Color(0xFFD4AF37).withAlpha(theme.isDark ? 80 : 60),
+                  color: const Color(
+                    0xFFD4AF37,
+                  ).withAlpha(theme.isDark ? 80 : 60),
                   width: 0.8,
                 ),
               ),
@@ -293,7 +307,9 @@ class ReflowablePageRenderer extends StatelessWidget {
                 style: TextStyle(
                   fontSize: typography.fontSize * 0.75,
                   fontWeight: FontWeight.bold,
-                  color: theme.isDark ? const Color(0xFFE5C058) : const Color(0xFF996515),
+                  color: theme.isDark
+                      ? const Color(0xFFE5C058)
+                      : const Color(0xFF996515),
                 ),
               ),
             ),
@@ -314,7 +330,10 @@ class ReflowablePageRenderer extends StatelessWidget {
     if (node.type == ContentNodeType.unorderedList) {
       final style = typography.bodyStyle(color: theme.textColor);
       final rawText = slice.textSlice.trim();
-      final bulletMatch = RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s*(.*)$', dotAll: true).firstMatch(rawText);
+      final bulletMatch = RegExp(
+        r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s*(.*)$',
+        dotAll: true,
+      ).firstMatch(rawText);
       final content = bulletMatch?.group(2) ?? rawText;
 
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
@@ -361,12 +380,12 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Caption Node
     if (node.type == ContentNodeType.caption) {
-      final style = typography.bodyStyle(
-        color: theme.secondaryTextColor,
-      ).copyWith(
-        fontSize: typography.fontSize * 0.85,
-        fontStyle: FontStyle.italic,
-      );
+      final style = typography
+          .bodyStyle(color: theme.secondaryTextColor)
+          .copyWith(
+            fontSize: typography.fontSize * 0.85,
+            fontStyle: FontStyle.italic,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
         sliceStartOffset: slice.startCharOffset,
@@ -392,14 +411,15 @@ class ReflowablePageRenderer extends StatelessWidget {
     }
 
     // Copyright / Metadata Block Node
-    if (node.type == ContentNodeType.copyrightBlock || node.type == ContentNodeType.metadataBlock) {
-      final style = typography.bodyStyle(
-        color: theme.secondaryTextColor,
-      ).copyWith(
-        fontSize: typography.fontSize * 0.82,
-        height: 1.5,
-        letterSpacing: 0.2,
-      );
+    if (node.type == ContentNodeType.copyrightBlock ||
+        node.type == ContentNodeType.metadataBlock) {
+      final style = typography
+          .bodyStyle(color: theme.secondaryTextColor)
+          .copyWith(
+            fontSize: typography.fontSize * 0.82,
+            height: 1.5,
+            letterSpacing: 0.2,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
         sliceStartOffset: slice.startCharOffset,
@@ -446,7 +466,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         ),
         child: SelectableText.rich(
           richSpan,
-          textAlign: typography.textAlign,
+          textAlign: TextAlign.left,
           contextMenuBuilder: (ctx, editableTextState) =>
               _buildContextMenu(ctx, editableTextState, slice),
         ),
@@ -495,12 +515,12 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Footnote Node
     if (node.type == ContentNodeType.footnote) {
-      final style = typography.bodyStyle(
-        color: theme.secondaryTextColor,
-      ).copyWith(
-        fontSize: typography.fontSize * 0.85,
-        fontStyle: FontStyle.italic,
-      );
+      final style = typography
+          .bodyStyle(color: theme.secondaryTextColor)
+          .copyWith(
+            fontSize: typography.fontSize * 0.85,
+            fontStyle: FontStyle.italic,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
         sliceStartOffset: slice.startCharOffset,

@@ -167,31 +167,50 @@ class SemanticClassifier {
             pageParas[1].text.length >= 8 &&
             pageParas[1].text.length <= 100 &&
             pageParas[1].boundingBox.top < effectivePageHeight * 0.40) {
-          final subtitlePara = pageParas[1];
-          final fusedText =
-              '${pageParas.first.text.trim()}: ${subtitlePara.text.trim()}';
+          final fusedParas = <ReconstructedParagraph>[
+            pageParas.first,
+            pageParas[1],
+          ];
+          var consumed = 2;
+          // Consume further centred subtitle lines (titles often wrap over
+          // two or three lines on the scanned page).
+          while (consumed < pageParas.length) {
+            final next = pageParas[consumed];
+            final nextText = next.text.trim();
+            if (next.boundingBox.top < effectivePageHeight * 0.40 &&
+                nextText.length <= 100 &&
+                !nextText.endsWith('.') &&
+                next.boundingBox.left > bodyLeftMargin + 40.0) {
+              fusedParas.add(next);
+              consumed++;
+            } else {
+              break;
+            }
+          }
+          final subtitleText = fusedParas
+              .skip(1)
+              .map((p) => p.text.trim())
+              .join(' ');
+          final fusedText = '${pageParas.first.text.trim()}: $subtitleText';
           final fusedPara = ReconstructedParagraph(
             text: fusedText,
             startPageIndex: pageIdx,
             endPageIndex: pageIdx,
             boundingBox: Rect.fromLTRB(
-              pageParas.first.boundingBox.left,
-              pageParas.first.boundingBox.top,
-              subtitlePara.boundingBox.right,
-              subtitlePara.boundingBox.bottom,
+              fusedParas.map((p) => p.boundingBox.left).reduce(math.min),
+              fusedParas.map((p) => p.boundingBox.top).reduce(math.min),
+              fusedParas.map((p) => p.boundingBox.right).reduce(math.max),
+              fusedParas.map((p) => p.boundingBox.bottom).reduce(math.max),
             ),
-            fontSize: math.max(pageParas.first.fontSize, subtitlePara.fontSize),
+            fontSize: fusedParas.map((p) => p.fontSize).reduce(math.max),
             fontStyles: pageParas.first.fontStyles,
             isBold: true,
             isItalic: false,
-            lineCount: pageParas.first.lineCount + subtitlePara.lineCount,
-            sourceLines: [
-              ...pageParas.first.sourceLines,
-              ...subtitlePara.sourceLines,
-            ],
+            lineCount: fusedParas.fold(0, (sum, p) => sum + p.lineCount),
+            sourceLines: [for (final p in fusedParas) ...p.sourceLines],
           );
           preparedParagraphs.add(fusedPara);
-          for (int i = 2; i < pageParas.length; i++) {
+          for (int i = consumed; i < pageParas.length; i++) {
             preparedParagraphs.add(pageParas[i]);
           }
           continue;
@@ -203,7 +222,34 @@ class SemanticClassifier {
 
     final classifiedBlocks = <SemanticReconstructedBlock>[];
 
-    for (final para in preparedParagraphs) {
+    // Vertical gaps relative to neighbouring paragraphs on the same page are a
+    // robust heading signal for OCR documents, where glyph-box heights (and
+    // therefore estimated font sizes) are noisy.
+    final gapBefore = List<double?>.filled(preparedParagraphs.length, null);
+    final gapAfter = List<double?>.filled(preparedParagraphs.length, null);
+    for (int i = 0; i < preparedParagraphs.length; i++) {
+      if (i > 0 &&
+          preparedParagraphs[i - 1].endPageIndex ==
+              preparedParagraphs[i].startPageIndex) {
+        gapBefore[i] = math.max(
+          0.0,
+          preparedParagraphs[i].boundingBox.top -
+              preparedParagraphs[i - 1].boundingBox.bottom,
+        );
+      }
+      if (i + 1 < preparedParagraphs.length &&
+          preparedParagraphs[i + 1].startPageIndex ==
+              preparedParagraphs[i].endPageIndex) {
+        gapAfter[i] = math.max(
+          0.0,
+          preparedParagraphs[i + 1].boundingBox.top -
+              preparedParagraphs[i].boundingBox.bottom,
+        );
+      }
+    }
+
+    for (int i = 0; i < preparedParagraphs.length; i++) {
+      final para = preparedParagraphs[i];
       final block = _classifyParagraph(
         para: para,
         bodyFontSize: bodyFontSize,
@@ -213,6 +259,8 @@ class SemanticClassifier {
         repeatingFooters: repeatingFooters,
         isTocPage: tocPageIndices.contains(para.startPageIndex),
         totalPages: totalPages,
+        gapBefore: gapBefore[i],
+        gapAfter: gapAfter[i],
       );
       classifiedBlocks.add(block);
     }
@@ -294,6 +342,8 @@ class SemanticClassifier {
     required Set<String> repeatingFooters,
     bool isTocPage = false,
     int totalPages = 1,
+    double? gapBefore,
+    double? gapAfter,
   }) {
     final text = para.text.trim();
     final top = para.boundingBox.top;
@@ -303,6 +353,9 @@ class SemanticClassifier {
     final isBold = para.isBold;
     final isItalic = para.isItalic;
     final lineCount = para.lineCount;
+    final isOcrParagraph =
+        para.sourceLines.isNotEmpty &&
+        para.sourceLines.first.fontName == 'AppleVisionOCR';
 
     // Handle Table of Contents pages:
     // Only the title "Daftar Isi" is a heading1; all entries on that page are body/toc content.
@@ -320,6 +373,35 @@ class SemanticClassifier {
           confidence: 0.98,
         );
       }
+      // TOC continuation pages still carry running headers and page numbers
+      // ("xii BICARA ITU ADA SENINYA", "xiii"). Do not turn those into TOC
+      // entries just because the page is part of the table of contents.
+      final inChromeZone = top <= 65.0 || bottom >= pageHeight - 75.0;
+      final isNumberedChrome =
+          RegExp(
+            r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
+          ).hasMatch(text) ||
+          RegExp(r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$').hasMatch(text);
+      if (inChromeZone && isNumberedChrome) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.runningHeader,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.95,
+        );
+      }
+      if (inChromeZone &&
+          RegExp(r'^([ivxlcdm]+|\d+)$', caseSensitive: false).hasMatch(text)) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.pageNumber,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.98,
+        );
+      }
+
       return SemanticReconstructedBlock(
         type: SemanticBlockType.bodyParagraph,
         text: text,
@@ -354,7 +436,18 @@ class SemanticClassifier {
           !text.endsWith(',') &&
           !text.endsWith(';');
 
-      if (repeatingHeaders.contains(text) || isAllUpperShort) {
+      // Running headers in this scan combine an all-caps book title with a
+      // lower-case Roman numeral ("vi BICARA ITU ADA SENINYA"). The numeral
+      // defeats the all-caps check, so recognise the numbered pattern too.
+      final isNumberedRunningHeader =
+          RegExp(
+            r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
+          ).hasMatch(text) ||
+          RegExp(r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$').hasMatch(text);
+
+      if (repeatingHeaders.contains(text) ||
+          isAllUpperShort ||
+          isNumberedRunningHeader) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningHeader,
           text: text,
@@ -566,6 +659,96 @@ class SemanticClassifier {
         sourceBounds: para.boundingBox,
         metadata: const {'isFrontMatter': true, 'isCover': true},
         confidence: 0.98,
+      );
+    }
+
+    // OCR-specific heading detection.
+    //
+    // Apple Vision provides no font family, weight or italic metadata, and the
+    // height of a glyph box changes with ascenders/descenders. The generic
+    // font-ratio heuristic therefore promotes ordinary prose and dialogue lines
+    // to headings. For OCR paragraphs, use casing plus the vertical whitespace
+    // around the paragraph, which is stable in page coordinates.
+    if (isOcrParagraph) {
+      final endsWithPunctuation = RegExp(r'[\.\?!…»”")\]]\s*$').hasMatch(text);
+      final startsWithLowercase =
+          text.isNotEmpty && RegExp(r'^[a-zà-ÿ]').hasMatch(text);
+      final startsWithQuote = RegExp(r'''^["'“‘«—\-–¿]''').hasMatch(text);
+      final startsWithDigit = RegExp(r'^\d').hasMatch(text);
+      final isAllCapsTitle =
+          text.length >= 3 &&
+          text.length <= 80 &&
+          text == text.toUpperCase() &&
+          RegExp(r'[A-Z]').hasMatch(text) &&
+          !RegExp(r'^\d+$').hasMatch(text);
+
+      // Named front/back matter that starts a real top-level chapter.
+      final isNamedChapter =
+          text.length <= 80 &&
+          !endsWithPunctuation &&
+          RegExp(
+            r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|testimoni|ucapan terima kasih|tentang penulis)\b',
+            caseSensitive: false,
+          ).hasMatch(text);
+
+      if (!isTocEntry && isNamedChapter) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.heading1,
+          headingLevel: 1,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.95,
+        );
+      }
+
+      if (!isTocEntry &&
+          isAllCapsTitle &&
+          !endsWithPunctuation &&
+          !startsWithQuote &&
+          top < pageHeight * 0.75) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.heading2,
+          headingLevel: 2,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.90,
+        );
+      }
+
+      final hasHeadingWhitespace =
+          (gapBefore != null &&
+              gapBefore >= 22.0 &&
+              (gapAfter == null || gapAfter >= 12.0)) ||
+          (gapAfter != null &&
+              gapAfter >= 24.0 &&
+              (gapBefore == null || gapBefore >= 12.0));
+
+      if (!isTocEntry &&
+          lineCount <= 2 &&
+          text.length <= 80 &&
+          !endsWithPunctuation &&
+          !startsWithLowercase &&
+          !startsWithQuote &&
+          !startsWithDigit &&
+          hasHeadingWhitespace) {
+        return SemanticReconstructedBlock(
+          type: SemanticBlockType.heading3,
+          headingLevel: 3,
+          text: text,
+          sourcePageIndex: para.startPageIndex,
+          sourceBounds: para.boundingBox,
+          confidence: 0.85,
+        );
+      }
+
+      return SemanticReconstructedBlock(
+        type: SemanticBlockType.bodyParagraph,
+        text: text,
+        sourcePageIndex: para.startPageIndex,
+        sourceBounds: para.boundingBox,
+        confidence: 0.95,
       );
     }
 

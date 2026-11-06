@@ -52,15 +52,17 @@ class ParagraphReconstructor {
   static final RegExp _sentenceTerminators = RegExp(r'[.!?…»”"][)\]"\s]*$');
 
   /// Dialogue openers: quotation marks, em-dash, guillemets.
-  static final RegExp _dialogueOpeners = RegExp(r'^(["“‘«—\-]|--\s)');
+  static final RegExp _dialogueOpeners = RegExp(r'^(["“‘«—\-¿]|--\s)');
 
   /// Ordered list items: "1.", "1)", "(1)", "a.", "i.", etc.
-  static final RegExp _orderedListRegex =
-      RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+');
+  static final RegExp _orderedListRegex = RegExp(
+    r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+',
+  );
 
   /// Unordered list items: bullet, dash, asterisk, en/em-dash
-  static final RegExp _unorderedListRegex =
-      RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+');
+  static final RegExp _unorderedListRegex = RegExp(
+    r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+',
+  );
 
   /// Copyright, imprint, and bibliographic metadata prefixes
   static final RegExp _copyrightMetaRegex = RegExp(
@@ -80,17 +82,69 @@ class ParagraphReconstructor {
     caseSensitive: false,
   );
 
+  /// Front/back matter titles that always start a new content section.
+  static final RegExp _frontMatterTitleRegex = RegExp(
+    r'^(prolog|prologue|epilog|epilogue|prakata|daftar isi|testimoni|ucapan terima kasih|tentang penulis)\b',
+    caseSensitive: false,
+  );
+
   /// Location, direction, spatial, and temporal nouns that follow preposition "di" or "ke"
   /// and MUST ALWAYS remain separate words (never joined into a single word).
   static const Set<String> indonesianPrepositionComplements = {
     // Spatial & location nouns
-    'rumah', 'kantor', 'sekolah', 'pasar', 'kampus', 'toko', 'gedung', 'kamar', 'ruang',
-    'jalan', 'gang', 'lorong', 'kota', 'desa', 'dusun', 'kampung', 'negeri', 'negara',
-    'darat', 'laut', 'pantai', 'gunung', 'sungai', 'danau', 'pulau', 'bumi', 'dunia',
-    'meja', 'kursi', 'lemari', 'pintu', 'jendela', 'sudut', 'tepi', 'ujung', 'pangkal',
+    'rumah',
+    'kantor',
+    'sekolah',
+    'pasar',
+    'kampus',
+    'toko',
+    'gedung',
+    'kamar',
+    'ruang',
+    'jalan',
+    'gang',
+    'lorong',
+    'kota',
+    'desa',
+    'dusun',
+    'kampung',
+    'negeri',
+    'negara',
+    'darat',
+    'laut',
+    'pantai',
+    'gunung',
+    'sungai',
+    'danau',
+    'pulau',
+    'bumi',
+    'dunia',
+    'meja',
+    'kursi',
+    'lemari',
+    'pintu',
+    'jendela',
+    'sudut',
+    'tepi',
+    'ujung',
+    'pangkal',
     'tempat', 'lokasi', 'posisi', 'daerah', 'wilayah', 'kawasan', 'lingkungan',
-    'seberang', 'sekeliling', 'sekitar', 'sebelah', 'antara', 'tengah', 'samping',
-    'depan', 'belakang', 'atas', 'bawah', 'dalam', 'luar', 'balik', 'muka', 'hadapan',
+    'seberang',
+    'sekeliling',
+    'sekitar',
+    'sebelah',
+    'antara',
+    'tengah',
+    'samping',
+    'depan',
+    'belakang',
+    'atas',
+    'bawah',
+    'dalam',
+    'luar',
+    'balik',
+    'muka',
+    'hadapan',
     // Pointers & pronouns
     'sini', 'situ', 'sana', 'mana', 'mana-mana',
     // Temporal nouns
@@ -101,8 +155,22 @@ class ParagraphReconstructor {
 
   /// Common Indonesian ordinal numbers and nouns taking the 'ke-' prefix.
   static const Set<String> indonesianKePrefixComplements = {
-    'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh',
-    'sebelas', 'seratus', 'seribu', 'tua', 'kasih', 'hendak',
+    'satu',
+    'dua',
+    'tiga',
+    'empat',
+    'lima',
+    'enam',
+    'tujuh',
+    'delapan',
+    'sembilan',
+    'sepuluh',
+    'sebelas',
+    'seratus',
+    'seribu',
+    'tua',
+    'kasih',
+    'hendak',
   };
 
   /// Known Indonesian coordinate compounds (kata majemuk setara), rhyming reduplications
@@ -205,8 +273,22 @@ class ParagraphReconstructor {
     if (p1Lower.endsWith(p2Lower) && p2Lower.length >= 3) return true;
 
     const prefixes = [
-      'ber', 'ter', 'per', 'se', 'meng', 'meny', 'men', 'mem', 'me',
-      'peng', 'peny', 'pen', 'pem', 'pe', 'di', 'ke'
+      'ber',
+      'ter',
+      'per',
+      'se',
+      'meng',
+      'meny',
+      'men',
+      'mem',
+      'me',
+      'peng',
+      'peny',
+      'pen',
+      'pem',
+      'pe',
+      'di',
+      'ke',
     ];
 
     for (final prefix in prefixes) {
@@ -219,16 +301,24 @@ class ParagraphReconstructor {
     }
 
     // Morphological nasalization in reciprocal verbs (e.g. tarik-menarik, kejar-mengejar)
-    if (p2Lower.startsWith('men') && p2Lower.length > 3 && 't${p2Lower.substring(3)}' == p1Lower) {
+    if (p2Lower.startsWith('men') &&
+        p2Lower.length > 3 &&
+        't${p2Lower.substring(3)}' == p1Lower) {
       return true;
     }
-    if (p2Lower.startsWith('meng') && p2Lower.length > 4 && 'k${p2Lower.substring(4)}' == p1Lower) {
+    if (p2Lower.startsWith('meng') &&
+        p2Lower.length > 4 &&
+        'k${p2Lower.substring(4)}' == p1Lower) {
       return true;
     }
-    if (p2Lower.startsWith('mem') && p2Lower.length > 3 && 'p${p2Lower.substring(3)}' == p1Lower) {
+    if (p2Lower.startsWith('mem') &&
+        p2Lower.length > 3 &&
+        'p${p2Lower.substring(3)}' == p1Lower) {
       return true;
     }
-    if (p2Lower.startsWith('meny') && p2Lower.length > 4 && 's${p2Lower.substring(4)}' == p1Lower) {
+    if (p2Lower.startsWith('meny') &&
+        p2Lower.length > 4 &&
+        's${p2Lower.substring(4)}' == p1Lower) {
       return true;
     }
 
@@ -241,7 +331,8 @@ class ParagraphReconstructor {
   }
 
   /// Cleans OCR artifacts, normalizes ligatures/unicode, and resolves glued or split words.
-  static String cleanOcrText(String raw) => ReconstructedParagraphBuilder.cleanOcrText(raw);
+  static String cleanOcrText(String raw) =>
+      ReconstructedParagraphBuilder.cleanOcrText(raw);
 
   /// Reconstructs paragraphs across all pages of a document.
   static List<ReconstructedParagraph> reconstructDocument(
@@ -262,8 +353,19 @@ class ParagraphReconstructor {
         final line = lines[i];
 
         // Obvious running headers or page numbers are isolated in place
+        // Page chrome (running headers/footers and page numbers) is emitted as
+        // its own one-line paragraph so semantic classification can filter it,
+        // but it does not close the current body paragraph. This keeps a
+        // paragraph that continues across a page boundary intact while still
+        // isolating the header/footer for the classifier.
         if (_isPageNumberOrRunningChrome(line)) {
-          if (currentBuilder != null && currentBuilder.lines.isNotEmpty) {
+          // Digital-PDF extraction has reliable page boundaries, so chrome
+          // closes the current paragraph as before. OCR scans need the builder
+          // to stay open so sentences that continue across a page are not
+          // truncated by a footer/header.
+          if (line.fontName != 'AppleVisionOCR' &&
+              currentBuilder != null &&
+              currentBuilder.lines.isNotEmpty) {
             allParagraphs.add(currentBuilder.build());
             currentBuilder = null;
           }
@@ -284,6 +386,7 @@ class ParagraphReconstructor {
           currentPage: line.pageIndex,
           modalLineGap: modalMetrics.modalGap,
           modalLineHeight: modalMetrics.modalHeight,
+          modalLeft: modalMetrics.modalLeft,
         );
 
         if (shouldBreak) {
@@ -317,6 +420,7 @@ class ParagraphReconstructor {
     required int currentPage,
     required double modalLineGap,
     required double modalLineHeight,
+    required double modalLeft,
   }) {
     final currentTrimmed = currentLine.text.trim();
     final prevTrimmed = prevLine.text.trim();
@@ -331,7 +435,8 @@ class ParagraphReconstructor {
     if (_orderedListRegex.hasMatch(prevTrimmed) ||
         _unorderedListRegex.hasMatch(prevTrimmed)) {
       if (_sentenceTerminators.hasMatch(prevTrimmed) ||
-          currentLine.bounds.top - prevLine.bounds.bottom >= modalLineGap * 0.9) {
+          currentLine.bounds.top - prevLine.bounds.bottom >=
+              modalLineGap * 0.9) {
         return true;
       }
     }
@@ -350,18 +455,70 @@ class ParagraphReconstructor {
 
     // 4. Chapter markers and prominent standalone title headings:
     if (_chapterHeaderRegex.hasMatch(currentTrimmed) ||
-        _chapterHeaderRegex.hasMatch(prevTrimmed)) {
+        _chapterHeaderRegex.hasMatch(prevTrimmed) ||
+        _frontMatterTitleRegex.hasMatch(currentTrimmed)) {
       return true;
     }
 
-    final isPrevAllCapTitle = prevTrimmed.length <= 60 &&
+    final isPrevAllCapTitle =
+        prevTrimmed.length <= 60 &&
         prevTrimmed == prevTrimmed.toUpperCase() &&
         RegExp(r'[A-Z]').hasMatch(prevTrimmed) &&
         !RegExp(r'^\d+$').hasMatch(prevTrimmed);
-    final isCurrAllCapTitle = currentTrimmed.length <= 60 &&
+    final isCurrAllCapTitle =
+        currentTrimmed.length <= 60 &&
         currentTrimmed == currentTrimmed.toUpperCase() &&
         RegExp(r'[A-Z]').hasMatch(currentTrimmed) &&
         !RegExp(r'^\d+$').hasMatch(currentTrimmed);
+
+    // OCR lines carry no reliable font family/style information. Their estimated
+    // font size is derived from noisy glyph-box heights, so font-size and
+    // bold/italic transitions must not be used to split paragraphs. Use
+    // indentation, vertical rhythm, casing and dialogue markers instead.
+    final isOcrPair =
+        prevLine.fontName == 'AppleVisionOCR' &&
+        currentLine.fontName == 'AppleVisionOCR';
+    if (isOcrPair) {
+      if (isPrevAllCapTitle != isCurrAllCapTitle) {
+        return true;
+      }
+      if (isPrevAllCapTitle && isCurrAllCapTitle) {
+        if (prevPage != currentPage) return true;
+        final verticalGap = currentLine.bounds.top - prevLine.bounds.bottom;
+        if (verticalGap > math.max(modalLineGap * 4.0, 40.0)) return true;
+        return false; // consecutive lines of the same multi-line title
+      }
+
+      if (prevPage == currentPage) {
+        // A first-line paragraph indent is the most reliable OCR paragraph signal.
+        final indentDiff = currentLine.bounds.left - prevLine.bounds.left;
+        if (indentDiff >= 10.0) return true;
+
+        // Large vertical whitespace separates paragraphs and headings. Normal
+        // line gaps in this scan are ~3-7pt; paragraph/heading gaps are >20pt.
+        final verticalGap = currentLine.bounds.top - prevLine.bounds.bottom;
+        if (verticalGap > math.max(modalLineGap * 2.4, 18.0)) return true;
+      } else if (currentLine.bounds.left > modalLeft + 10.0) {
+        // Page margins shift between scans, so compare the first line on the
+        // new page with that page's own body margin, not with the previous page.
+        return true;
+      } else if (_sentenceTerminators.hasMatch(prevTrimmed) &&
+          RegExp(r'^[A-Z]').hasMatch(currentTrimmed)) {
+        // A completed sentence at the end of a page followed by an uppercase
+        // line is a new paragraph or a new heading on the next page.
+        return true;
+      }
+
+      if (_dialogueOpeners.hasMatch(currentTrimmed) &&
+          _sentenceTerminators.hasMatch(prevTrimmed)) {
+        return true;
+      }
+
+      // Otherwise the line continues the current paragraph, even across a page
+      // boundary (the source book breaks paragraphs with indentation, not pages).
+      return false;
+    }
+
     if (isPrevAllCapTitle != isCurrAllCapTitle) {
       return true;
     }
@@ -420,9 +577,14 @@ class ParagraphReconstructor {
       }
 
       // Right margin termination signal:
-      final prevLineEndedPunctuation = _sentenceTerminators.hasMatch(prevTrimmed);
-      final widthRatio = prevLine.bounds.width / math.max(currentLine.bounds.width, 1.0);
-      if (prevLineEndedPunctuation && widthRatio < 0.80 && verticalGap >= modalLineGap * 0.85) {
+      final prevLineEndedPunctuation = _sentenceTerminators.hasMatch(
+        prevTrimmed,
+      );
+      final widthRatio =
+          prevLine.bounds.width / math.max(currentLine.bounds.width, 1.0);
+      if (prevLineEndedPunctuation &&
+          widthRatio < 0.80 &&
+          verticalGap >= modalLineGap * 0.85) {
         return true;
       }
     } else {
@@ -453,16 +615,22 @@ class ParagraphReconstructor {
   /// Calculates modal line height and vertical gap between adjacent lines.
   static _LineMetrics _calculatePageLineMetrics(List<ExtractedTextLine> lines) {
     if (lines.length < 2) {
-      return _LineMetrics(modalHeight: 12.0, modalGap: 4.0);
+      return _LineMetrics(
+        modalHeight: 12.0,
+        modalGap: 4.0,
+        modalLeft: lines.isEmpty ? 0.0 : lines.first.bounds.left,
+      );
     }
 
     final heights = <double>[];
     final gaps = <double>[];
+    final lefts = <double>[];
 
     for (int i = 0; i < lines.length - 1; i++) {
       final a = lines[i];
       final b = lines[i + 1];
       heights.add(a.bounds.height);
+      lefts.add(a.bounds.left);
 
       final gap = b.bounds.top - a.bounds.bottom;
       if (gap > 0 && gap < 30) {
@@ -472,8 +640,15 @@ class ParagraphReconstructor {
 
     final modalHeight = heights.isNotEmpty ? _findMedian(heights) : 12.0;
     final modalGap = gaps.isNotEmpty ? _findMedian(gaps) : 4.0;
+    final modalLeft = lefts.isNotEmpty
+        ? _findMedian(lefts)
+        : lines.first.bounds.left;
 
-    return _LineMetrics(modalHeight: modalHeight, modalGap: modalGap);
+    return _LineMetrics(
+      modalHeight: modalHeight,
+      modalGap: modalGap,
+      modalLeft: modalLeft,
+    );
   }
 
   static double _findMedian(List<double> values) {
@@ -496,9 +671,28 @@ class ParagraphReconstructor {
       return true;
     }
 
-    // 2. Running header at the extreme top of page (must be short and all uppercase or chapter heading)
-    if (line.bounds.top < 52.0 && line.fontSize <= 11.0 && trimmed.length <= 45) {
-      final isAllUpper = trimmed == trimmed.toUpperCase() &&
+    // 2. Running headers/footers that combine a page number (including Roman
+    // numerals in lower case, e.g. "vi BICARA ITU ADA SENINYA") with the
+    // all-caps book title. Restrict to the physical header/footer zone so an
+    // all-caps chapter title ending in a digit ("PERBEDAAN JUARA 1") is not
+    // mistaken for chrome.
+    final inChromeZone = line.bounds.top < 75.0 || line.bounds.bottom > 760.0;
+    if (inChromeZone &&
+        (RegExp(
+              r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
+            ).hasMatch(trimmed) ||
+            RegExp(
+              r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$',
+            ).hasMatch(trimmed))) {
+      return true;
+    }
+
+    // 3. Running header at the extreme top of page (must be short and all uppercase or chapter heading)
+    if (line.bounds.top < 52.0 &&
+        line.fontSize <= 11.0 &&
+        trimmed.length <= 45) {
+      final isAllUpper =
+          trimmed == trimmed.toUpperCase() &&
           RegExp(r'[A-Z]').hasMatch(trimmed) &&
           !trimmed.endsWith(',') &&
           !trimmed.endsWith(';');
@@ -513,7 +707,12 @@ class ParagraphReconstructor {
 class _LineMetrics {
   final double modalHeight;
   final double modalGap;
-  _LineMetrics({required this.modalHeight, required this.modalGap});
+  final double modalLeft;
+  _LineMetrics({
+    required this.modalHeight,
+    required this.modalGap,
+    required this.modalLeft,
+  });
 }
 
 /// Helper class to accumulate text lines and build a unified ReconstructedParagraph.
@@ -549,6 +748,17 @@ class ReconstructedParagraphBuilder {
         .replaceAll('œ', 'oe')
         .replaceAll('æ', 'ae');
 
+    // Apple Vision occasionally recognises an opening curly quote as an
+    // inverted question mark on this scan. There is no Spanish text in the
+    // corpus, so normalise it to a quotation mark to keep dialogue detection
+    // and search text consistent.
+    s = s.replaceAll('¿', '"');
+
+    // A paragraph that begins with a capital I misread as "i" is almost always
+    // an opening quotation mark ("iAmerika ...", "iBagaimana ..."). Only
+    // normalise at the start of the paragraph so words such as "iPod" survive.
+    s = s.replaceAllMapped(RegExp(r'^i(?=[A-Z])'), (m) => '"');
+
     // 3. Dotless-i artifact from photocopy / scanned print (e.g. "dıtutup" -> "ditutup", "hasıl" -> "hasil")
     s = s.replaceAllMapped(
       RegExp(r'([a-zA-Z])ı|ı([a-zA-Z])'),
@@ -575,23 +785,43 @@ class ReconstructedParagraphBuilder {
         final p2Lower = part2.toLowerCase();
 
         // 5a. Check if reduplication (e.g. anak-anak, tiba-tiba, kata-kata, mengira-ngira)
-        if (ParagraphReconstructor.isIndonesianReduplication(p1Lower, p2Lower)) {
+        if (ParagraphReconstructor.isIndonesianReduplication(
+          p1Lower,
+          p2Lower,
+        )) {
           return '$part1-$part2';
         }
 
         // 5b. Common Indonesian affixes that were split by OCR hyphenation
         const affixes = {
-          'se', 'di', 'ke', 'me', 'pe', 'ber', 'ter', 'per', 'men', 'mem',
-          'peng', 'meng', 'meny', 'pen', 'pem'
+          'se',
+          'di',
+          'ke',
+          'me',
+          'pe',
+          'ber',
+          'ter',
+          'per',
+          'men',
+          'mem',
+          'peng',
+          'meng',
+          'meny',
+          'pen',
+          'pem',
         };
         if (affixes.contains(p1Lower)) {
           // Strictly protect Indonesian prepositional phrases: "di rumah", "ke rumah", "di mana", "di sini"
           if ((p1Lower == 'di' || p1Lower == 'ke') &&
-              ParagraphReconstructor.indonesianPrepositionComplements.contains(p2Lower)) {
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(
+                p2Lower,
+              )) {
             return '$part1 $part2';
           }
           if (p1Lower == 'ke' &&
-              !ParagraphReconstructor.indonesianKePrefixComplements.contains(p2Lower)) {
+              !ParagraphReconstructor.indonesianKePrefixComplements.contains(
+                p2Lower,
+              )) {
             return '$part1 $part2';
           }
           return '$part1$part2';
@@ -599,7 +829,9 @@ class ReconstructedParagraphBuilder {
 
         // 5c. Check if known Indonesian coordinate compound or rhyming reduplication
         final compoundKey = '$p1Lower-$p2Lower';
-        if (ParagraphReconstructor.indonesianPairedCompounds.contains(compoundKey)) {
+        if (ParagraphReconstructor.indonesianPairedCompounds.contains(
+          compoundKey,
+        )) {
           return '$part1-$part2';
         }
 
@@ -627,6 +859,14 @@ class ReconstructedParagraphBuilder {
       (m) => 'di${m.group(1)}',
     );
 
+    // Apple Vision frequently reads a capital "I" as a lower-case "l" in this
+    // scan ("la bekerja", "la merupakan"). "la" is not an Indonesian word, so
+    // normalise standalone occurrences to "Ia".
+    s = s.replaceAllMapped(
+      RegExp(r'(^|[\s"“”‘’\(])la(?=[\s,.;:!?"”’\)]|$)'),
+      (m) => '${m.group(1)}Ia',
+    );
+
     // 7. Multiple spaces collapsing
     s = s.replaceAll(RegExp(r'[ \t]+'), ' ');
 
@@ -648,8 +888,9 @@ class ReconstructedParagraphBuilder {
       } else {
         final prevText = lines[i - 1].text.trim();
         // Cross-line de-hyphenation: check if prevLine ends with a hyphen or dash
-        final hyphenMatch =
-            RegExp(r'([a-zA-Z]+)[-\u2010\u2013\u2014]$').firstMatch(prevText);
+        final hyphenMatch = RegExp(
+          r'([a-zA-Z]+)[-\u2010\u2013\u2014]$',
+        ).firstMatch(prevText);
         if (hyphenMatch != null &&
             text.isNotEmpty &&
             RegExp(r'^[a-zA-Z]').hasMatch(text)) {
@@ -661,14 +902,21 @@ class ReconstructedParagraphBuilder {
           final p2Lower = nextFirstWord.toLowerCase();
 
           // Is it an Indonesian reduplication across lines? (e.g. mengira- \n ngira)
-          final isRedup = ParagraphReconstructor.isIndonesianReduplication(p1Lower, p2Lower);
+          final isRedup = ParagraphReconstructor.isIndonesianReduplication(
+            p1Lower,
+            p2Lower,
+          );
 
           // Is it a known Indonesian paired compound across lines? (e.g. siang- \n malam)
-          final isCompound = ParagraphReconstructor.indonesianPairedCompounds.contains('$p1Lower-$p2Lower');
+          final isCompound = ParagraphReconstructor.indonesianPairedCompounds
+              .contains('$p1Lower-$p2Lower');
 
           // Is it an Indonesian preposition complement across lines? (e.g. di- \n rumah)
-          final isPrepositionSplit = (p1Lower == 'di' || p1Lower == 'ke') &&
-              ParagraphReconstructor.indonesianPrepositionComplements.contains(p2Lower);
+          final isPrepositionSplit =
+              (p1Lower == 'di' || p1Lower == 'ke') &&
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(
+                p2Lower,
+              );
 
           final currentBufferStr = buffer.toString();
           final lastHyphenIdx = currentBufferStr.lastIndexOf(
@@ -713,6 +961,20 @@ class ReconstructedParagraphBuilder {
     final isItalic = lines.every((l) => l.isItalic);
     final fontStyles = firstLine.fontStyle;
 
+    // OCR glyph-box heights vary with ascenders/descenders. Using the first
+    // line's height as the paragraph font size produces jitter of several
+    // points, so use the paragraph median height for OCR-derived paragraphs.
+    var fontSize = firstLine.fontSize;
+    final isOcrParagraph = lines.every((l) => l.fontName == 'AppleVisionOCR');
+    if (isOcrParagraph) {
+      final heights = lines.map((l) => l.bounds.height).toList()..sort();
+      final mid = heights.length ~/ 2;
+      final medianHeight = heights.length.isOdd
+          ? heights[mid]
+          : (heights[mid - 1] + heights[mid]) / 2.0;
+      fontSize = (medianHeight * 0.80).clamp(8.0, 32.0);
+    }
+
     final cleanedText = cleanOcrText(buffer.toString());
 
     return ReconstructedParagraph(
@@ -720,7 +982,7 @@ class ReconstructedParagraphBuilder {
       startPageIndex: firstLine.pageIndex,
       endPageIndex: lines.last.pageIndex,
       boundingBox: Rect.fromLTRB(minLeft, minTop, maxRight, maxBottom),
-      fontSize: firstLine.fontSize,
+      fontSize: fontSize,
       fontStyles: fontStyles,
       isBold: isBold,
       isItalic: isItalic,
@@ -728,12 +990,19 @@ class ReconstructedParagraphBuilder {
       sourceLines: List.unmodifiable(lines),
       isDialogue: RegExp(r'^(["“‘«—\-]|--\s)').hasMatch(cleanedText),
       isIsolated: lines.length == 1,
-      isOrderedList: ParagraphReconstructor._orderedListRegex.hasMatch(cleanedText),
-      isUnorderedList: ParagraphReconstructor._unorderedListRegex.hasMatch(cleanedText),
-      isCopyright: ParagraphReconstructor._copyrightMetaRegex.hasMatch(cleanedText) ||
-          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(cleanedText),
+      isOrderedList: ParagraphReconstructor._orderedListRegex.hasMatch(
+        cleanedText,
+      ),
+      isUnorderedList: ParagraphReconstructor._unorderedListRegex.hasMatch(
+        cleanedText,
+      ),
+      isCopyright:
+          ParagraphReconstructor._copyrightMetaRegex.hasMatch(cleanedText) ||
+          RegExp(
+            r'\b(isbn|katalog dalam terbitan|kdt)\b',
+            caseSensitive: false,
+          ).hasMatch(cleanedText),
       isCaption: ParagraphReconstructor._captionRegex.hasMatch(cleanedText),
     );
   }
 }
-

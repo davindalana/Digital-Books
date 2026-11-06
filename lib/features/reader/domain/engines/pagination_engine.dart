@@ -133,7 +133,9 @@ class PaginationEngine {
         : viewportWidth;
     final double effectiveMargin = (rawPageWidth < 400.0)
         ? 18.0
-        : (rawPageWidth < 650.0 ? 24.0 : math.max(32.0, typography.horizontalMargin));
+        : (rawPageWidth < 650.0
+              ? 24.0
+              : math.max(32.0, typography.horizontalMargin));
     final double maxClampWidth = isTwoPageSpread ? 620.0 : 680.0;
     final double contentWidth = (rawPageWidth - (effectiveMargin * 2.0)).clamp(
       160.0,
@@ -186,7 +188,8 @@ class PaginationEngine {
       if (node.type == ContentNodeType.image) {
         const double estimatedImageHeight = 220.0;
         final hasCaption = node.text.trim().isNotEmpty;
-        final totalImageHeight = estimatedImageHeight + (hasCaption ? 28.0 : 0.0);
+        final totalImageHeight =
+            estimatedImageHeight + (hasCaption ? 28.0 : 0.0);
         if (currentUsedHeight + totalImageHeight > availableHeight &&
             currentPageSlices.isNotEmpty) {
           pushCurrentPage();
@@ -210,7 +213,9 @@ class PaginationEngine {
       final TextStyle textStyle;
       switch (node.type) {
         case ContentNodeType.documentTitle:
-          textStyle = typography.headingStyle(level: 1).copyWith(
+          textStyle = typography
+              .headingStyle(level: 1)
+              .copyWith(
                 fontSize: typography.fontSize * 1.5,
                 fontWeight: FontWeight.bold,
               );
@@ -219,7 +224,9 @@ class PaginationEngine {
           textStyle = typography.headingStyle(level: node.level);
           break;
         case ContentNodeType.sectionHeading:
-          textStyle = typography.headingStyle(level: 2).copyWith(
+          textStyle = typography
+              .headingStyle(level: 2)
+              .copyWith(
                 fontSize: typography.fontSize * 1.15,
                 fontWeight: FontWeight.bold,
               );
@@ -229,15 +236,15 @@ class PaginationEngine {
           break;
         case ContentNodeType.footnote:
           textStyle = typography.bodyStyle().copyWith(
-                fontSize: typography.fontSize * 0.85,
-                fontStyle: FontStyle.italic,
-              );
+            fontSize: typography.fontSize * 0.85,
+            fontStyle: FontStyle.italic,
+          );
           break;
         case ContentNodeType.caption:
           textStyle = typography.bodyStyle().copyWith(
-                fontSize: typography.fontSize * 0.85,
-                fontStyle: FontStyle.italic,
-              );
+            fontSize: typography.fontSize * 0.85,
+            fontStyle: FontStyle.italic,
+          );
           break;
         case ContentNodeType.copyrightBlock:
         case ContentNodeType.metadataBlock:
@@ -251,7 +258,8 @@ class PaginationEngine {
       // Orphan heading prevention:
       // If block is a heading, verify that the heading AND at least 3 lines of following text fit.
       // If not, break to the next page immediately so heading does not sit alone at the bottom.
-      final isHeadingNode = node.type == ContentNodeType.heading ||
+      final isHeadingNode =
+          node.type == ContentNodeType.heading ||
           node.type == ContentNodeType.sectionHeading ||
           node.type == ContentNodeType.documentTitle;
 
@@ -281,7 +289,8 @@ class PaginationEngine {
       }
 
       // Paragraph / Quote / Footnote text
-      final isAtomicNode = node.type == ContentNodeType.footnote ||
+      final isAtomicNode =
+          node.type == ContentNodeType.footnote ||
           (node.type == ContentNodeType.quote && text.length < 250);
 
       int charStart = 0;
@@ -328,7 +337,8 @@ class PaginationEngine {
 
         final requiredBudget = fullHeight + nodePadding;
         if (requiredBudget <= remainingHeightBudget ||
-            (currentPageSlices.isEmpty && fullHeight <= remainingHeightBudget)) {
+            (currentPageSlices.isEmpty &&
+                fullHeight <= remainingHeightBudget)) {
           // Entire remaining paragraph fits
           currentPageSlices.add(
             PaginatedNodeSlice(
@@ -380,7 +390,9 @@ class PaginationEngine {
               currentPageSlices.add(
                 PaginatedNodeSlice(
                   node: node,
-                  textSlice: remainingText.substring(0, forcedIndex).trimRight(),
+                  textSlice: remainingText
+                      .substring(0, forcedIndex)
+                      .trimRight(),
                   startCharOffset: charStart,
                   endCharOffset: charStart + forcedIndex,
                   isContinuation: charStart > 0,
@@ -557,7 +569,9 @@ class PaginationEngine {
       final targetLineIndex = (targetLines - 1).clamp(0, totalLines - 1);
       final targetLineMid = lineMetrics[targetLineIndex].baseline;
 
-      final textPos = textPainter.getPositionForOffset(Offset(maxWidth, targetLineMid));
+      final textPos = textPainter.getPositionForOffset(
+        Offset(maxWidth, targetLineMid),
+      );
       int candidateOffset = textPos.offset.clamp(0, text.length);
 
       // Snap backward to whitespace boundary
@@ -570,14 +584,18 @@ class PaginationEngine {
       // Verify with sub-TextPainter that candidate slice does not exceed targetLines or maxHeight
       while (candidateOffset > 0) {
         final subTp = TextPainter(
-          text: TextSpan(text: text.substring(0, candidateOffset).trimRight(), style: style),
+          text: TextSpan(
+            text: text.substring(0, candidateOffset).trimRight(),
+            style: style,
+          ),
           textDirection: TextDirection.ltr,
         )..layout(maxWidth: maxWidth);
         final subLines = subTp.computeLineMetrics().length;
         final subHeight = subTp.height;
         subTp.dispose();
 
-        if (subLines <= targetLines && (subHeight <= maxHeight || isFreshPage)) {
+        if (subLines <= targetLines &&
+            (subHeight <= maxHeight || isFreshPage)) {
           return candidateOffset;
         }
         candidateOffset--;

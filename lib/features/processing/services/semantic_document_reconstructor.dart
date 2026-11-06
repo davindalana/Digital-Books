@@ -24,7 +24,9 @@ class SemanticDocumentReconstructor {
     final readingOrders = ReadingOrderResolver.resolveDocument(extraction);
 
     // D2: Paragraph Reconstruction
-    final paragraphs = ParagraphReconstructor.reconstructDocument(readingOrders);
+    final paragraphs = ParagraphReconstructor.reconstructDocument(
+      readingOrders,
+    );
 
     // D3: Semantic Classification
     final classifiedBlocks = SemanticClassifier.classifyDocument(
@@ -47,15 +49,30 @@ class SemanticDocumentReconstructor {
       blocks: integratedBlocks,
     );
 
+    // Identify back-cover pages. Their marketing copy and barcode are part of
+    // the physical cover, not of the last content chapter, and must not be
+    // merged into "BAB V" as body text. The original PDF still contains them.
+    final backCoverPages = <int>{};
+    for (final page in extraction.pages) {
+      final pageText = page.lines.map((l) => l.text).join(' ').toLowerCase();
+      if (pageText.contains('harga p. jawa') ||
+          pageText.contains('self improvement') ||
+          pageText.contains('penerbitbip')) {
+        backCoverPages.add(page.pageIndex);
+      }
+    }
+
     // Filter chrome (running headers/footers/page numbers) from reader content stream
     // but retain footnotes, quotes, headings, paragraphs, and images.
     // Explicitly filter out cover images so cover is not rendered inside body chapters.
     final contentBlocks = integratedBlocks.where((b) {
       if (b.isChrome) return false;
+      if (backCoverPages.contains(b.sourcePageIndex)) return false;
       if (b.type == SemanticBlockType.image) {
         final role = b.metadata['role'] as String?;
         if (role == ImageSemanticRole.coverImage.name ||
-            (b.sourcePageIndex == 0 && (role == null || role == ImageSemanticRole.coverImage.name))) {
+            (b.sourcePageIndex == 0 &&
+                (role == null || role == ImageSemanticRole.coverImage.name))) {
           return false;
         }
       }

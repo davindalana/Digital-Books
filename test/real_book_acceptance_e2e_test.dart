@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/native.dart';
@@ -85,6 +86,16 @@ void main() {
 
   setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
+    // Load real glyphs for visual evidence. Flutter tests default to the Ahem
+    // test font, which renders every character as a solid block.
+    for (final family in ['Palatino', 'Inter']) {
+      final bytes = File(
+        '/System/Library/Fonts/Supplemental/Arial.ttf',
+      ).readAsBytesSync();
+      final loader = FontLoader(family)
+        ..addFont(Future.value(ByteData.view(bytes.buffer)));
+      await loader.load();
+    }
     expect(dbFile.existsSync(), isTrue, reason: 'Database file must exist');
     expect(pdfFile.existsSync(), isTrue, reason: 'Original PDF must exist');
 
@@ -330,6 +341,78 @@ void main() {
       );
       print('• Total Structured Blocks: $totalBlocks');
       expect(totalBlocks, greaterThan(300));
+
+      // The real book has exactly nine top-level sections and no invented ones.
+      expect(bookDoc.chapters.length, equals(9));
+      final titles = bookDoc.chapters.map((c) => c.title).join(' | ');
+      expect(titles, contains('Testimoni'));
+      expect(titles, contains('Prolog'));
+      expect(titles, contains('Daftar Isi'));
+
+      // Heading classification spot checks against the actual scan.
+      final allBlocks = bookDoc.chapters.expand((c) => c.blocks).toList();
+      final page21 = allBlocks
+          .where((b) => b.originalPageNumber == 21)
+          .toList();
+      final page22 = allBlocks
+          .where((b) => b.originalPageNumber == 22)
+          .toList();
+      expect(
+        page21.any(
+          (b) =>
+              b.type == BlockType.sectionHeading &&
+              b.text.contains('DARI MANA DATANGNYA'),
+        ),
+        isTrue,
+        reason: 'The page 21 section title must remain a section heading',
+      );
+      expect(
+        page21.any(
+          (b) =>
+              b.type == BlockType.heading &&
+              b.text.startsWith('Ucapan yang membuat'),
+        ),
+        isTrue,
+        reason: 'The bold subsection title must remain a heading',
+      );
+      expect(
+        page22.any(
+          (b) =>
+              b.type != BlockType.heading &&
+              b.type != BlockType.sectionHeading &&
+              b.text.contains('Hmm... biasa saja'),
+        ),
+        isTrue,
+        reason: 'Dialogue must not be promoted to a heading',
+      );
+      final headingCount = allBlocks
+          .where(
+            (b) =>
+                b.type == BlockType.heading ||
+                b.type == BlockType.sectionHeading,
+          )
+          .length;
+      print('• Heading blocks after OCR classification: $headingCount');
+      expect(
+        headingCount,
+        lessThan(200),
+        reason: 'OCR prose must not be over-classified as headings',
+      );
+      expect(
+        allBlocks.any(
+          (b) =>
+              (b.type == BlockType.heading ||
+                  b.type == BlockType.sectionHeading) &&
+              b.text.contains('BICARA ITU ADA SENINYA'),
+        ),
+        isFalse,
+        reason: 'Running headers must be filtered from heading output',
+      );
+      expect(
+        bookDoc.chapters.last.blocks.any((b) => b.originalPageNumber == 255),
+        isFalse,
+        reason: 'Back cover must not be appended to BAB V',
+      );
     });
 
     test('4. Ground-Truth Transcription Validation (CER & WER)', () async {
@@ -339,51 +422,31 @@ void main() {
       print('STEP 4: GROUND-TRUTH TRANSCRIPTION VALIDATION');
       print('===============================================================');
 
+      // Ground truth was transcribed manually from the rendered PDF page
+      // images (not copied from OCR output). Page keys are 0-based OCR page
+      // indexes; the printed label shows the 1-based PDF page.
       final representativePages = <int, Map<String, dynamic>>{
-        12: {
-          'name': 'Front Matter: Daftar Isi',
-          'type': 'Table of Contents / Front Matter',
-          'groundTruth':
-              'Daftar Isi Testimoni Prolog - Membuka Peluang Kesempatan dengan Kebiasaan Bicara Bab I Perbedaan Juara 1 dan Juara 2 Terletak Pada Ucapannya Dari Mana Datangnya Kesan Pertama "Nyawa" Logika Mengungkapkan Diri Lewat Storytelling Penyebab Takut Bicara Lengkapi dengan Bahasa Nonverbal Mengubah Cara Bicara, Mengubah Hidup Mengubah yang Tidak Mungkin Menjadi Mungkin',
-        },
         18: {
-          'name': 'BAB I Divider Page',
+          'name': 'PDF page 19: BAB I divider',
           'type': 'Chapter Divider',
           'groundTruth':
               'PERBEDAAN JUARA 1 DAN JUARA 2 TERLETAK PADA UCAPANNYA BAB I',
         },
-        29: {
-          'name': 'Page 29: Numbered List & Rules',
-          'type': 'Numbered List & Subsections',
+        21: {
+          'name': 'PDF page 22: BAB I body paragraph',
+          'type': 'Narrative prose',
+          'start': 'merupakan salah satu contoh orang yang merugi',
+          'end': 'selalu saja tidak baik',
           'groundTruth':
-              '3. Konsisten dalam Bersikap Saat kondisi argumen kita lemah, kita akan jatuh ke dalam kontradiksi dan posisi yang membingungkan, sebab kita akan mengeluarkan argumen baru yang berbeda dengan apa yang sebelumnya kita ungkapkan. Oleh karena itu, kita harus memiliki sikap konsisten dengan pendapat kita dari awal hingga akhir. 4. Gunakan Kata-Kata Sederhana Ada orang yang suka menggunakan bahasa Inggris, karakter Mandarin, atau istilah-istilah tinggi yang hanya diketahui dirinya sendiri seolah-olah ia yang paling tahu segalanya. Alih-alih membantu dalam menyampaikan pendapatnya, hal ini justru akan membuatnya menerima penolakan dari lawan bicara. Ingatlah bahwa ucapan yang sulit dimengerti adalah penghalang komunikasi. 5. Tetap Tenang Kita dapat menemukan orang-orang yang sentimental saat berbicara dalam acara debat di televisi. Mereka sering kali melontarkan perkataan-perkataan yang tidak berhubungan dengan topik pembicaraan. Contohnya mencari kesalahan untuk menyerang secara personal. Hal ini muncul karena situasinya menjengkelkan. Ingatlah, kekesalan merupakan hal yang dilarang karena akan menciptakan pembicaraan yang tidak logis dan bersikap tenang sangat dibutuhkan dalam situasi seperti ini.',
+              'Ia merupakan salah satu contoh orang yang merugi karena ucapan meskipun sudah memiliki semuanya untuk memberikan kesan pertama yang baik. Suaranya jernih dan enak didengar, tapi isi ucapan yang terkandung di dalamnya yang bermasalah. Dengan hanya membicarakan diri sendiri dan tidak memikirkan lawan bicara, ia jadi dicap tidak berperasaan oleh lawan bicaranya. Terlepas dari seringnya saya bergaul dengan wanita, rasanya tidak ada yang tidak tahu bahwa wanita tidak menyukai pria yang suka membanggakan diri sendiri. Hal itu sudah menjadi rahasia umum. Mungkin karena K tidak menyadari hal tersebut, kesan pertama yang dibuatnya setiap kali berkencan selalu saja tidak baik.',
         },
-        33: {
-          'name': 'Page 33: BAB I Subsection',
-          'type': 'Subsection & Dialogue',
+        50: {
+          'name': 'PDF page 51: BAB I body paragraph',
+          'type': 'Narrative prose',
+          'start': 'Oprah memiliki kemampuan bicara',
+          'end': 'puncak keberhasilan',
           'groundTruth':
-              'Katarsis dalam Cerita yang Bagus "Latihan storytelling atau menyampaikan cerita sama saja seperti mengasah kemampuan komunikasi. Jika Anda berencana ingin menjadi pembicara, berlatih storytelling akan sangat membantu. Kalaupun tidak ingin menjadi pembicara, latihan ini akan menjadi senjata besar dalam kehidupan sosial Anda". Kata-kata di atas diucapkan oleh Doug Stevenson, konsultan ahli presentasi dan pelatih teknik mengajar terbaik di Amerika. Menurutnya, storytelling adalah keterampilan berbicara yang sangat bermanfaat baik saat mengajar, pertemuan bisnis, wawancara, ataupun kehidupan sehari-hari. Lalu bagaimana caranya berbicara dengan metode storytelling? Storytelling yang baik membutuhkan empat hal (tema, konflik, simpati, dan solusi) dan dua faktor tambahan (pembalikan dan alasan). Pertama, kita lihat keempat unsur yang diperlukan, yaitu: 1. Tema Harus memiliki tema yang menonjol. Cerita yang bertema menonjol disukai oleh orang-orang. Legenda atau dongeng-dongeng klasik bertahan lama karena mengandung sebuah tema, bahwa yang baik akan menang dan yang jahat akan dihukum. Cerita yang ingin disampaikan harus konsisten dengan satu tema.',
-        },
-        60: {
-          'name': 'BAB II Divider Page',
-          'type': 'Chapter Divider',
-          'groundTruth': 'PINTAR MENDENGAR, PANDAI BERBICARA BAB II',
-        },
-        114: {
-          'name': 'BAB III Divider Page',
-          'type': 'Chapter Divider',
-          'groundTruth':
-              'UCAPAN YANG MEMBUAT LAWAN BICARA MEMIHAK KITA BAB III',
-        },
-        153: {
-          'name': 'BAB IV Divider Page',
-          'type': 'Chapter Divider',
-          'groundTruth': 'BERATNYA UCAPAN DITENTUKAN OLEH DALAMNYA ISI BAB IV',
-        },
-        209: {
-          'name': 'BAB V Divider Page',
-          'type': 'Chapter Divider',
-          'groundTruth': 'SUARA BAGUS BUKAN BAWAAN DARI LAHIR BAB V',
+              'Oprah memiliki kemampuan bicara yang cerdas dan hebat. Orang-orang pun akan meninggalkan acara tersebut. Namun, berkat ucapannya yang hangat dan jujur memperlihatkan lukanya sendiri, Oprah mampu mengangkat acaranya ke puncak keberhasilan.',
         },
       };
 
@@ -430,7 +493,27 @@ void main() {
             .where((t) => t.isNotEmpty)
             .toList();
 
-        final rawOcrText = bodyLines.join(' ');
+        var selectedLines = bodyLines;
+        final startMarker = info['start'] as String?;
+        if (startMarker != null) {
+          final startIndex = selectedLines.indexWhere(
+            (t) => t.contains(startMarker),
+          );
+          if (startIndex >= 0) {
+            selectedLines = selectedLines.sublist(startIndex);
+          }
+        }
+        final endMarker = info['end'] as String?;
+        if (endMarker != null) {
+          final endIndex = selectedLines.indexWhere(
+            (t) => t.contains(endMarker),
+          );
+          if (endIndex >= 0) {
+            selectedLines = selectedLines.sublist(0, endIndex + 1);
+          }
+        }
+
+        final rawOcrText = selectedLines.join(' ');
         // Normalize leader dots and repetitive whitespace for fair comparison
         final ocrText = rawOcrText
             .replaceAll(RegExp(r'[\.\-]{2,}\s*[0-9a-zA-Z]*'), '')
@@ -467,21 +550,21 @@ void main() {
         });
 
         print(
-          '• [Page $pageIdx: ${info['name']}] '
+          '• [${info['name']} | OCR index $pageIdx] '
           'CER: ${(cer * 100).toStringAsFixed(2)}% (dist=$charDist/${groundTruth.length}) | '
           'WER: ${(wer * 100).toStringAsFixed(2)}% (dist=$wordDist/${truthWords.length})',
         );
 
-        // Sanity assertions: CER must be under 15% and WER under 20% even on imperfect scans
+        // Manual transcription ground truth: true OCR accuracy gates.
         expect(
           cer,
-          lessThan(0.15),
-          reason: 'CER must be under 15% for page $pageIdx',
+          lessThan(0.03),
+          reason: 'CER must be under 3% for OCR index $pageIdx',
         );
         expect(
           wer,
-          lessThan(0.25),
-          reason: 'WER must be under 25% for page $pageIdx',
+          lessThan(0.06),
+          reason: 'WER must be under 6% for OCR index $pageIdx',
         );
       }
 
@@ -499,8 +582,8 @@ void main() {
       print('• Mean WER: ${(meanWer * 100).toStringAsFixed(2)}%');
       expect(
         meanCer,
-        lessThan(0.08),
-        reason: 'Mean CER across representative pages must be < 8%',
+        lessThan(0.02),
+        reason: 'Mean CER across manually transcribed pages must be < 2%',
       );
     });
 
@@ -608,7 +691,10 @@ void main() {
             overrides: [databaseServiceProvider.overrideWithValue(dbService)],
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
-              theme: ThemeData(fontFamily: 'Inter', brightness: Brightness.light),
+              theme: ThemeData(
+                fontFamily: 'Inter',
+                brightness: Brightness.light,
+              ),
               home: Scaffold(
                 backgroundColor: const Color(0xFFF8F9FA),
                 body: Center(
@@ -632,7 +718,9 @@ void main() {
           final boundary =
               key.currentContext!.findRenderObject() as RenderRepaintBoundary;
           final image = await boundary.toImage(pixelRatio: 2.0);
-          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+          final byteData = await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
           final pngBytes = byteData!.buffer.asUint8List();
 
           final outFile = File('${evidenceDir.path}/$filename');
