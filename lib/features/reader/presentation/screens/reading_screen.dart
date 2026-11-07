@@ -1271,9 +1271,14 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                           onHighlightCreated: _handleHighlightCreated,
                           onTotalPagesCalculated: (total) {
                             if (_readingMode == ReadingMode.reflowable &&
-                                mounted) {
-                              setState(() {
-                                _totalPages = total > 0 ? total : 1;
+                                mounted &&
+                                _totalPages != total) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted && _totalPages != total) {
+                                  setState(() {
+                                    _totalPages = total > 0 ? total : 1;
+                                  });
+                                }
                               });
                             }
                           },
@@ -1283,7 +1288,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                 _reflowablePosition = page;
                                 _activeAnchorNodeId = anchorId;
                                 _activeCharOffset = charOffset;
-                                _updateChapterInfo(ch);
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted) {
+                                    _updateChapterInfo(ch);
+                                  }
+                                });
                                 _saveProgress(
                                   chapter: ch,
                                   position: page,

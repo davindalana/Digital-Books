@@ -123,17 +123,23 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
       if (isTwoPage && targetIndex % 2 != 0) {
         targetIndex -= 1;
       }
+    } else if (isTwoPage && targetIndex % 2 != 0) {
+      targetIndex -= 1;
     }
 
-    setState(() {
-      _pages = newPages;
-      _currentPageIndex = targetIndex.clamp(
-        0,
-        math.max(0, newPages.length - 1),
-      );
-    });
+    _pages = newPages;
+    _currentPageIndex = targetIndex.clamp(
+      0,
+      math.max(0, newPages.length - 1),
+    );
 
-    widget.onTotalPagesCalculated?.call(_pages.length);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onTotalPagesCalculated?.call(_pages.length);
+      if (_pages.isNotEmpty) {
+        _onPageSelected(_currentPageIndex);
+      }
+    });
   }
 
   void nextPage() {

@@ -1073,10 +1073,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
               final isDesktopOrTablet = constraints.maxWidth >= 700;
               final isContinuous = widget.viewMode == PdfViewMode.continuous;
               final isSpread = _isEffectiveSpread(constraints.maxWidth);
+              final spreadChanged = _effectiveTwoPage != isSpread;
               _effectiveTwoPage = isSpread;
 
               final spreads = _getSpreads(isSpread);
-              if (_currentSpreadIndex >= spreads.length) {
+              if (spreadChanged || _currentSpreadIndex >= spreads.length) {
                 _currentSpreadIndex = _getSpreadIndexForPage(
                   _currentPage,
                   spreads,
