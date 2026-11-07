@@ -206,66 +206,16 @@ class _Metrics {
         lines += 8;
         continue;
       }
-      final style = _styleFor(s.node);
+      final style = PaginationEngine.textStyleFor(s.node, typography);
       final tp = TextPainter(
         text: TextSpan(text: s.textSlice, style: style),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: contentWidth);
-      height += tp.height + _paddingFor(s.node);
+      height += tp.height + PaginationEngine.paddingFor(s.node, typography);
       lines += tp.computeLineMetrics().length;
       tp.dispose();
     }
     return (height: height, lines: lines);
-  }
-
-  TextStyle _styleFor(ContentNode node) {
-    switch (node.type) {
-      case ContentNodeType.documentTitle:
-        return typography.headingStyle(level: 1).copyWith(
-          fontSize: typography.fontSize * 1.5,
-          fontWeight: FontWeight.bold,
-        );
-      case ContentNodeType.heading:
-        return typography.headingStyle(level: node.level);
-      case ContentNodeType.sectionHeading:
-        return typography.headingStyle(level: 2).copyWith(
-          fontSize: typography.fontSize * 1.15,
-          fontWeight: FontWeight.bold,
-        );
-      case ContentNodeType.quote:
-        return typography.quoteStyle();
-      case ContentNodeType.footnote:
-      case ContentNodeType.caption:
-        return typography.bodyStyle().copyWith(
-          fontSize: typography.fontSize * 0.85,
-          fontStyle: FontStyle.italic,
-        );
-      default:
-        return typography.bodyStyle();
-    }
-  }
-
-  double _paddingFor(ContentNode node) {
-    switch (node.type) {
-      case ContentNodeType.footnote:
-      case ContentNodeType.caption:
-        return 4.0 + (typography.paragraphSpacing * 0.5);
-      case ContentNodeType.orderedList:
-      case ContentNodeType.unorderedList:
-      case ContentNodeType.listItem:
-        return typography.paragraphSpacing * 0.6;
-      case ContentNodeType.quote:
-        return 8.0 + typography.paragraphSpacing;
-      case ContentNodeType.copyrightBlock:
-      case ContentNodeType.metadataBlock:
-        return 6.0 + (typography.paragraphSpacing * 0.8);
-      case ContentNodeType.heading:
-      case ContentNodeType.sectionHeading:
-      case ContentNodeType.documentTitle:
-        return 8.0 + (typography.paragraphSpacing * 1.2);
-      default:
-        return typography.paragraphSpacing;
-    }
   }
 }
 

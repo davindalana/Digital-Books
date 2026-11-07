@@ -118,6 +118,26 @@ void main() {
       }
     });
 
+    testWidgets('0b. Render Chapter 0: Front Matter Spread (Cover & Copyright)', (tester) async {
+      print('\n--- Evaluating Chapter 0: Front Matter Spread ---');
+      final ch0 = readerDoc.chapters.firstWhere((c) => c.title.contains('Bagian Awal'));
+      expect(ch0.nodes, isNotEmpty);
+
+      await renderAndCapture(
+        tester,
+        widget: PaginatedReflowableReader(
+          document: readerDoc,
+          initialAnchorNodeId: ch0.nodes.first.id,
+          theme: ReadingThemeType.dark,
+          typography: const TypographySettings(twoPageSpread: true),
+          onTapContent: () {},
+          onProgressChanged: (ch, p, pct, anc, off) {},
+        ),
+        size: const Size(1102, 951),
+        filename: '00_front_matter_spread.png',
+      );
+    });
+
     testWidgets('1. Render Chapter 3: Table of Contents (TOC)', (tester) async {
       print('\n--- Evaluating Chapter 3: Table of Contents ---');
       final tocChapter = readerDoc.chapters.firstWhere((c) => c.title.contains('Daftar Isi'));

@@ -210,7 +210,7 @@ class PaginationEngine {
       final text = node.text.trim();
       if (text.isEmpty) continue;
 
-      final TextStyle textStyle = _textStyleFor(node, typography);
+      final TextStyle textStyle = textStyleFor(node, typography);
 
       // Orphan heading prevention:
       // A heading must stay with the content that follows it. Rather than
@@ -272,7 +272,7 @@ class PaginationEngine {
           contentWidth,
         );
 
-        final double nodePadding = _paddingFor(node, typography);
+        final double nodePadding = paddingFor(node, typography);
 
         final requiredBudget = fullHeight + nodePadding;
 
@@ -439,7 +439,7 @@ class PaginationEngine {
       (node.type == ContentNodeType.orderedList &&
           node.attributes['legalClause'] == true);
 
-  static TextStyle _textStyleFor(
+  static TextStyle textStyleFor(
     ContentNode node,
     TypographySettings typography,
   ) {
@@ -450,6 +450,13 @@ class PaginationEngine {
           fontWeight: FontWeight.bold,
         );
       case ContentNodeType.heading:
+        if (node.attributes['kind'] == 'legalHeading') {
+          return typography.bodyStyle().copyWith(
+            fontSize: typography.fontSize * 0.95,
+            fontWeight: FontWeight.bold,
+            height: 1.55,
+          );
+        }
         return typography.headingStyle(level: node.level);
       case ContentNodeType.sectionHeading:
         return typography.headingStyle(level: 2).copyWith(
@@ -464,14 +471,47 @@ class PaginationEngine {
           fontSize: typography.fontSize * 0.85,
           fontStyle: FontStyle.italic,
         );
+      case ContentNodeType.orderedList:
+        if (node.attributes['legalClause'] == true) {
+          return typography.bodyStyle().copyWith(
+            fontSize: typography.fontSize * 0.80,
+            height: 1.55,
+          );
+        }
+        return typography.bodyStyle();
       case ContentNodeType.copyrightBlock:
+        return typography.bodyStyle().copyWith(
+          fontSize: typography.fontSize * 0.78,
+          height: 1.55,
+        );
       case ContentNodeType.metadataBlock:
+        final kind = node.attributes['kind'] as String? ?? '';
+        final factor = switch (kind) {
+          'publisherLogo' || 'publisher' => 0.72,
+          'subtitle' => 0.95,
+          'author' => 1.08,
+          'credential' => 0.76,
+          'badge' => 0.68,
+          'label' => 0.82,
+          'publisherSlogan' => 0.92,
+          'tocChapterLabel' => 0.70,
+          'tocChapterTitle' => 1.02,
+          'tocPerson' => 0.82,
+          'tocEntry' => 0.88,
+          'frontMatterFooter' => 0.70,
+          'legalHeading' => 0.95,
+          _ => 0.80,
+        };
+        return typography.bodyStyle().copyWith(
+          fontSize: typography.fontSize * factor,
+          height: 1.55,
+        );
       default:
         return typography.bodyStyle();
     }
   }
 
-  static double _paddingFor(
+  static double paddingFor(
     ContentNode node,
     TypographySettings typography,
   ) {
@@ -480,6 +520,10 @@ class PaginationEngine {
       case ContentNodeType.caption:
         return 4.0 + (typography.paragraphSpacing * 0.5);
       case ContentNodeType.orderedList:
+        if (node.attributes['legalClause'] == true) {
+          return 5.0;
+        }
+        return typography.paragraphSpacing * 0.6;
       case ContentNodeType.unorderedList:
       case ContentNodeType.listItem:
         return typography.paragraphSpacing * 0.6;
@@ -487,7 +531,10 @@ class PaginationEngine {
         return 8.0 + typography.paragraphSpacing;
       case ContentNodeType.copyrightBlock:
       case ContentNodeType.metadataBlock:
-        return 6.0 + (typography.paragraphSpacing * 0.8);
+        final hasSectionLabel =
+            (node.attributes['sectionLabel'] as String?)?.isNotEmpty == true;
+        return (hasSectionLabel ? 22.0 : 6.0) +
+            (typography.paragraphSpacing * 0.5);
       default:
         return typography.paragraphSpacing;
     }
@@ -502,7 +549,7 @@ class PaginationEngine {
     if (text.isEmpty) return 0.0;
     return _measureTextHeight(
           text,
-          _textStyleFor(node, typography),
+          textStyleFor(node, typography),
           contentWidth,
         ) +
         8.0 +
@@ -526,10 +573,10 @@ class PaginationEngine {
     }
     return _measureTextHeight(
           text,
-          _textStyleFor(node, typography),
+          textStyleFor(node, typography),
           contentWidth,
         ) +
-        _paddingFor(node, typography);
+        paddingFor(node, typography);
   }
 
   /// Height of the next non-empty block for a `keepWithNext` composition hint.
@@ -573,10 +620,10 @@ class PaginationEngine {
 
     final fullHeight = _measureTextHeight(
       text,
-      _textStyleFor(node, typography),
+      textStyleFor(node, typography),
       contentWidth,
     );
-    final padding = _paddingFor(node, typography);
+    final padding = paddingFor(node, typography);
     if (_isAtomicNode(node, text)) return fullHeight + padding;
 
     final lineHeight = typography.fontSize * typography.lineSpacing;

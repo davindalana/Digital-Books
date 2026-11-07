@@ -79,7 +79,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         page.slices.every(
           (s) => s.node.attributes['kind'] == 'publisherSlogan',
         );
-    final centerFrontMatter = isCoverPage || isTitlePage || isSloganPage;
+    final centerFrontMatter = hasFrontMatter || isSloganPage;
 
     return Container(
       width: contentWidth,
