@@ -16,6 +16,7 @@ enum SemanticBlockType {
   runningFooter,
   pageNumber,
   image,
+  pageBreak,
   table,
   documentTitle,
   orderedListItem,
@@ -103,6 +104,9 @@ class SemanticReconstructedBlock {
         break;
       case SemanticBlockType.image:
         blockType = BlockType.image;
+        break;
+      case SemanticBlockType.pageBreak:
+        blockType = BlockType.pageBreak;
         break;
       case SemanticBlockType.caption:
         blockType = BlockType.caption;
@@ -238,4 +242,3 @@ class ReconstructedDocument {
     'blocks': blocks.map((b) => b.toJson()).toList(),
   };
 }
-

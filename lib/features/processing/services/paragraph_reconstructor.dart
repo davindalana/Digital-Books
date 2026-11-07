@@ -54,9 +54,16 @@ class ParagraphReconstructor {
   /// Dialogue openers: quotation marks, em-dash, guillemets.
   static final RegExp _dialogueOpeners = RegExp(r'^(["“‘«—\-¿]|--\s)');
 
+  /// A marker sitting alone on its OCR line ("1.", "2.", "•"). The item text
+  /// is often on the following line; the marker must start a list item rather
+  /// than being appended to the previous paragraph.
+  static final RegExp _standaloneListMarkerRegex = RegExp(
+    r'^(\d{1,3}[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]{1,3}\)|[•\-\*–—])$',
+  );
+
   /// Ordered list items: "1.", "1)", "(1)", "a.", "i.", etc.
   static final RegExp _orderedListRegex = RegExp(
-    r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+',
+    r'^(\d{1,3}[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]{1,3}\))\s+',
   );
 
   /// Unordered list items: bullet, dash, asterisk, en/em-dash
@@ -387,6 +394,7 @@ class ParagraphReconstructor {
           modalLineGap: modalMetrics.modalGap,
           modalLineHeight: modalMetrics.modalHeight,
           modalLeft: modalMetrics.modalLeft,
+          modalRight: modalMetrics.modalRight,
         );
 
         if (shouldBreak) {
@@ -421,9 +429,19 @@ class ParagraphReconstructor {
     required double modalLineGap,
     required double modalLineHeight,
     required double modalLeft,
+    required double modalRight,
   }) {
     final currentTrimmed = currentLine.text.trim();
     final prevTrimmed = prevLine.text.trim();
+
+    // Standalone OCR list markers: the marker starts a new item, and the item
+    // text on the following line belongs to that marker.
+    if (_standaloneListMarkerRegex.hasMatch(currentTrimmed)) {
+      return true;
+    }
+    if (_standaloneListMarkerRegex.hasMatch(prevTrimmed)) {
+      return false;
+    }
 
     // 1. List Item checks (Ordered and Unordered):
     // A line starting with 1., 2., a., •, -, * always begins a distinct list item!
@@ -490,6 +508,18 @@ class ParagraphReconstructor {
       }
 
       if (prevPage == currentPage) {
+        // Centred multi-line titles drift horizontally: every narrower line is
+        // centred, so the next line can start further right even though it
+        // continues the same title. Aligned centres on two narrow lines are a
+        // continuation, not a new indented paragraph.
+        if (_isCenteredTitleContinuation(
+          prevLine: prevLine,
+          currentLine: currentLine,
+          modalRight: modalRight,
+        )) {
+          return false;
+        }
+
         // A first-line paragraph indent is the most reliable OCR paragraph signal.
         final indentDiff = currentLine.bounds.left - prevLine.bounds.left;
         if (indentDiff >= 10.0) return true;
@@ -612,6 +642,41 @@ class ParagraphReconstructor {
     return false;
   }
 
+  /// Two consecutive narrow, differently-indented lines whose centres line up
+  /// are a wrapped centred title (for example "Menggaruk yang Gatal dengan" /
+  /// "Pertanyaan yang Tepat"). They must not be split by the first-line indent
+  /// heuristic just because centring moves the left edge.
+  static bool _isCenteredTitleContinuation({
+    required ExtractedTextLine prevLine,
+    required ExtractedTextLine currentLine,
+    required double modalRight,
+  }) {
+    final prev = prevLine.text.trim();
+    final current = currentLine.text.trim();
+    if (prev.isEmpty || current.isEmpty) return false;
+    // The previous line must not terminate the sentence. The continuing line
+    // is allowed to end with punctuation (e.g. "Kiss!" or "?").
+    if (_sentenceTerminators.hasMatch(prev)) {
+      return false;
+    }
+    // The previous line starts the title; the continuing line can be an uppercase
+    // word or a lowercase conjunction/preposition ("yang", "dan", "untuk").
+    if (!RegExp(r'^[A-Z0-9"“]').hasMatch(prev) ||
+        !RegExp(r'^[a-zA-Z0-9"“]').hasMatch(current)) {
+      return false;
+    }
+
+    final narrowTolerance = math.max(16.0, modalRight * 0.04);
+    if (prevLine.bounds.right > modalRight - narrowTolerance ||
+        currentLine.bounds.right > modalRight - narrowTolerance) {
+      return false;
+    }
+
+    final centreDelta =
+        (prevLine.bounds.center.dx - currentLine.bounds.center.dx).abs();
+    return centreDelta <= math.max(10.0, modalRight * 0.025);
+  }
+
   /// Calculates modal line height and vertical gap between adjacent lines.
   static _LineMetrics _calculatePageLineMetrics(List<ExtractedTextLine> lines) {
     if (lines.length < 2) {
@@ -619,12 +684,14 @@ class ParagraphReconstructor {
         modalHeight: 12.0,
         modalGap: 4.0,
         modalLeft: lines.isEmpty ? 0.0 : lines.first.bounds.left,
+        modalRight: lines.isEmpty ? 0.0 : lines.first.bounds.right,
       );
     }
 
     final heights = <double>[];
     final gaps = <double>[];
     final lefts = <double>[];
+    final rights = <double>[];
 
     for (int i = 0; i < lines.length - 1; i++) {
       final a = lines[i];
@@ -637,17 +704,24 @@ class ParagraphReconstructor {
         gaps.add(gap);
       }
     }
+    // The rightmost line on the page estimates the body text edge, including
+    // the final line which the pairwise loop above skips.
+    rights.addAll(lines.map((l) => l.bounds.right));
 
     final modalHeight = heights.isNotEmpty ? _findMedian(heights) : 12.0;
     final modalGap = gaps.isNotEmpty ? _findMedian(gaps) : 4.0;
     final modalLeft = lefts.isNotEmpty
         ? _findMedian(lefts)
         : lines.first.bounds.left;
+    // Centred titles are narrower than the body edge. The maximum right edge is
+    // stable even on pages with only a few body lines.
+    final modalRight = rights.reduce(math.max);
 
     return _LineMetrics(
       modalHeight: modalHeight,
       modalGap: modalGap,
       modalLeft: modalLeft,
+      modalRight: modalRight,
     );
   }
 
@@ -708,10 +782,12 @@ class _LineMetrics {
   final double modalHeight;
   final double modalGap;
   final double modalLeft;
+  final double modalRight;
   _LineMetrics({
     required this.modalHeight,
     required this.modalGap,
     required this.modalLeft,
+    required this.modalRight,
   });
 }
 

@@ -228,18 +228,37 @@ class SemanticClassifier {
     final gapBefore = List<double?>.filled(preparedParagraphs.length, null);
     final gapAfter = List<double?>.filled(preparedParagraphs.length, null);
     for (int i = 0; i < preparedParagraphs.length; i++) {
-      if (i > 0 &&
-          preparedParagraphs[i - 1].endPageIndex ==
-              preparedParagraphs[i].startPageIndex) {
-        gapBefore[i] = math.max(
-          0.0,
-          preparedParagraphs[i].boundingBox.top -
-              preparedParagraphs[i - 1].boundingBox.bottom,
-        );
+      if (i > 0) {
+        final prev = preparedParagraphs[i - 1];
+        final current = preparedParagraphs[i];
+        if (prev.endPageIndex == current.startPageIndex) {
+          // A paragraph that spans pages has its boundingBox.bottom on a later
+          // page. Using it to measure the gap before the next paragraph would
+          // collapse the gap to zero, so measure from the last source line that
+          // actually sits on the current page instead.
+          double? prevBottom;
+          if (prev.endPageIndex > prev.startPageIndex) {
+            final samePageLines = prev.sourceLines
+                .where((line) => line.pageIndex == current.startPageIndex)
+                .toList();
+            if (samePageLines.isNotEmpty) {
+              prevBottom = samePageLines
+                  .map((line) => line.bounds.bottom)
+                  .reduce(math.max);
+            }
+          }
+          prevBottom ??= prev.boundingBox.bottom;
+          gapBefore[i] = math.max(
+            0.0,
+            current.boundingBox.top - prevBottom,
+          );
+        }
       }
       if (i + 1 < preparedParagraphs.length &&
           preparedParagraphs[i + 1].startPageIndex ==
               preparedParagraphs[i].endPageIndex) {
+        // next.startPageIndex == current.endPageIndex, so next.boundingBox.top
+        // is located on the page where the current paragraph ends.
         gapAfter[i] = math.max(
           0.0,
           preparedParagraphs[i + 1].boundingBox.top -
@@ -461,7 +480,11 @@ class SemanticClassifier {
     // B. Footnotes (bottom region of page with smaller font size and index marker)
     final footnoteThreshold = pageHeight - 160.0;
     if (top > footnoteThreshold && fontSize < bodyFontSize * 0.95) {
-      if (RegExp(r'^(\*|\d+[\.\)]|\[\d+\]|\(\d+\))\s+').hasMatch(text)) {
+      final isFootnoteMarker =
+          RegExp(r'^(\*|\[\d+\]|\(\d+\))\s+').hasMatch(text) ||
+          (RegExp(r'^\d{1,3}[\.\)]\s+').hasMatch(text) &&
+              (text.length >= 25 || text.trim().endsWith('.')));
+      if (isFootnoteMarker) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.footnote,
           text: text,
@@ -488,8 +511,14 @@ class SemanticClassifier {
           confidence: 0.98,
         );
       }
-      if (repeatingFooters.contains(text) ||
-          (fontSize <= bodyFontSize && lineCount <= 2 && text.length <= 60)) {
+      final isNumberedChrome =
+          RegExp(
+            r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
+          ).hasMatch(text) ||
+          RegExp(r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$').hasMatch(text);
+      if (isNumberedChrome ||
+          repeatingFooters.contains(text) ||
+          (fontSize <= bodyFontSize * 1.15 && lineCount <= 2 && text.length <= 60)) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningFooter,
           text: text,
@@ -538,7 +567,7 @@ class SemanticClassifier {
         (isBold && lineCount == 1 && text.length < 100);
 
     final orderedMatch = RegExp(
-      r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+',
+      r'^(\d{1,3}[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]{1,3}\))\s+',
     ).firstMatch(text);
     if ((para.isOrderedList || orderedMatch != null) && !isLikelyHeading) {
       final marker = orderedMatch?.group(1) ?? '';
@@ -569,7 +598,7 @@ class SemanticClassifier {
     // F. Copyright, Imprint, and Publishing Information
     if (para.isCopyright ||
         RegExp(
-          r'(hak cipta|all rights reserved|dilarang memfotokopi|katalog dalam terbitan|kdt|isbn\b|cetakan ke-|desain sampul|penata letak|penerjemah|editor:|diterbitkan oleh|penerbit\b)',
+          r'(hak cipta|all rights reserved|dilarang memfotokopi|katalog dalam terbitan|kdt|isbn\b|cetakan ke-|desain sampul|penata letak|penerjemah:|editor:|diterbitkan oleh|penerbit\s*:)',
           caseSensitive: false,
         ).hasMatch(text)) {
       return SemanticReconstructedBlock(
@@ -670,7 +699,7 @@ class SemanticClassifier {
     // to headings. For OCR paragraphs, use casing plus the vertical whitespace
     // around the paragraph, which is stable in page coordinates.
     if (isOcrParagraph) {
-      final endsWithPunctuation = RegExp(r'[\.\?!…»”")\]]\s*$').hasMatch(text);
+      final endsWithPunctuation = RegExp(r'[\.…»”")\]]\s*$').hasMatch(text);
       final startsWithLowercase =
           text.isNotEmpty && RegExp(r'^[a-zà-ÿ]').hasMatch(text);
       final startsWithQuote = RegExp(r'''^["'“‘«—\-–¿]''').hasMatch(text);
@@ -858,7 +887,7 @@ class SemanticClassifier {
       }
 
       // H3: Sub-section heading / Section lead (bold/italic/larger font without terminal punctuation)
-      final endsWithPunct = RegExp(r'[\.\?!…]\s*$').hasMatch(text);
+      final endsWithPunct = RegExp(r'[\.…]\s*$').hasMatch(text);
       if (lineCount <= 2 &&
           text.length <= 80 &&
           !endsWithPunct &&

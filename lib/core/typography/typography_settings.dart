@@ -166,7 +166,7 @@ class TypographySettings {
     this.lineSpacing = 1.65,
     this.paragraphSpacing = 14.0,
     this.letterSpacing = 0.2,
-    this.textAlign = TextAlign.justify,
+    this.textAlign = TextAlign.left,
     this.horizontalMargin = 32.0,
     this.twoPageSpread = true,
   });

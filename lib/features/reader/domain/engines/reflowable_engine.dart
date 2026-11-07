@@ -91,6 +91,7 @@ class ReflowableEngine {
             level: b.headingLevel,
             imagePath: b.imagePath,
             sourcePdfPage: b.originalPageNumber,
+            attributes: b.metadata,
           ),
         );
       }

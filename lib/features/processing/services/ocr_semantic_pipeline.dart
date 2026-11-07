@@ -18,11 +18,12 @@ class OcrSemanticPipeline {
 
   const OcrSemanticPipeline(this.dbService);
 
-  /// Reconstructs a full reflowable [BookDocument] from the completed OCR pages of [bookId].
+  /// Reconstructs a full reflowable [BookDocument] in-memory from the completed
+  /// OCR pages of [bookId] without writing to disk or updating the database.
   ///
-  /// Preserves the immutable original PDF while producing a structured derivative
-  /// that is saved as JSON and linked via [Books.processedBookPath].
-  Future<BookDocument?> reconstructBook({
+  /// Useful for audits, tests, and preview pipelines where database mutations
+  /// must be prevented.
+  Future<BookDocument?> reconstructDocument({
     required String bookId,
     required String pdfPath,
     String? title,
@@ -122,7 +123,7 @@ class OcrSemanticPipeline {
     );
 
     // 5. Generate domain BookDocument
-    final bookDoc = reconstructed
+    return reconstructed
         .toBookDocument(
           extraMetadata: {
             'ocrSource': 'apple_vision_offline',
@@ -133,6 +134,25 @@ class OcrSemanticPipeline {
         // This derivative is always produced from scanned pages: the quality
         // status is not a reliable indicator that the source PDF had text.
         .copyWith(isScanned: true);
+  }
+
+  /// Reconstructs a full reflowable [BookDocument] from the completed OCR pages of [bookId].
+  ///
+  /// Preserves the immutable original PDF while producing a structured derivative
+  /// that is saved as JSON and linked via [Books.processedBookPath].
+  Future<BookDocument?> reconstructBook({
+    required String bookId,
+    required String pdfPath,
+    String? title,
+    String? author,
+  }) async {
+    final bookDoc = await reconstructDocument(
+      bookId: bookId,
+      pdfPath: pdfPath,
+      title: title,
+      author: author,
+    );
+    if (bookDoc == null) return null;
 
     // 6. Save derivative JSON to storage
     final savedJsonFile = await FileStorageService.saveProcessedBook(

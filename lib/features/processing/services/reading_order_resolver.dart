@@ -124,7 +124,10 @@ class ReadingOrderResolver {
     }
 
     // 3. Attempt two-column partitioning on candidate body lines
-    if (candidateBodyLines.length >= 4) {
+    // In genuine two-column layouts, column body text dominates the page rather
+    // than a few narrow lines or right-aligned attributions among full-width text.
+    if (candidateBodyLines.length >= 6 &&
+        candidateBodyLines.length >= fullWidthLines.length * 0.5) {
       final twoColResult = _tryPartitionTwoColumns(
         candidateBodyLines,
         pageWidth,
@@ -290,8 +293,8 @@ class ReadingOrderResolver {
       );
 
       if (straddling.isEmpty &&
-          leftLines.length >= 2 &&
-          rightLines.length >= 2) {
+          leftLines.length >= 3 &&
+          rightLines.length >= 3) {
         final gLeft = leftLines.map((l) => l.bounds.right).reduce(math.max);
         final gRight = rightLines.map((l) => l.bounds.left).reduce(math.min);
         final gWidth = gRight - gLeft;

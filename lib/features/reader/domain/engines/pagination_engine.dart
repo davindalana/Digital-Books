@@ -210,67 +210,30 @@ class PaginationEngine {
       final text = node.text.trim();
       if (text.isEmpty) continue;
 
-      final TextStyle textStyle;
-      switch (node.type) {
-        case ContentNodeType.documentTitle:
-          textStyle = typography
-              .headingStyle(level: 1)
-              .copyWith(
-                fontSize: typography.fontSize * 1.5,
-                fontWeight: FontWeight.bold,
-              );
-          break;
-        case ContentNodeType.heading:
-          textStyle = typography.headingStyle(level: node.level);
-          break;
-        case ContentNodeType.sectionHeading:
-          textStyle = typography
-              .headingStyle(level: 2)
-              .copyWith(
-                fontSize: typography.fontSize * 1.15,
-                fontWeight: FontWeight.bold,
-              );
-          break;
-        case ContentNodeType.quote:
-          textStyle = typography.quoteStyle();
-          break;
-        case ContentNodeType.footnote:
-          textStyle = typography.bodyStyle().copyWith(
-            fontSize: typography.fontSize * 0.85,
-            fontStyle: FontStyle.italic,
-          );
-          break;
-        case ContentNodeType.caption:
-          textStyle = typography.bodyStyle().copyWith(
-            fontSize: typography.fontSize * 0.85,
-            fontStyle: FontStyle.italic,
-          );
-          break;
-        case ContentNodeType.copyrightBlock:
-        case ContentNodeType.metadataBlock:
-          textStyle = typography.bodyStyle();
-          break;
-        default:
-          textStyle = typography.bodyStyle();
-          break;
-      }
+      final TextStyle textStyle = _textStyleFor(node, typography);
 
       // Orphan heading prevention:
-      // If block is a heading, verify that the heading AND at least 3 lines of following text fit.
-      // If not, break to the next page immediately so heading does not sit alone at the bottom.
-      final isHeadingNode =
-          node.type == ContentNodeType.heading ||
-          node.type == ContentNodeType.sectionHeading ||
-          node.type == ContentNodeType.documentTitle;
+      // A heading must stay with the content that follows it. Rather than
+      // reserving a fixed three lines, measure the actual next block: a run of
+      // consecutive headings is kept together, a short paragraph must fit
+      // whole, an atomic legal clause must fit whole, and a long paragraph only
+      // needs its first slice. If that keep-with-next budget does not fit, the
+      // heading moves to the next page instead of being left alone.
+      final isHeadingNode = _isHeadingNode(node.type);
 
       if (isHeadingNode) {
         final headingHeight = _measureTextHeight(text, textStyle, contentWidth);
-        final minHeadingBudget =
-            headingHeight +
-            (typography.fontSize * typography.lineSpacing * 3.0) +
-            (typography.paragraphSpacing * 2.0);
+        final headingAdvance = headingHeight + 8.0 +
+            (typography.paragraphSpacing * 1.2);
+        final keepWithNextHeight = _keepWithNextHeight(
+          nodes: chapter.nodes,
+          nodeIdx: nodeIdx,
+          typography: typography,
+          contentWidth: contentWidth,
+        );
 
-        if (currentUsedHeight + minHeadingBudget > availableHeight &&
+        if (currentUsedHeight + headingAdvance + keepWithNextHeight >
+                availableHeight &&
             currentPageSlices.isNotEmpty) {
           pushCurrentPage();
         }
@@ -283,15 +246,12 @@ class PaginationEngine {
             endCharOffset: text.length,
           ),
         );
-        currentUsedHeight +=
-            headingHeight + 8.0 + (typography.paragraphSpacing * 1.2);
+        currentUsedHeight += headingAdvance;
         continue;
       }
 
       // Paragraph / Quote / Footnote text
-      final isAtomicNode =
-          node.type == ContentNodeType.footnote ||
-          (node.type == ContentNodeType.quote && text.length < 250);
+      final isAtomicNode = _isAtomicNode(node, text);
 
       int charStart = 0;
       while (charStart < text.length) {
@@ -312,33 +272,31 @@ class PaginationEngine {
           contentWidth,
         );
 
-        final double nodePadding;
-        switch (node.type) {
-          case ContentNodeType.footnote:
-          case ContentNodeType.caption:
-            nodePadding = 4.0 + (typography.paragraphSpacing * 0.5);
-            break;
-          case ContentNodeType.orderedList:
-          case ContentNodeType.unorderedList:
-          case ContentNodeType.listItem:
-            nodePadding = typography.paragraphSpacing * 0.6;
-            break;
-          case ContentNodeType.quote:
-            nodePadding = 8.0 + typography.paragraphSpacing;
-            break;
-          case ContentNodeType.copyrightBlock:
-          case ContentNodeType.metadataBlock:
-            nodePadding = 6.0 + (typography.paragraphSpacing * 0.8);
-            break;
-          default:
-            nodePadding = typography.paragraphSpacing;
-            break;
-        }
+        final double nodePadding = _paddingFor(node, typography);
 
         final requiredBudget = fullHeight + nodePadding;
-        if (requiredBudget <= remainingHeightBudget ||
-            (currentPageSlices.isEmpty &&
-                fullHeight <= remainingHeightBudget)) {
+
+        // Explicit keepWithNext hint (for example the final legal clause before
+        // the copyright footer). If the block and the following block cannot
+        // share this page, move the block to the next page instead of leaving a
+        // footer by itself on a page of its own.
+        if (charStart == 0 &&
+            node.attributes['keepWithNext'] == true &&
+            currentPageSlices.isNotEmpty) {
+          final keepWithNextHeight = _keepWithNextBlockHeight(
+            nodes: chapter.nodes,
+            nodeIdx: nodeIdx,
+            typography: typography,
+            contentWidth: contentWidth,
+          );
+          if (currentUsedHeight + requiredBudget + keepWithNextHeight >
+              availableHeight) {
+            pushCurrentPage();
+            continue;
+          }
+        }
+
+        if (requiredBudget <= remainingHeightBudget) {
           // Entire remaining paragraph fits
           currentPageSlices.add(
             PaginatedNodeSlice(
@@ -468,6 +426,194 @@ class PaginationEngine {
 
     _layoutCache[cacheKey] = generatedPages;
     return generatedPages;
+  }
+
+  static bool _isHeadingNode(ContentNodeType type) =>
+      type == ContentNodeType.heading ||
+      type == ContentNodeType.sectionHeading ||
+      type == ContentNodeType.documentTitle;
+
+  static bool _isAtomicNode(ContentNode node, String text) =>
+      node.type == ContentNodeType.footnote ||
+      (node.type == ContentNodeType.quote && text.length < 250) ||
+      (node.type == ContentNodeType.orderedList &&
+          node.attributes['legalClause'] == true);
+
+  static TextStyle _textStyleFor(
+    ContentNode node,
+    TypographySettings typography,
+  ) {
+    switch (node.type) {
+      case ContentNodeType.documentTitle:
+        return typography.headingStyle(level: 1).copyWith(
+          fontSize: typography.fontSize * 1.5,
+          fontWeight: FontWeight.bold,
+        );
+      case ContentNodeType.heading:
+        return typography.headingStyle(level: node.level);
+      case ContentNodeType.sectionHeading:
+        return typography.headingStyle(level: 2).copyWith(
+          fontSize: typography.fontSize * 1.15,
+          fontWeight: FontWeight.bold,
+        );
+      case ContentNodeType.quote:
+        return typography.quoteStyle();
+      case ContentNodeType.footnote:
+      case ContentNodeType.caption:
+        return typography.bodyStyle().copyWith(
+          fontSize: typography.fontSize * 0.85,
+          fontStyle: FontStyle.italic,
+        );
+      case ContentNodeType.copyrightBlock:
+      case ContentNodeType.metadataBlock:
+      default:
+        return typography.bodyStyle();
+    }
+  }
+
+  static double _paddingFor(
+    ContentNode node,
+    TypographySettings typography,
+  ) {
+    switch (node.type) {
+      case ContentNodeType.footnote:
+      case ContentNodeType.caption:
+        return 4.0 + (typography.paragraphSpacing * 0.5);
+      case ContentNodeType.orderedList:
+      case ContentNodeType.unorderedList:
+      case ContentNodeType.listItem:
+        return typography.paragraphSpacing * 0.6;
+      case ContentNodeType.quote:
+        return 8.0 + typography.paragraphSpacing;
+      case ContentNodeType.copyrightBlock:
+      case ContentNodeType.metadataBlock:
+        return 6.0 + (typography.paragraphSpacing * 0.8);
+      default:
+        return typography.paragraphSpacing;
+    }
+  }
+
+  static double _headingAdvanceHeight(
+    ContentNode node,
+    TypographySettings typography,
+    double contentWidth,
+  ) {
+    final text = node.text.trim();
+    if (text.isEmpty) return 0.0;
+    return _measureTextHeight(
+          text,
+          _textStyleFor(node, typography),
+          contentWidth,
+        ) +
+        8.0 +
+        (typography.paragraphSpacing * 1.2);
+  }
+
+  /// Full height of a block as it would appear on an empty page. Used by the
+  /// explicit `keepWithNext` composition hint.
+  static double _fullBlockHeightFor(
+    ContentNode node,
+    TypographySettings typography,
+    double contentWidth,
+  ) {
+    if (node.type == ContentNodeType.image) {
+      return _minimumSliceHeightFor(node, typography, contentWidth);
+    }
+    final text = node.text.trim();
+    if (text.isEmpty) return 0.0;
+    if (_isHeadingNode(node.type)) {
+      return _headingAdvanceHeight(node, typography, contentWidth);
+    }
+    return _measureTextHeight(
+          text,
+          _textStyleFor(node, typography),
+          contentWidth,
+        ) +
+        _paddingFor(node, typography);
+  }
+
+  /// Height of the next non-empty block for a `keepWithNext` composition hint.
+  static double _keepWithNextBlockHeight({
+    required List<ContentNode> nodes,
+    required int nodeIdx,
+    required TypographySettings typography,
+    required double contentWidth,
+  }) {
+    var i = nodeIdx + 1;
+    while (i < nodes.length) {
+      final next = nodes[i];
+      if (next.type == ContentNodeType.pageBreak) return 0.0;
+      if (next.type == ContentNodeType.image) {
+        return _fullBlockHeightFor(next, typography, contentWidth);
+      }
+      if (next.text.trim().isEmpty) {
+        i++;
+        continue;
+      }
+      return _fullBlockHeightFor(next, typography, contentWidth);
+    }
+    return 0.0;
+  }
+
+  /// Minimum height the next block needs on the same page as a heading.
+  static double _minimumSliceHeightFor(
+    ContentNode node,
+    TypographySettings typography,
+    double contentWidth,
+  ) {
+    if (node.type == ContentNodeType.image) {
+      final hasCaption = node.text.trim().isNotEmpty;
+      return 220.0 + (hasCaption ? 28.0 : 0.0) + typography.paragraphSpacing;
+    }
+    final text = node.text.trim();
+    if (text.isEmpty) return 0.0;
+    if (_isHeadingNode(node.type)) {
+      return _headingAdvanceHeight(node, typography, contentWidth);
+    }
+
+    final fullHeight = _measureTextHeight(
+      text,
+      _textStyleFor(node, typography),
+      contentWidth,
+    );
+    final padding = _paddingFor(node, typography);
+    if (_isAtomicNode(node, text)) return fullHeight + padding;
+
+    final lineHeight = typography.fontSize * typography.lineSpacing;
+    return math.min(fullHeight, lineHeight * 3.0) + padding;
+  }
+
+  /// Height that must remain after a heading so it is never the last slice on a
+  /// page. Consecutive headings are chained; an explicit page break ends the
+  /// chain because there is no following text to keep with.
+  static double _keepWithNextHeight({
+    required List<ContentNode> nodes,
+    required int nodeIdx,
+    required TypographySettings typography,
+    required double contentWidth,
+  }) {
+    var budget = 0.0;
+    var i = nodeIdx + 1;
+    while (i < nodes.length) {
+      final next = nodes[i];
+      if (next.type == ContentNodeType.pageBreak) return budget;
+      if (next.type == ContentNodeType.image) {
+        budget += _minimumSliceHeightFor(next, typography, contentWidth);
+        return budget;
+      }
+      if (next.text.trim().isEmpty) {
+        i++;
+        continue;
+      }
+      if (_isHeadingNode(next.type)) {
+        budget += _headingAdvanceHeight(next, typography, contentWidth);
+        i++;
+        continue;
+      }
+      budget += _minimumSliceHeightFor(next, typography, contentWidth);
+      return budget;
+    }
+    return budget;
   }
 
   /// Measures exact rendered height of text using Flutter's native [TextPainter].

@@ -63,6 +63,24 @@ class ReflowablePageRenderer extends StatelessWidget {
         ? ' (PDF hal. ${sourcePdfPages.join(', ')})'
         : '';
 
+    final hasFrontMatter = page.slices.any(
+      (s) => s.node.attributes['frontMatter'] != null,
+    );
+    final isCoverPage = page.slices.any(
+      (s) => s.node.attributes['frontMatter'] == 'cover',
+    );
+    final isTitlePage = page.slices.any(
+      (s) => s.node.attributes['frontMatter'] == 'titlePage',
+    );
+    final effectiveShowHeader = showHeader && !hasFrontMatter;
+    final effectiveShowFooter = showFooter && !isCoverPage && !isTitlePage;
+    final isSloganPage =
+        page.slices.isNotEmpty &&
+        page.slices.every(
+          (s) => s.node.attributes['kind'] == 'publisherSlogan',
+        );
+    final centerFrontMatter = isCoverPage || isTitlePage || isSloganPage;
+
     return Container(
       width: contentWidth,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -70,7 +88,7 @@ class ReflowablePageRenderer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Running Header
-          if (showHeader)
+          if (effectiveShowHeader)
             SizedBox(
               height: 28,
               child: Align(
@@ -103,7 +121,9 @@ class ReflowablePageRenderer extends StatelessWidget {
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              alignment: Alignment.topCenter,
+              alignment: centerFrontMatter
+                  ? Alignment.center
+                  : Alignment.topCenter,
               child: SizedBox(
                 width: contentWidth,
                 child: Column(
@@ -118,7 +138,7 @@ class ReflowablePageRenderer extends StatelessWidget {
           ),
 
           // 3. Running Footer
-          if (showFooter)
+          if (effectiveShowFooter)
             SizedBox(
               height: 24,
               child: Center(
@@ -164,12 +184,19 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     // Document Title Node
     if (node.type == ContentNodeType.documentTitle) {
+      final kind = node.attributes['kind'] as String? ?? '';
+      final isMainTitle = kind == 'mainTitle';
+      final isEnglishTitle = kind == 'englishTitle';
       final style = typography
           .headingStyle(level: 1, color: theme.textColor)
           .copyWith(
-            fontSize: typography.fontSize * 1.45,
+            fontSize:
+                typography.fontSize *
+                (isMainTitle ? 1.35 : (isEnglishTitle ? 0.74 : 1.35)),
             fontWeight: FontWeight.bold,
-            letterSpacing: 0.8,
+            height: isMainTitle ? 1.18 : 1.35,
+            letterSpacing: isEnglishTitle ? 1.8 : 0.5,
+            color: isEnglishTitle ? theme.secondaryTextColor : theme.textColor,
           );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
@@ -182,8 +209,11 @@ class ReflowablePageRenderer extends StatelessWidget {
         onHighlightTap: onHighlightTap,
       );
 
+      final topPadding = isMainTitle
+          ? (node.attributes['frontMatter'] == 'cover' ? 36.0 : 20.0)
+          : 8.0;
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        padding: EdgeInsets.only(top: topPadding, bottom: isMainTitle ? 14 : 6),
         child: Column(
           children: [
             SelectableText.rich(
@@ -192,15 +222,17 @@ class ReflowablePageRenderer extends StatelessWidget {
               contextMenuBuilder: (ctx, editableTextState) =>
                   _buildContextMenu(ctx, editableTextState, slice),
             ),
-            const SizedBox(height: 10),
-            Container(
-              width: 50,
-              height: 2,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37),
-                borderRadius: BorderRadius.circular(1),
+            if (!isEnglishTitle) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: isMainTitle ? 64 : 50,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37),
+                  borderRadius: BorderRadius.circular(1),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       );
@@ -253,6 +285,61 @@ class ReflowablePageRenderer extends StatelessWidget {
       );
     }
 
+    // Legal numbered clause (front matter). Legal text uses a plain hanging
+    // number rather than the decorative list badge used for body content.
+    if (node.type == ContentNodeType.orderedList &&
+        node.attributes['legalClause'] == true) {
+      final itemText = slice.textSlice.trim();
+      final markerText = node.attributes['listMarker'] as String? ?? '';
+      final markerPattern = markerText.isNotEmpty
+          ? RegExp('^${RegExp.escape(markerText)}\\s*')
+          : RegExp(r'^(\d+[\.\)])\s*');
+      final match = markerPattern.firstMatch(itemText);
+      final marker =
+          match?.group(0)?.trim() ?? (markerText.isNotEmpty ? markerText : '•');
+      final content = match != null ? itemText.substring(match.end) : itemText;
+      final style = typography
+          .bodyStyle(color: theme.secondaryTextColor)
+          .copyWith(fontSize: typography.fontSize * 0.80, height: 1.55);
+      final consumed = itemText.length - content.length;
+      final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: content,
+        sliceStartOffset: slice.startCharOffset + consumed,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: style,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.only(left: 6, right: 8, bottom: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 24,
+              child: Text(
+                marker,
+                textAlign: TextAlign.right,
+                style: style.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SelectableText.rich(
+                richSpan,
+                textAlign: TextAlign.left,
+                contextMenuBuilder: (ctx, editableTextState) =>
+                    _buildContextMenu(ctx, editableTextState, slice),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     // Ordered List Item Node
     if (node.type == ContentNodeType.orderedList ||
         node.type == ContentNodeType.listItem) {
@@ -285,34 +372,20 @@ class ReflowablePageRenderer extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              constraints: const BoxConstraints(minWidth: 26),
-              margin: const EdgeInsets.only(right: 8, top: 1),
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(
-                  0xFFD4AF37,
-                ).withAlpha(theme.isDark ? 30 : 20),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: const Color(
-                    0xFFD4AF37,
-                  ).withAlpha(theme.isDark ? 80 : 60),
-                  width: 0.8,
-                ),
-              ),
+            SizedBox(
+              width: 28,
               child: Text(
                 marker,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: typography.fontSize * 0.75,
-                  fontWeight: FontWeight.bold,
-                  color: theme.isDark
-                      ? const Color(0xFFE5C058)
-                      : const Color(0xFF996515),
-                ),
+                textAlign: TextAlign.right,
+                style: typography
+                    .bodyStyle(color: theme.secondaryTextColor)
+                    .copyWith(
+                      fontSize: typography.fontSize * 0.90,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
+            const SizedBox(width: 10),
             Expanded(
               child: SelectableText.rich(
                 richSpan,
@@ -356,15 +429,18 @@ class ReflowablePageRenderer extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              margin: const EdgeInsets.only(left: 6, right: 12, top: 7),
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: Color(0xFFD4AF37),
-                shape: BoxShape.circle,
+            SizedBox(
+              width: 18,
+              child: Text(
+                '•',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: typography.fontSize,
+                  color: const Color(0xFFD4AF37),
+                ),
               ),
             ),
+            const SizedBox(width: 6),
             Expanded(
               child: SelectableText.rich(
                 richSpan,
@@ -413,12 +489,200 @@ class ReflowablePageRenderer extends StatelessWidget {
     // Copyright / Metadata Block Node
     if (node.type == ContentNodeType.copyrightBlock ||
         node.type == ContentNodeType.metadataBlock) {
+      final kind = node.attributes['kind'] as String? ?? '';
+      if (kind == 'tocPerson') {
+        final name = (node.attributes['tocTitle'] as String?) ?? node.text;
+        final page = (node.attributes['tocPage'] as String?) ?? '';
+        return Padding(
+          padding: const EdgeInsets.only(left: 12, top: 2, bottom: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography
+                      .bodyStyle(color: theme.secondaryTextColor)
+                      .copyWith(
+                        fontSize: typography.fontSize * 0.82,
+                        fontStyle: FontStyle.italic,
+                      ),
+                ),
+              ),
+              if (page.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Text(
+                  page,
+                  style: typography
+                      .bodyStyle(color: theme.secondaryTextColor)
+                      .copyWith(
+                        fontSize: typography.fontSize * 0.80,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
+            ],
+          ),
+        );
+      }
+      if (kind == 'tocEntry') {
+        final tocTitle = (node.attributes['tocTitle'] as String?) ?? node.text;
+        final tocPage = (node.attributes['tocPage'] as String?) ?? '';
+        final titleStyle = typography
+            .bodyStyle(color: theme.textColor)
+            .copyWith(fontSize: typography.fontSize * 0.88, height: 1.45);
+        final pageStyle = typography
+            .bodyStyle(color: theme.secondaryTextColor)
+            .copyWith(
+              fontSize: typography.fontSize * 0.82,
+              fontWeight: FontWeight.w600,
+            );
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Flexible(
+                fit: FlexFit.loose,
+                child: Text(
+                  tocTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: ClipRect(
+                  child: Text(
+                    '.' * 120,
+                    maxLines: 1,
+                    overflow: TextOverflow.clip,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: typography.fontSize * 0.82,
+                      height: 1.45,
+                      letterSpacing: 2.0,
+                      color: theme.secondaryTextColor.withAlpha(70),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 34,
+                child: Text(
+                  tocPage,
+                  textAlign: TextAlign.right,
+                  style: pageStyle,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      var factor = 0.80;
+      var weight = FontWeight.normal;
+      var fontStyle = FontStyle.normal;
+      var color = theme.secondaryTextColor;
+      var align = TextAlign.left;
+      var letterSpacing = 0.2;
+      var padding = const EdgeInsets.symmetric(vertical: 6.0);
+
+      switch (kind) {
+        case 'tocChapterLabel':
+          factor = 0.70;
+          weight = FontWeight.bold;
+          color = const Color(0xFFD4AF37);
+          letterSpacing = 1.5;
+          padding = const EdgeInsets.only(top: 16, bottom: 2);
+          break;
+        case 'tocChapterTitle':
+          factor = 1.02;
+          weight = FontWeight.bold;
+          color = theme.textColor;
+          padding = const EdgeInsets.only(top: 2, bottom: 7);
+          break;
+        case 'publisherLogo':
+          factor = 0.72;
+          weight = FontWeight.w600;
+          letterSpacing = 1.6;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 4, bottom: 12);
+          break;
+        case 'subtitle':
+          factor = 0.95;
+          letterSpacing = 0.6;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 4, bottom: 10);
+          break;
+        case 'author':
+          factor = 1.08;
+          weight = FontWeight.bold;
+          color = theme.textColor;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 12, bottom: 2);
+          break;
+        case 'credential':
+          factor = 0.76;
+          fontStyle = FontStyle.italic;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(bottom: 12);
+          break;
+        case 'badge':
+          factor = 0.68;
+          weight = FontWeight.bold;
+          color = const Color(0xFFD4AF37);
+          letterSpacing = 1.4;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(bottom: 12);
+          break;
+        case 'label':
+          factor = 0.82;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 12, bottom: 2);
+          break;
+        case 'publisher':
+          factor = 0.72;
+          letterSpacing = 1.3;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 18, bottom: 12);
+          break;
+        case 'publisherSlogan':
+          factor = 0.92;
+          fontStyle = FontStyle.italic;
+          align = TextAlign.center;
+          padding = const EdgeInsets.symmetric(vertical: 12);
+          break;
+        case 'legalHeading':
+          factor = 0.95;
+          weight = FontWeight.bold;
+          color = theme.textColor;
+          padding = const EdgeInsets.only(top: 18, bottom: 6);
+          break;
+        case 'frontMatterFooter':
+          factor = 0.70;
+          letterSpacing = 0.4;
+          align = TextAlign.center;
+          padding = const EdgeInsets.only(top: 16);
+          break;
+        default:
+          if (node.type == ContentNodeType.copyrightBlock) {
+            factor = 0.78;
+            padding = const EdgeInsets.symmetric(vertical: 5.0);
+          }
+          break;
+      }
+
       final style = typography
-          .bodyStyle(color: theme.secondaryTextColor)
+          .bodyStyle(color: color)
           .copyWith(
-            fontSize: typography.fontSize * 0.82,
-            height: 1.5,
-            letterSpacing: 0.2,
+            fontSize: typography.fontSize * factor,
+            height: 1.55,
+            letterSpacing: letterSpacing,
+            fontWeight: weight,
+            fontStyle: fontStyle,
           );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: slice.textSlice,
@@ -431,15 +695,90 @@ class ReflowablePageRenderer extends StatelessWidget {
         onHighlightTap: onHighlightTap,
       );
 
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        child: SelectableText.rich(
-          richSpan,
-          textAlign: TextAlign.left,
-          contextMenuBuilder: (ctx, editableTextState) =>
-              _buildContextMenu(ctx, editableTextState, slice),
-        ),
+      final sectionLabel = node.attributes['sectionLabel'] as String?;
+      final content = SelectableText.rich(
+        richSpan,
+        textAlign: align,
+        contextMenuBuilder: (ctx, editableTextState) =>
+            _buildContextMenu(ctx, editableTextState, slice),
       );
+      return Padding(
+        padding: padding,
+        child: sectionLabel == null || sectionLabel.isEmpty
+            ? content
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    sectionLabel.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: typography.fontSize * 0.62,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFD4AF37),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  content,
+                ],
+              ),
+      );
+    }
+
+    // Chapter opening: split the OCR marker ("BAB I:") from the title so the
+    // page reads like a book chapter opener instead of a giant all-caps blob.
+    if (node.type == ContentNodeType.heading && node.level == 1) {
+      final fullText = slice.textSlice.trim();
+      final match = RegExp(
+        r'^(BAB|CHAPTER)\s+([IVXLCDM0-9]+)\s*:\s*(.+)$',
+        dotAll: true,
+      ).firstMatch(fullText);
+      final titleText = match?.group(3);
+      if (match != null && titleText != null) {
+        final title = titleText.trim();
+        final titleIndex = fullText.indexOf(titleText);
+        final titleStyle = typography
+            .headingStyle(level: 1, color: theme.textColor)
+            .copyWith(
+              fontSize: typography.fontSize * 1.22,
+              height: 1.28,
+              letterSpacing: 0.2,
+            );
+        final titleSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+          text: title,
+          sliceStartOffset: slice.startCharOffset + titleIndex,
+          sliceEndOffset: slice.endCharOffset,
+          highlightsForNode: highlightsForNode,
+          searchMatchesForNode: searchMatchesForNode,
+          baseStyle: titleStyle,
+          theme: theme,
+          onHighlightTap: onHighlightTap,
+        );
+        return Padding(
+          padding: const EdgeInsets.only(top: 18, bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${match.group(1)!.toUpperCase()} ${match.group(2)}',
+                style: TextStyle(
+                  fontSize: typography.fontSize * 0.68,
+                  letterSpacing: 2.2,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFFD4AF37),
+                ),
+              ),
+              const SizedBox(height: 7),
+              SelectableText.rich(
+                titleSpan,
+                textAlign: TextAlign.left,
+                contextMenuBuilder: (ctx, editableTextState) =>
+                    _buildContextMenu(ctx, editableTextState, slice),
+              ),
+            ],
+          ),
+        );
+      }
     }
 
     // Heading Node
@@ -540,6 +879,35 @@ class ReflowablePageRenderer extends StatelessWidget {
         child: SelectableText.rich(
           richSpan,
           textAlign: typography.textAlign,
+          contextMenuBuilder: (ctx, editableTextState) =>
+              _buildContextMenu(ctx, editableTextState, slice),
+        ),
+      );
+    }
+
+    // Table-of-contents entry. TOC lines are denser and should not inherit the
+    // body paragraph rhythm; the semantic stage still uses bodyParagraph to
+    // preserve anchors and search offsets.
+    if (node.type == ContentNodeType.paragraph &&
+        node.attributes['isTocEntry'] == true) {
+      final tocStyle = typography
+          .bodyStyle(color: theme.textColor)
+          .copyWith(fontSize: typography.fontSize * 0.88, height: 1.50);
+      final tocSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
+        text: slice.textSlice,
+        sliceStartOffset: slice.startCharOffset,
+        sliceEndOffset: slice.endCharOffset,
+        highlightsForNode: highlightsForNode,
+        searchMatchesForNode: searchMatchesForNode,
+        baseStyle: tocStyle,
+        theme: theme,
+        onHighlightTap: onHighlightTap,
+      );
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: SelectableText.rich(
+          tocSpan,
+          textAlign: TextAlign.left,
           contextMenuBuilder: (ctx, editableTextState) =>
               _buildContextMenu(ctx, editableTextState, slice),
         ),
