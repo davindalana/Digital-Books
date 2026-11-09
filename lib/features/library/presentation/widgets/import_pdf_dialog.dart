@@ -275,36 +275,63 @@ class ImportPdfHelper {
       if (!context.mounted) return;
 
       // Show Import Progress Dialog
-      showDialog(
+      var progressDialogOpen = true;
+      var userCancelled = false;
+      showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const ImportProgressDialog(),
-      );
+        builder: (_) =>
+            ImportProgressDialog(onCancel: () => userCancelled = true),
+      ).whenComplete(() {
+        progressDialogOpen = false;
+      });
 
       // Start import pipeline
       final importedBook = await ref
           .read(importNotifierProvider.notifier)
           .importFile(selectedFile);
 
-      if (context.mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Cleanly close progress dialog
+      if (!context.mounted) return;
 
-        if (importedBook != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ReadingScreen(
-                    book: importedBook,
-                    initialMode: importedBook.isScanned
-                        ? ReadingMode.originalPdf
-                        : ReadingMode.reflowable,
-                  ),
-                ),
-              );
-            }
-          });
+      if (importedBook != null) {
+        // Close the progress dialog once. If the user already dismissed it,
+        // do not pop again or the library screen itself would be removed.
+        if (progressDialogOpen) {
+          Navigator.of(context, rootNavigator: true).pop();
         }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ReadingScreen(
+                  book: importedBook,
+                  initialMode: importedBook.isScanned
+                      ? ReadingMode.originalPdf
+                      : ReadingMode.reflowable,
+                ),
+              ),
+            );
+          }
+        });
+        return;
+      }
+
+      if (userCancelled) return;
+
+      final errorMessage = ref.read(importNotifierProvider).errorMessage;
+      if (progressDialogOpen) {
+        // Keep the dialog visible so the user can read the failure reason.
+        // Its Close button pops it.
+        return;
+      }
+
+      if (errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to import PDF: $errorMessage'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -320,7 +347,9 @@ class ImportPdfHelper {
 }
 
 class ImportProgressDialog extends ConsumerWidget {
-  const ImportProgressDialog({super.key});
+  final VoidCallback? onCancel;
+
+  const ImportProgressDialog({super.key, this.onCancel});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -438,6 +467,7 @@ class ImportProgressDialog extends ConsumerWidget {
                     TextButton(
                       onPressed: () {
                         if (importState.isProcessing) {
+                          onCancel?.call();
                           ref.read(importNotifierProvider.notifier).cancel();
                         }
                         Navigator.of(context).pop();
