@@ -115,6 +115,40 @@ class PaginationEngine {
     return allPages;
   }
 
+  /// Content width used for pagination in the given viewport. Exposed so
+  /// verification tests measure the same geometry as the pagination engine.
+  static double contentWidthFor({
+    required double viewportWidth,
+    required TypographySettings typography,
+  }) {
+    final isTwoPageSpread = viewportWidth >= 850.0 && typography.twoPageSpread;
+    final double rawPageWidth = isTwoPageSpread
+        ? ((viewportWidth - 24.0) / 2.0)
+        : viewportWidth;
+    final double effectiveMargin = (rawPageWidth < 400.0)
+        ? 18.0
+        : (rawPageWidth < 650.0
+              ? 24.0
+              : math.max(32.0, typography.horizontalMargin));
+    final double maxClampWidth = isTwoPageSpread ? 620.0 : 680.0;
+    return (rawPageWidth - (effectiveMargin * 2.0)).clamp(160.0, maxClampWidth);
+  }
+
+  /// Usable body height after reader chrome and vertical padding. Exposed for
+  /// verification tests that must not guess the available geometry.
+  static double availableHeightFor({
+    required double viewportHeight,
+    double headerHeight = 28.0,
+    double footerHeight = 24.0,
+    double verticalPadding = 8.0,
+  }) {
+    return (viewportHeight -
+            (verticalPadding * 2) -
+            headerHeight -
+            footerHeight)
+        .clamp(120.0, 4000.0);
+  }
+
   /// Paginates a single [ReaderChapter] with actual [TextPainter] height measurements.
   static List<PaginatedPage> paginateChapter({
     required ReaderChapter chapter,
@@ -127,24 +161,16 @@ class PaginationEngine {
     double verticalPadding = 8.0,
   }) {
     // 1. Check cache
-    final isTwoPageSpread = viewportWidth >= 850.0 && typography.twoPageSpread;
-    final double rawPageWidth = isTwoPageSpread
-        ? ((viewportWidth - 24.0) / 2.0)
-        : viewportWidth;
-    final double effectiveMargin = (rawPageWidth < 400.0)
-        ? 18.0
-        : (rawPageWidth < 650.0
-              ? 24.0
-              : math.max(32.0, typography.horizontalMargin));
-    final double maxClampWidth = isTwoPageSpread ? 620.0 : 680.0;
-    final double contentWidth = (rawPageWidth - (effectiveMargin * 2.0)).clamp(
-      160.0,
-      maxClampWidth,
+    final contentWidth = contentWidthFor(
+      viewportWidth: viewportWidth,
+      typography: typography,
     );
-
-    final double availableHeight =
-        (viewportHeight - (verticalPadding * 2) - headerHeight - footerHeight)
-            .clamp(120.0, 4000.0);
+    final availableHeight = availableHeightFor(
+      viewportHeight: viewportHeight,
+      headerHeight: headerHeight,
+      footerHeight: footerHeight,
+      verticalPadding: verticalPadding,
+    );
 
     final cacheKey =
         '${chapter.id}_${contentWidth.toInt()}x${availableHeight.toInt()}_${typography.cacheKey}_$startBookPageIndex';
@@ -223,8 +249,8 @@ class PaginationEngine {
 
       if (isHeadingNode) {
         final headingHeight = _measureTextHeight(text, textStyle, contentWidth);
-        final headingAdvance = headingHeight + 8.0 +
-            (typography.paragraphSpacing * 1.2);
+        final headingAdvance =
+            headingHeight + 8.0 + (typography.paragraphSpacing * 1.2);
         final keepWithNextHeight = _keepWithNextHeight(
           nodes: chapter.nodes,
           nodeIdx: nodeIdx,
@@ -445,10 +471,12 @@ class PaginationEngine {
   ) {
     switch (node.type) {
       case ContentNodeType.documentTitle:
-        return typography.headingStyle(level: 1).copyWith(
-          fontSize: typography.fontSize * 1.5,
-          fontWeight: FontWeight.bold,
-        );
+        return typography
+            .headingStyle(level: 1)
+            .copyWith(
+              fontSize: typography.fontSize * 1.5,
+              fontWeight: FontWeight.bold,
+            );
       case ContentNodeType.heading:
         if (node.attributes['kind'] == 'legalHeading') {
           return typography.bodyStyle().copyWith(
@@ -459,10 +487,12 @@ class PaginationEngine {
         }
         return typography.headingStyle(level: node.level);
       case ContentNodeType.sectionHeading:
-        return typography.headingStyle(level: 2).copyWith(
-          fontSize: typography.fontSize * 1.15,
-          fontWeight: FontWeight.bold,
-        );
+        return typography
+            .headingStyle(level: 2)
+            .copyWith(
+              fontSize: typography.fontSize * 1.15,
+              fontWeight: FontWeight.bold,
+            );
       case ContentNodeType.quote:
         return typography.quoteStyle();
       case ContentNodeType.footnote:
@@ -511,10 +541,7 @@ class PaginationEngine {
     }
   }
 
-  static double paddingFor(
-    ContentNode node,
-    TypographySettings typography,
-  ) {
+  static double paddingFor(ContentNode node, TypographySettings typography) {
     switch (node.type) {
       case ContentNodeType.footnote:
       case ContentNodeType.caption:

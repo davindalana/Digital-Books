@@ -1611,6 +1611,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     bool isBookmarked,
   ) {
     final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWideDesktop = screenWidth >= 960;
     final isDesktopOrTablet = screenWidth >= 680;
     final isCompact = screenWidth < 520;
     final isUltraCompact = screenWidth < 380;
@@ -1821,15 +1822,17 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                     size: 14,
                                     color: activeTheme.textColor,
                                   ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Mulai OCR',
-                                    style: TextStyle(
-                                      color: activeTheme.textColor,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
+                                  if (isWideDesktop) ...[
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'Mulai OCR',
+                                      style: TextStyle(
+                                        color: activeTheme.textColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -1957,24 +1960,26 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                             );
                           },
                         ),
-                      IconButton(
-                        tooltip: 'Zoom Out (Cmd -)',
-                        icon: Icon(
-                          Icons.zoom_out,
-                          color: activeTheme.textColor,
-                          size: 20,
+                      if (isWideDesktop) ...[
+                        IconButton(
+                          tooltip: 'Zoom Out (Cmd -)',
+                          icon: Icon(
+                            Icons.zoom_out,
+                            color: activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () => _pdfKey.currentState?.zoomOut(),
                         ),
-                        onPressed: () => _pdfKey.currentState?.zoomOut(),
-                      ),
-                      IconButton(
-                        tooltip: 'Zoom In (Cmd +)',
-                        icon: Icon(
-                          Icons.zoom_in,
-                          color: activeTheme.textColor,
-                          size: 20,
+                        IconButton(
+                          tooltip: 'Zoom In (Cmd +)',
+                          icon: Icon(
+                            Icons.zoom_in,
+                            color: activeTheme.textColor,
+                            size: 20,
+                          ),
+                          onPressed: () => _pdfKey.currentState?.zoomIn(),
                         ),
-                        onPressed: () => _pdfKey.currentState?.zoomIn(),
-                      ),
+                      ],
                     ],
                     if (!isUltraCompact)
                       IconButton(
