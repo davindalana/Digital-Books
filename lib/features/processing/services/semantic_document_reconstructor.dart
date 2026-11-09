@@ -45,9 +45,17 @@ class SemanticDocumentReconstructor {
     );
 
     // D3: Semantic Classification
+    final pageHeights = <int, double>{
+      for (final page in extraction.pages) page.pageIndex: page.pageSize.height,
+    };
+    final pageWidths = <int, double>{
+      for (final page in extraction.pages) page.pageIndex: page.pageSize.width,
+    };
     final classifiedBlocks = SemanticClassifier.classifyDocument(
       paragraphs: paragraphs,
       totalPages: extraction.totalPages,
+      pageHeights: pageHeights,
+      pageWidths: pageWidths,
     );
 
     // Front matter and TOC own their pages; discard generic prose blocks for
@@ -239,12 +247,14 @@ class SemanticDocumentReconstructor {
       final isListMarker = RegExp(
         r'^(\d{1,3}[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]{1,3}\)|[•\-\*–—])',
       ).hasMatch(text);
-      final isAnnotationOrFormula =
-          RegExp(r'^(\[[^\]]+\]|\([^\)]+\)|[A-Z0-9\+\-\*\/=]+$)').hasMatch(text);
+      final isAnnotationOrFormula = RegExp(
+        r'^(\[[^\]]+\]|\([^\)]+\)|[A-Z0-9\+\-\*\/=]+$)',
+      ).hasMatch(text);
 
       final prevEndsSentence =
           output.isNotEmpty && _endsSentence(output.last.text);
-      final prevEndsHyphen = output.isNotEmpty &&
+      final prevEndsHyphen =
+          output.isNotEmpty &&
           (output.last.text.trimRight().endsWith('-') ||
               output.last.text.trimRight().endsWith('\u2010') ||
               output.last.text.trimRight().endsWith('\u2013'));

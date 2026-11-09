@@ -11,6 +11,9 @@ class SemanticClassifier {
     required List<ReconstructedParagraph> paragraphs,
     required int totalPages,
     double defaultPageHeight = 792.0, // standard letter/A4
+    double defaultPageWidth = 612.0,
+    Map<int, double>? pageHeights,
+    Map<int, double>? pageWidths,
   }) {
     if (paragraphs.isEmpty) return [];
 
@@ -23,25 +26,46 @@ class SemanticClassifier {
         ? defaultPageHeight
         : math.max(defaultPageHeight, detectedMaxY + 20.0);
 
+    final detectedMaxX = paragraphs
+        .map((p) => p.boundingBox.right)
+        .reduce(math.max);
+    final effectivePageWidth =
+        (defaultPageWidth > 0 && (defaultPageWidth - detectedMaxX).abs() < 140)
+        ? defaultPageWidth
+        : math.max(defaultPageWidth, detectedMaxX + 36.0);
+
     // 1. Calculate document-wide typography baselines
     final bodyFontSize = _detectModalBodyFontSize(paragraphs);
     final bodyLeftMargin = _detectModalLeftMargin(paragraphs);
 
-    final headerZoneThreshold = math.min(65.0, effectivePageHeight * 0.10);
-    final footerZoneThreshold = math.max(
-      effectivePageHeight - 75.0,
-      effectivePageHeight * 0.88,
-    );
-
-    // 2. Detect repeating header/footer patterns across pages
+    // 2. Detect repeating header/footer patterns across pages. A repeated
+    // string is only meaningful when it appears on at least two pages; on a
+    // single-page document every top-zone candidate would otherwise count as
+    // "repeating" and be discarded as chrome.
     final repeatingHeaders = _detectRepeatingTexts(
-      paragraphs.where((p) => p.boundingBox.top <= headerZoneThreshold),
-      minOccurrences: math.min(2, totalPages),
+      paragraphs.where(
+        (p) =>
+            p.boundingBox.top <=
+            _headerThresholdFor(
+              p.startPageIndex,
+              pageHeights,
+              effectivePageHeight,
+            ),
+      ),
+      minOccurrences: 2,
     );
 
     final repeatingFooters = _detectRepeatingTexts(
-      paragraphs.where((p) => p.boundingBox.bottom >= footerZoneThreshold),
-      minOccurrences: math.min(2, totalPages),
+      paragraphs.where(
+        (p) =>
+            p.boundingBox.bottom >=
+            _footerThresholdFor(
+              p.startPageIndex,
+              pageHeights,
+              effectivePageHeight,
+            ),
+      ),
+      minOccurrences: 2,
     );
 
     // 3. Page-Level Pre-Pass:
@@ -248,10 +272,7 @@ class SemanticClassifier {
             }
           }
           prevBottom ??= prev.boundingBox.bottom;
-          gapBefore[i] = math.max(
-            0.0,
-            current.boundingBox.top - prevBottom,
-          );
+          gapBefore[i] = math.max(0.0, current.boundingBox.top - prevBottom);
         }
       }
       if (i + 1 < preparedParagraphs.length &&
@@ -273,7 +294,16 @@ class SemanticClassifier {
         para: para,
         bodyFontSize: bodyFontSize,
         bodyLeftMargin: bodyLeftMargin,
-        pageHeight: effectivePageHeight,
+        pageHeight: _pageHeightFor(
+          para.startPageIndex,
+          pageHeights,
+          effectivePageHeight,
+        ),
+        pageWidth: _pageWidthFor(
+          para.startPageIndex,
+          pageWidths,
+          effectivePageWidth,
+        ),
         repeatingHeaders: repeatingHeaders,
         repeatingFooters: repeatingFooters,
         isTocPage: tocPageIndices.contains(para.startPageIndex),
@@ -357,6 +387,7 @@ class SemanticClassifier {
     required double bodyFontSize,
     required double bodyLeftMargin,
     required double pageHeight,
+    required double pageWidth,
     required Set<String> repeatingHeaders,
     required Set<String> repeatingFooters,
     bool isTocPage = false,
@@ -431,6 +462,19 @@ class SemanticClassifier {
       );
     }
 
+    // Explicit chapter markers and named front/back matter are structural
+    // headings, not page chrome. A genuine heading may sit in the physical top
+    // zone of the page (e.g. "BAB III" at y≈30), so classifying by position
+    // alone loses content. Only treat it as a running header when the exact
+    // same line repeats on another page.
+    final normChapter = normalizeChapterHeader(text);
+    final isNamedStructuralTitle = _isNamedFrontMatterTitle(text);
+    final isStructuralHeading =
+        normChapter != null ||
+        isNamedStructuralTitle ||
+        (isBold && fontSize >= bodyFontSize * 1.05) ||
+        fontSize >= bodyFontSize * 1.18;
+
     // A. Running Headers (top zone)
     final headerThreshold = math.min(65.0, pageHeight * 0.10);
     if (top <= headerThreshold) {
@@ -456,7 +500,7 @@ class SemanticClassifier {
           !text.endsWith(';');
 
       // Running headers in this scan combine an all-caps book title with a
-      // lower-case Roman numeral ("vi BICARA ITU ADA SENINYA"). The numeral
+      // lower-case Roman numeral ("vi BICARA ITU ADA SENINNYA"). The numeral
       // defeats the all-caps check, so recognise the numbered pattern too.
       final isNumberedRunningHeader =
           RegExp(
@@ -464,9 +508,22 @@ class SemanticClassifier {
           ).hasMatch(text) ||
           RegExp(r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$').hasMatch(text);
 
-      if (repeatingHeaders.contains(text) ||
-          isAllUpperShort ||
-          isNumberedRunningHeader) {
+      final lineCenter = (left + para.boundingBox.right) / 2.0;
+      final isCenteredChrome =
+          (lineCenter - (pageWidth / 2.0)).abs() <=
+          math.max(18.0, pageWidth * 0.06);
+      final isSmallTopLine = fontSize <= bodyFontSize * 1.02 && lineCount <= 1;
+
+      final isRepeatedHeader = repeatingHeaders.contains(text);
+      // Repeated text is chrome even when it looks like a structural heading
+      // (a chapter title used as a running head on every page). Non-repeated
+      // structural headings must survive so chapter titles at the top of a
+      // page are not dropped.
+      final mayBeChrome = !isStructuralHeading || isRepeatedHeader;
+      if (mayBeChrome &&
+          (isRepeatedHeader ||
+              isNumberedRunningHeader ||
+              (isAllUpperShort && isCenteredChrome && isSmallTopLine))) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningHeader,
           text: text,
@@ -516,9 +573,17 @@ class SemanticClassifier {
             r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
           ).hasMatch(text) ||
           RegExp(r'^[A-Z][A-Z\s\.\-–]{3,}\s+([ivxlcdm]+|\d+)$').hasMatch(text);
+      // A short paragraph at the bottom of a page often ends a scene ("Ia pun
+      // pergi."). Position alone is not evidence of a running footer. Require
+      // a page number, a repeated footer line, or a single small-font line
+      // pinned to the very bottom margin.
+      final isDeepSmallFooter =
+          fontSize <= bodyFontSize * 0.92 &&
+          lineCount <= 1 &&
+          top >= pageHeight - 55.0;
       if (isNumberedChrome ||
           repeatingFooters.contains(text) ||
-          (fontSize <= bodyFontSize * 1.15 && lineCount <= 2 && text.length <= 60)) {
+          isDeepSmallFooter) {
         return SemanticReconstructedBlock(
           type: SemanticBlockType.runningFooter,
           text: text,
@@ -632,7 +697,6 @@ class SemanticClassifier {
     }
 
     // Direct Chapter Header Check (e.g. "BAB 1: ...", "BAB I: ...", "Chapter 1: ...")
-    final normChapter = normalizeChapterHeader(text);
     final isTocEntry =
         RegExp(r'(\.{3,}|[-–—]{3,}|\.{2,}\s*[0-9ivxlcdm]+$)').hasMatch(text) &&
         (text.contains('..') || text.contains('--'));
@@ -923,6 +987,54 @@ class SemanticClassifier {
       sourceBounds: para.boundingBox,
       confidence: 0.50,
     );
+  }
+
+  static double _pageHeightFor(
+    int pageIndex,
+    Map<int, double>? pageHeights,
+    double fallback,
+  ) {
+    final height = pageHeights?[pageIndex];
+    return (height != null && height > 100.0) ? height : fallback;
+  }
+
+  static double _pageWidthFor(
+    int pageIndex,
+    Map<int, double>? pageWidths,
+    double fallback,
+  ) {
+    final width = pageWidths?[pageIndex];
+    return (width != null && width > 100.0) ? width : fallback;
+  }
+
+  static double _headerThresholdFor(
+    int pageIndex,
+    Map<int, double>? pageHeights,
+    double fallback,
+  ) {
+    return math.min(
+      65.0,
+      _pageHeightFor(pageIndex, pageHeights, fallback) * 0.10,
+    );
+  }
+
+  static double _footerThresholdFor(
+    int pageIndex,
+    Map<int, double>? pageHeights,
+    double fallback,
+  ) {
+    final height = _pageHeightFor(pageIndex, pageHeights, fallback);
+    return math.max(height - 75.0, height * 0.88);
+  }
+
+  /// Named front/back matter that always starts a real content section.
+  static bool _isNamedFrontMatterTitle(String text) {
+    if (text.length > 80) return false;
+    if (RegExp(r'[\.…]\s*$').hasMatch(text)) return false;
+    return RegExp(
+      r'^(prolog|prologue|epilog|epilogue|introduction|pengantar|prakata|kata pengantar|pendahuluan|kesimpulan|conclusion|daftar isi|testimoni|ucapan terima kasih|tentang penulis)\b',
+      caseSensitive: false,
+    ).hasMatch(text);
   }
 
   /// Calculates the modal (most frequent) body font size across paragraphs.

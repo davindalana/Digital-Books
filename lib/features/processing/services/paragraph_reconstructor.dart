@@ -365,7 +365,7 @@ class ParagraphReconstructor {
         // but it does not close the current body paragraph. This keeps a
         // paragraph that continues across a page boundary intact while still
         // isolating the header/footer for the classifier.
-        if (_isPageNumberOrRunningChrome(line)) {
+        if (_isPageNumberOrRunningChrome(line, pageResult.pageHeight)) {
           // Digital-PDF extraction has reliable page boundaries, so chrome
           // closes the current paragraph as before. OCR scans need the builder
           // to stay open so sentences that continue across a page are not
@@ -735,7 +735,10 @@ class ParagraphReconstructor {
   }
 
   /// Identifies obvious standalone page numbers or headers for isolating during paragraph joining.
-  static bool _isPageNumberOrRunningChrome(ExtractedTextLine line) {
+  static bool _isPageNumberOrRunningChrome(
+    ExtractedTextLine line,
+    double pageHeight,
+  ) {
     final trimmed = line.text.trim();
     // 1. Standalone page numbers in header or footer
     if (RegExp(
@@ -750,7 +753,9 @@ class ParagraphReconstructor {
     // all-caps book title. Restrict to the physical header/footer zone so an
     // all-caps chapter title ending in a digit ("PERBEDAAN JUARA 1") is not
     // mistaken for chrome.
-    final inChromeZone = line.bounds.top < 75.0 || line.bounds.bottom > 760.0;
+    final topZone = math.min(75.0, pageHeight * 0.10);
+    final inChromeZone =
+        line.bounds.top < topZone || line.bounds.bottom > pageHeight - 32.0;
     if (inChromeZone &&
         (RegExp(
               r'^([ivxlcdm]+|\d+)\s+[A-Z][A-Z\s\.\-–]{3,}$',
@@ -762,7 +767,7 @@ class ParagraphReconstructor {
     }
 
     // 3. Running header at the extreme top of page (must be short and all uppercase or chapter heading)
-    if (line.bounds.top < 52.0 &&
+    if (line.bounds.top < math.min(52.0, pageHeight * 0.07) &&
         line.fontSize <= 11.0 &&
         trimmed.length <= 45) {
       final isAllUpper =

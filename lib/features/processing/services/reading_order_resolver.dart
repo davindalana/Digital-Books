@@ -18,6 +18,12 @@ class PageReadingOrderResult {
   final double? detectedGutterX;
   final double? detectedGutterWidth;
 
+  /// Physical page dimensions in PDF points. Used by paragraph reconstruction
+  /// to locate header/footer chrome on non-letter page sizes instead of
+  /// assuming a US Letter height.
+  final double pageWidth;
+  final double pageHeight;
+
   const PageReadingOrderResult({
     required this.pageIndex,
     required this.layoutStructure,
@@ -25,6 +31,8 @@ class PageReadingOrderResult {
     required this.columnConfidence,
     this.detectedGutterX,
     this.detectedGutterWidth,
+    this.pageWidth = 612.0,
+    this.pageHeight = 792.0,
   });
 }
 
@@ -35,12 +43,19 @@ class ReadingOrderResolver {
 
   /// Resolves the reading order for a single extracted page geometry.
   static PageReadingOrderResult resolvePage(ExtractedPageGeometry page) {
+    final physicalWidth = page.pageSize.width > 0 ? page.pageSize.width : 612.0;
+    final physicalHeight = page.pageSize.height > 0
+        ? page.pageSize.height
+        : 792.0;
+
     if (page.lines.isEmpty) {
       return PageReadingOrderResult(
         pageIndex: page.pageIndex,
         layoutStructure: PageLayoutStructure.singleColumn,
         orderedLines: const [],
         columnConfidence: 1.0,
+        pageWidth: physicalWidth,
+        pageHeight: physicalHeight,
       );
     }
 
@@ -51,6 +66,8 @@ class ReadingOrderResolver {
         layoutStructure: PageLayoutStructure.singleColumn,
         orderedLines: sorted,
         columnConfidence: 1.0,
+        pageWidth: physicalWidth,
+        pageHeight: physicalHeight,
       );
     }
 
@@ -72,15 +89,13 @@ class ReadingOrderResolver {
         layoutStructure: PageLayoutStructure.singleColumn,
         orderedLines: _sortLinesSingleColumn(page.lines),
         columnConfidence: 1.0,
+        pageWidth: physicalWidth,
+        pageHeight: physicalHeight,
       );
     }
 
-    final pageWidth = page.pageSize.width > 0
-        ? page.pageSize.width
-        : page.lines.map((l) => l.bounds.right).reduce(math.max) + 50.0;
-    final pageHeight = page.pageSize.height > 0
-        ? page.pageSize.height
-        : page.lines.map((l) => l.bounds.bottom).reduce(math.max) + 50.0;
+    final pageWidth = physicalWidth;
+    final pageHeight = physicalHeight;
 
     // 1. Separate running chrome (top header & bottom footer/page number)
     final headerLines = <ExtractedTextLine>[];
@@ -182,6 +197,8 @@ class ReadingOrderResolver {
           columnConfidence: twoColResult.confidence,
           detectedGutterX: twoColResult.gutterCenterX,
           detectedGutterWidth: twoColResult.gutterWidth,
+          pageWidth: physicalWidth,
+          pageHeight: physicalHeight,
         );
       }
     }
@@ -194,6 +211,8 @@ class ReadingOrderResolver {
       layoutStructure: PageLayoutStructure.singleColumn,
       orderedLines: allSorted,
       columnConfidence: 0.95,
+      pageWidth: physicalWidth,
+      pageHeight: physicalHeight,
     );
   }
 
