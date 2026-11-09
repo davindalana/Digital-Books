@@ -14,7 +14,7 @@ import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/utils/file_storage_service.dart';
 import '../../models/book_document.dart';
-import '../../services/book_text_normalizer.dart';
+import '../../services/book_document_loader.dart';
 import '../../domain/engines/in_book_search_engine.dart';
 import '../../domain/engines/reflowable_engine.dart';
 import '../../domain/engines/reflowable_highlight_span_builder.dart';
@@ -379,24 +379,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       }
     } catch (_) {}
 
-    // 2. Load processed book document if available
-    if (widget.book.processedBookPath != null) {
-      try {
-        final jsonStr = await FileStorageService.readProcessedBook(
-          widget.book.processedBookPath!,
-        );
-        if (jsonStr != null) {
-          final loadedDoc = BookDocument.fromJsonString(jsonStr);
-          _document = loadedDoc.metadata.containsKey('reconstructionQuality')
-              ? loadedDoc
-              : BookTextNormalizer.normalizeDocument(loadedDoc);
-          _readerDocument = ReflowableEngine.normalizeDocument(_document!);
-          if (_currentChapter < _document!.chapters.length) {
-            _currentChapterTitle = _document!.chapters[_currentChapter].title;
-          }
-        }
-      } catch (_) {}
-    }
+    // 2. Load the processed book document exactly once. Progress restoration
+    // above may have selected Book Mode, but this method is responsible for
+    // loading, normalising, and validating the processed document.
     await _loadProcessedDoc();
 
     if (mounted) {
@@ -407,7 +392,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     }
   }
 
-  Future<void> _loadProcessedDoc([String? explicitPath]) async {
+  Future<bool> _loadProcessedDoc([String? explicitPath]) async {
     String? path = explicitPath ?? widget.book.processedBookPath;
     if (path == null) {
       final dbBook = await ref
@@ -415,23 +400,70 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           .getBookById(widget.book.id);
       path = dbBook?.processedBookPath;
     }
-    if (path != null) {
-      try {
-        final jsonStr = await FileStorageService.readProcessedBook(path);
-        if (jsonStr != null && mounted) {
-          final loadedDoc = BookDocument.fromJsonString(jsonStr);
-          setState(() {
-            _document = loadedDoc.metadata.containsKey('reconstructionQuality')
-                ? loadedDoc
-                : BookTextNormalizer.normalizeDocument(loadedDoc);
-            _readerDocument = ReflowableEngine.normalizeDocument(_document!);
-            if (_currentChapter < _document!.chapters.length) {
-              _currentChapterTitle = _document!.chapters[_currentChapter].title;
-            }
-          });
-        }
-      } catch (_) {}
+    if (path == null || path.isEmpty) {
+      // A book without a processed document is normal: the original PDF is the
+      // only available mode. Only report this if Book Mode was explicitly
+      // requested.
+      if (_readingMode == ReadingMode.reflowable) {
+        _handleDocumentLoadFailure('Book Mode is not available for this book.');
+      }
+      return false;
     }
+
+    final result = await BookDocumentLoader.load(path);
+    if (!mounted) return result.isSuccess;
+    if (!result.isSuccess) {
+      _handleDocumentLoadFailure(result.error!);
+      return false;
+    }
+
+    final normalizedDoc = result.document!;
+    setState(() {
+      _document = normalizedDoc;
+      _readerDocument = result.readerDocument;
+      if (_currentChapter < normalizedDoc.chapters.length) {
+        _currentChapterTitle = normalizedDoc.chapters[_currentChapter].title;
+      }
+    });
+    return true;
+  }
+
+  /// Never leave the reader showing an empty Book Mode. Clear the partially
+  /// loaded document, fall back to the original PDF when Book Mode was active,
+  /// and tell the user why the mode changed.
+  void _handleDocumentLoadFailure(String message) {
+    if (!mounted) return;
+
+    final wasReflowable = _readingMode == ReadingMode.reflowable;
+    setState(() {
+      _document = null;
+      _readerDocument = null;
+      if (wasReflowable) {
+        _readingMode = ReadingMode.originalPdf;
+        _currentPage = _pdfPage;
+      }
+    });
+
+    if (wasReflowable) {
+      ref.read(activeReadingModeProvider(widget.book.id).notifier).state =
+          ReadingMode.originalPdf;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            wasReflowable ? '$message Original PDF mode is active.' : message,
+          ),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Coba Lagi',
+            onPressed: _loadProcessedDoc,
+          ),
+        ),
+      );
+    });
   }
 
   void _handleHighlightCreated(
@@ -1288,7 +1320,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                 _reflowablePosition = page;
                                 _activeAnchorNodeId = anchorId;
                                 _activeCharOffset = charOffset;
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
                                   if (mounted) {
                                     _updateChapterInfo(ch);
                                   }
@@ -1409,13 +1443,20 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       final quality =
                           _document?.metadata['reconstructionQuality']
                               as Map<String, dynamic>?;
+                      final processingStatus =
+                          _document?.metadata['processingStatus'] as String?;
                       // `book.isScanned` only describes the source PDF. Once a
                       // verified OCR derivative exists, Book Mode quality is
                       // described by reconstructionQuality; showing the
                       // "PDF Asli recommended" banner for every scanned book
                       // hides the fact that the reflowable document is good.
+                      final requiresOcr = processingStatus == 'requiresOcr';
+                      final reconstructionFailed =
+                          processingStatus == 'reconstructionFailed';
                       final isPoor =
                           quality?['status'] == 'poor' ||
+                          requiresOcr ||
+                          reconstructionFailed ||
                           (quality == null && widget.book.isScanned);
                       final isPartial = quality?['status'] == 'partial';
 
@@ -1461,8 +1502,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
-                                        isPoor
+                                        requiresOcr
                                             ? 'Dokumen ini hasil pindaian (scan) tanpa lapisan teks lengkap. Mode PDF Asli direkomendasikan untuk kenyamanan membaca.'
+                                            : reconstructionFailed
+                                            ? 'Mode Buku tidak dapat merekonstruksi dokumen ini dengan baik. Mode PDF Asli direkomendasikan.'
+                                            : isPoor
+                                            ? 'Kualitas rekonstruksi dokumen ini rendah. Mode PDF Asli direkomendasikan untuk kenyamanan membaca.'
                                             : 'Tata letak dokumen ini memiliki kompleksitas visual. Mode PDF Asli tersedia untuk tata letak lengkap.',
                                         style: TextStyle(
                                           fontSize: 12,
