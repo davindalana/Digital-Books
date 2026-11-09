@@ -150,6 +150,7 @@ class SemanticDocumentReconstructor {
       blocks: integratedBlocks,
       quality: quality,
       durationMs: durationMs,
+      isScannedSource: !extraction.hasUsableTextLayer,
     );
   }
 

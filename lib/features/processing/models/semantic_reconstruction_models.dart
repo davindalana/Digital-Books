@@ -203,6 +203,11 @@ class ReconstructedDocument {
   final ReconstructionQuality quality;
   final double durationMs;
 
+  /// True when the source PDF is predominantly a raster scan without a usable
+  /// selectable text layer. This is independent of reconstruction quality: an
+  /// OCR derivative can reconstruct well while the original remains scanned.
+  final bool isScannedSource;
+
   const ReconstructedDocument({
     required this.bookId,
     required this.title,
@@ -212,20 +217,31 @@ class ReconstructedDocument {
     required this.blocks,
     required this.quality,
     required this.durationMs,
+    this.isScannedSource = false,
   });
 
   /// Converts this reconstructed document into a domain BookDocument for reader playback.
   BookDocument toBookDocument({Map<String, dynamic>? extraMetadata}) {
+    final processingStatus = switch (quality.status) {
+      QualityStatus.good => 'ready',
+      QualityStatus.partial => 'readyWithWarnings',
+      QualityStatus.poor =>
+        isScannedSource ? 'requiresOcr' : 'reconstructionFailed',
+    };
+
     return BookDocument(
       id: bookId,
       title: title,
       author: author,
       totalPages: totalPages,
-      isScanned: quality.status == QualityStatus.poor,
+      isScanned: isScannedSource || quality.status == QualityStatus.poor,
       chapters: chapters,
       metadata: {
         'reconstructionQuality': quality.toJson(),
         'reconstructionDurationMs': durationMs,
+        'processingStatus': processingStatus,
+        'processingReasons': quality.reasons,
+        'isScannedSource': isScannedSource,
         if (extraMetadata != null) ...extraMetadata,
       },
     );

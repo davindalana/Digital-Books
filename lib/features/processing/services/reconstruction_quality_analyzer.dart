@@ -15,10 +15,14 @@ class ReconstructionQualityAnalyzer {
 
     // 1. Text Layer Analysis
     final totalPages = extraction.totalPages;
-    final scannedPages = extraction.layerBreakdown[PageLayerType.scannedImage] ?? 0;
+    final safeTotalPages = totalPages > 0 ? totalPages : 1;
+    final scannedPages =
+        extraction.layerBreakdown[PageLayerType.scannedImage] ?? 0;
     final hybridPages = extraction.layerBreakdown[PageLayerType.hybrid] ?? 0;
-    final nativePages = extraction.layerBreakdown[PageLayerType.nativeText] ?? 0;
-    final emptyPages = extraction.layerBreakdown[PageLayerType.emptyOrUnsupported] ?? 0;
+    final nativePages =
+        extraction.layerBreakdown[PageLayerType.nativeText] ?? 0;
+    final emptyPages =
+        extraction.layerBreakdown[PageLayerType.emptyOrUnsupported] ?? 0;
 
     metrics['totalPages'] = totalPages;
     metrics['scannedPages'] = scannedPages;
@@ -29,26 +33,36 @@ class ReconstructionQualityAnalyzer {
     metrics['totalBlocks'] = blocks.length;
 
     // A. Extreme case: Scanned document without selectable text layer
-    if (!extraction.hasUsableTextLayer || (totalPages > 0 && scannedPages == totalPages)) {
-      reasons.add('Document contains 0 selectable vector text lines across all $totalPages scanned pages.');
-      reasons.add('OCR layer is absent. High-fidelity rendering is only possible via rasterized original pages.');
+    if (!extraction.hasUsableTextLayer ||
+        (totalPages > 0 && scannedPages == totalPages)) {
+      reasons.add(
+        'Document contains 0 selectable vector text lines across all $totalPages scanned pages.',
+      );
+      reasons.add(
+        'OCR layer is absent. High-fidelity rendering is only possible via rasterized original pages.',
+      );
 
       return ReconstructionQuality(
         status: QualityStatus.poor,
         score: 0.1,
         reasons: reasons,
         metrics: metrics,
-        recommendedTier: 'Original PDF Reader (Scanned book without text layer)',
+        recommendedTier:
+            'Original PDF Reader (Scanned book without text layer)',
       );
     }
 
     // B. Hybrid document check
     if (scannedPages > 0) {
-      final ratio = scannedPages / totalPages;
+      final ratio = scannedPages / safeTotalPages;
       if (ratio > 0.3) {
-        reasons.add('$scannedPages of $totalPages pages (${(ratio * 100).toStringAsFixed(1)}%) are image scans without selectable text.');
+        reasons.add(
+          '$scannedPages of $totalPages pages (${(ratio * 100).toStringAsFixed(1)}%) are image scans without selectable text.',
+        );
       } else {
-        reasons.add('Document contains $scannedPages isolated scanned page(s).');
+        reasons.add(
+          'Document contains $scannedPages isolated scanned page(s).',
+        );
       }
     }
 
@@ -69,7 +83,9 @@ class ReconstructionQualityAnalyzer {
     metrics['multiColumnPages'] = multiColumnPages;
 
     if (avgColumnConfidence < 0.75) {
-      reasons.add('Column boundaries on some pages exhibited ambiguous horizontal gutters.');
+      reasons.add(
+        'Column boundaries on some pages exhibited ambiguous horizontal gutters.',
+      );
     }
 
     // 3. Semantic Classification Quality
@@ -100,14 +116,18 @@ class ReconstructionQualityAnalyzer {
     metrics['captionBoundCount'] = captionBoundCount;
 
     if (unknownRatio > 0.25) {
-      reasons.add('${(unknownRatio * 100).toStringAsFixed(1)}% of content blocks could not be confidently classified.');
+      reasons.add(
+        '${(unknownRatio * 100).toStringAsFixed(1)}% of content blocks could not be confidently classified.',
+      );
     }
 
     // 4. Image Extraction Completeness
     if (extraction.totalImages > 0) {
       metrics['extractedImages'] = extraction.totalImages;
       if (captionBoundCount > 0) {
-        reasons.add('$captionBoundCount of $imageCount embedded image(s) successfully bound to captions.');
+        reasons.add(
+          '$captionBoundCount of $imageCount embedded image(s) successfully bound to captions.',
+        );
       }
     }
 
@@ -115,7 +135,7 @@ class ReconstructionQualityAnalyzer {
     double score = 1.0;
 
     // Penalty for scanned pages
-    score -= (scannedPages / totalPages) * 0.6;
+    score -= (scannedPages / safeTotalPages) * 0.6;
     // Penalty for low column confidence
     score -= (1.0 - avgColumnConfidence) * 0.2;
     // Penalty for unknown blocks
@@ -131,17 +151,23 @@ class ReconstructionQualityAnalyzer {
     if (score >= 0.80 && scannedPages == 0) {
       status = QualityStatus.good;
       recommendedTier = 'Smart Reflowable Reader';
-      reasons.add('High structural fidelity verified with clean vector text and consistent reading flow.');
+      reasons.add(
+        'High structural fidelity verified with clean vector text and consistent reading flow.',
+      );
     } else if (score >= 0.50) {
       status = QualityStatus.partial;
       recommendedTier = scannedPages > 0
           ? 'Original PDF Reader (Contains mixed scanned pages)'
           : 'Smart Reflowable Reader (Minor layout ambiguities)';
-      reasons.add('Partial reconstruction fidelity. Reflowable available but Original PDF recommended for complex pages.');
+      reasons.add(
+        'Partial reconstruction fidelity. Reflowable available but Original PDF recommended for complex pages.',
+      );
     } else {
       status = QualityStatus.poor;
       recommendedTier = 'Original PDF Reader (Low reconstruction fidelity)';
-      reasons.add('Reconstruction confidence below acceptable threshold. Original PDF view strongly recommended.');
+      reasons.add(
+        'Reconstruction confidence below acceptable threshold. Original PDF view strongly recommended.',
+      );
     }
 
     return ReconstructionQuality(
@@ -153,4 +179,3 @@ class ReconstructionQualityAnalyzer {
     );
   }
 }
-

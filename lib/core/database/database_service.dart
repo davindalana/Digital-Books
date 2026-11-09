@@ -115,10 +115,7 @@ class DatabaseService {
     );
   }
 
-  Future<int> updateBookProcessedPath(
-    String bookId,
-    String processedBookPath,
-  ) {
+  Future<int> updateBookProcessedPath(String bookId, String processedBookPath) {
     return (db.update(db.books)..where((t) => t.id.equals(bookId))).write(
       BooksCompanion(
         processedBookPath: Value(processedBookPath),
@@ -270,25 +267,48 @@ class DatabaseService {
   }
 
   Future<int> upsertProgress(ReadingProgressesCompanion progress) async {
-    final bookIdVal = progress.bookId.value;
-    final existing = await getProgress(bookIdVal);
-    if (existing != null) {
-      return (db.update(
-        db.readingProgresses,
-      )..where((t) => t.bookId.equals(bookIdVal))).write(
-        ReadingProgressesCompanion(
-          currentChapter: progress.currentChapter,
-          currentPosition: progress.currentPosition,
-          progressPercentage: progress.progressPercentage,
-          lastReadingMode: progress.lastReadingMode.present
-              ? progress.lastReadingMode
-              : Value(existing.lastReadingMode),
-          lastReadAt: progress.lastReadAt,
-        ),
-      );
-    } else {
-      return db.into(db.readingProgresses).insert(progress);
-    }
+    // A single atomic upsert avoids the read-then-insert race where two
+    // concurrent saves both observe no row and the second insert violates the
+    // unique constraint on reading_progresses.book_id.
+    return db
+        .into(db.readingProgresses)
+        .insert(
+          progress,
+          onConflict: DoUpdate(
+            (_) => ReadingProgressesCompanion(
+              currentChapter: progress.currentChapter,
+              currentPosition: progress.currentPosition,
+              progressPercentage: progress.progressPercentage,
+              // An absent value is omitted from the UPDATE, so a caller that
+              // does not know the reading mode keeps the persisted one.
+              lastReadingMode: progress.lastReadingMode,
+              lastReadAt: progress.lastReadAt,
+            ),
+            target: [db.readingProgresses.bookId],
+          ),
+        );
+  }
+
+  /// Persists a fully imported book, its chapters, and its initial reading
+  /// progress in one transaction. Without this, a failure after inserting the
+  /// book row leaves an orphaned library entry whose files may already have
+  /// been cleaned up by the import pipeline.
+  Future<void> importBookAtomic({
+    required BooksCompanion book,
+    required List<ChaptersCompanion> chapters,
+    required ReadingProgressesCompanion progress,
+  }) async {
+    final bookId = book.id.value;
+    await db.transaction(() async {
+      await db.into(db.books).insertOnConflictUpdate(book);
+      await (db.delete(
+        db.chapters,
+      )..where((t) => t.bookId.equals(bookId))).go();
+      for (final chapter in chapters) {
+        await db.into(db.chapters).insert(chapter);
+      }
+      await upsertProgress(progress);
+    });
   }
 
   // --- Bookmarks ---
@@ -514,9 +534,13 @@ class DatabaseService {
 
   Future<void> saveAnnotation(BookAnnotation annotation) async {
     if (annotation.isBookmark) {
-      await db.into(db.bookmarks).insertOnConflictUpdate(annotation.toBookmarkCompanion());
+      await db
+          .into(db.bookmarks)
+          .insertOnConflictUpdate(annotation.toBookmarkCompanion());
     } else {
-      await db.into(db.highlights).insertOnConflictUpdate(annotation.toHighlightCompanion());
+      await db
+          .into(db.highlights)
+          .insertOnConflictUpdate(annotation.toHighlightCompanion());
     }
   }
 
@@ -632,10 +656,9 @@ class DatabaseService {
   }
 
   Future<OcrPage?> getOcrPage(String bookId, int pageIndex) {
-    return (db.select(db.ocrPages)
-          ..where(
-            (t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex),
-          ))
+    return (db.select(db.ocrPages)..where(
+          (t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex),
+        ))
         .getSingleOrNull();
   }
 
@@ -681,20 +704,26 @@ class DatabaseService {
   }
 
   Future<BookSearchPage?> getSearchPage(String bookId, int pageIndex) {
-    return (db.select(db.bookSearchPages)
-          ..where((t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex)))
+    return (db.select(db.bookSearchPages)..where(
+          (t) => t.bookId.equals(bookId) & t.pageIndex.equals(pageIndex),
+        ))
         .getSingleOrNull();
   }
 
   Future<List<BookSearchPage>> getSearchPagesForBook(String bookId) {
     return (db.select(db.bookSearchPages)
           ..where((t) => t.bookId.equals(bookId))
-          ..orderBy([(t) => OrderingTerm(expression: t.pageIndex, mode: OrderingMode.asc)]))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.pageIndex, mode: OrderingMode.asc),
+          ]))
         .get();
   }
 
   Future<int> deleteSearchPagesForBook(String bookId) {
-    return (db.delete(db.bookSearchPages)..where((t) => t.bookId.equals(bookId))).go();
+    return (db.delete(
+      db.bookSearchPages,
+    )..where((t) => t.bookId.equals(bookId))).go();
   }
 
   Future<int> getIndexedSearchPageCount(String bookId) async {

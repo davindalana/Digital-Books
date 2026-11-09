@@ -9,7 +9,6 @@ import '../../../core/database/database_service.dart';
 import '../../../core/utils/cover_generator.dart';
 import '../../../core/utils/file_storage_service.dart';
 import '../models/processing_status.dart';
-import '../models/semantic_reconstruction_models.dart';
 import 'geometry_aware_pdf_extractor.dart';
 import 'semantic_document_reconstructor.dart';
 
@@ -75,29 +74,48 @@ class PdfProcessingPipeline {
         'Reading document metadata...',
       );
       final bytes = await pdfFile.readAsBytes();
-      final PdfDocument document = PdfDocument(inputBytes: bytes);
-      final totalPages = document.pages.count;
+      final PdfDocument document;
+      try {
+        document = PdfDocument(inputBytes: bytes);
+      } catch (e) {
+        throw Exception(
+          'Unable to open PDF. The file may be encrypted, password-protected, '
+          'or corrupted. ($e)',
+        );
+      }
 
+      final int totalPages;
       String title = customTitle?.trim() ?? '';
       String author = customAuthor?.trim() ?? '';
       String? publisher;
       String? description;
 
       try {
-        final info = document.documentInformation;
-        if (title.isEmpty && info.title.isNotEmpty) {
-          title = info.title.trim();
+        totalPages = document.pages.count;
+        if (totalPages <= 0) {
+          throw Exception(
+            'The PDF has no pages. The file may be corrupted or incomplete.',
+          );
         }
-        if (author.isEmpty && info.author.isNotEmpty) {
-          author = info.author.trim();
-        }
-        if (info.subject.isNotEmpty) {
-          description = info.subject.trim();
-        }
-        if (info.creator.isNotEmpty || info.producer.isNotEmpty) {
-          publisher = info.creator.isNotEmpty ? info.creator : info.producer;
-        }
-      } catch (_) {}
+
+        try {
+          final info = document.documentInformation;
+          if (title.isEmpty && info.title.isNotEmpty) {
+            title = info.title.trim();
+          }
+          if (author.isEmpty && info.author.isNotEmpty) {
+            author = info.author.trim();
+          }
+          if (info.subject.isNotEmpty) {
+            description = info.subject.trim();
+          }
+          if (info.creator.isNotEmpty || info.producer.isNotEmpty) {
+            publisher = info.creator.isNotEmpty ? info.creator : info.producer;
+          }
+        } catch (_) {}
+      } finally {
+        document.dispose();
+      }
 
       // Fallback title to filename if still empty
       if (title.isEmpty) {
@@ -107,8 +125,6 @@ class PdfProcessingPipeline {
       if (author.isEmpty) {
         author = 'Unknown Author';
       }
-
-      document.dispose();
 
       if (_isCancelled) {
         throw Exception('Operation cancelled by user.');
@@ -126,11 +142,8 @@ class PdfProcessingPipeline {
         bookId: bookId,
         imageOutputDir: imagesDir,
         extractImagesToDisk: true,
-        onProgress: (p, msg) => notify(
-          ProcessingStage.extractingText,
-          0.25 + (p * 0.40),
-          msg,
-        ),
+        onProgress: (p, msg) =>
+            notify(ProcessingStage.extractingText, 0.25 + (p * 0.40), msg),
       );
 
       if (_isCancelled) {
@@ -149,7 +162,8 @@ class PdfProcessingPipeline {
         author: author,
       );
 
-      final isScanned = reconstructed.quality.status == QualityStatus.poor;
+      final isScanned =
+          reconstructed.isScannedSource || !extraction.hasUsableTextLayer;
       final bookDoc = reconstructed.toBookDocument(
         extraMetadata: {
           'publisher': publisher ?? '',
@@ -219,9 +233,6 @@ class PdfProcessingPipeline {
         updatedAt: Value(now),
       );
 
-      await _dbService.insertBook(bookCompanion);
-
-      // Save chapters to DB
       final chapterCompanions = bookDoc.chapters.asMap().entries.map((entry) {
         final index = entry.key;
         final ch = entry.value;
@@ -235,11 +246,13 @@ class PdfProcessingPipeline {
         );
       }).toList();
 
-      await _dbService.replaceChaptersForBook(bookId, chapterCompanions);
-
-      // Initialize reading progress
-      await _dbService.upsertProgress(
-        ReadingProgressesCompanion(
+      // Book, chapters, and initial progress are committed together so a
+      // failure cannot leave a library row pointing at files that the catch
+      // block then deletes.
+      await _dbService.importBookAtomic(
+        book: bookCompanion,
+        chapters: chapterCompanions,
+        progress: ReadingProgressesCompanion(
           id: Value(const Uuid().v4()),
           bookId: Value(bookId),
           currentChapter: const Value(0),
@@ -248,8 +261,6 @@ class PdfProcessingPipeline {
           lastReadAt: Value(now),
         ),
       );
-
-      document.dispose();
 
       notify(ProcessingStage.completed, 1.0, 'Book successfully ready!');
       final createdBook = await _dbService.getBookById(bookId);
