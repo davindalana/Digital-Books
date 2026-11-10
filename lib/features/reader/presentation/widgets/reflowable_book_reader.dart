@@ -205,19 +205,22 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
         int lines = 1;
         if (block.type == BlockType.image) {
           lines = 13;
-        } else if (block.type == BlockType.heading || block.type == BlockType.documentTitle) {
+        } else if (block.type == BlockType.heading ||
+            block.type == BlockType.documentTitle) {
           lines = 4;
         } else if (block.type == BlockType.sectionHeading) {
           lines = 3;
         } else if (block.type == BlockType.quote) {
           lines = math.max(1, (text.length / (charsPerLine * 0.85)).ceil()) + 2;
-        } else if (block.type == BlockType.copyrightBlock || block.type == BlockType.metadataBlock) {
+        } else if (block.type == BlockType.copyrightBlock ||
+            block.type == BlockType.metadataBlock) {
           lines = math.max(1, (text.length / (charsPerLine * 0.90)).ceil()) + 3;
         } else if (block.type == BlockType.orderedList ||
             block.type == BlockType.unorderedList ||
             block.type == BlockType.listItem) {
           lines = math.max(1, (text.length / (charsPerLine * 0.88)).ceil()) + 1;
-        } else if (block.type == BlockType.caption || block.type == BlockType.footnote) {
+        } else if (block.type == BlockType.caption ||
+            block.type == BlockType.footnote) {
           lines = math.max(1, (text.length / (charsPerLine * 0.90)).ceil()) + 1;
         } else {
           // Paragraph: calculate lines with word wrap buffer + paragraph margin
@@ -927,7 +930,8 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
     }
 
     // 6. Ordered List Item Block
-    if (block.type == BlockType.orderedList || block.type == BlockType.listItem) {
+    if (block.type == BlockType.orderedList ||
+        block.type == BlockType.listItem) {
       final itemText = block.text.trim();
       final match = RegExp(
         r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s*(.*)$',

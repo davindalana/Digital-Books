@@ -2511,13 +2511,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       builder: (_) => BookDetailsDialog(book: book),
     );
     if (req != null && mounted) {
-      ref.read(activeReadingModeProvider(req.book.id).notifier).state = req.mode;
+      ref.read(activeReadingModeProvider(req.book.id).notifier).state =
+          req.mode;
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => ReadingScreen(
-            book: req.book,
-            initialMode: req.mode,
-          ),
+          builder: (_) => ReadingScreen(book: req.book, initialMode: req.mode),
         ),
       );
     }

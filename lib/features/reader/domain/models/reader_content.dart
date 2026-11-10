@@ -252,17 +252,17 @@ class ReaderDocument {
   final Map<String, dynamic> metadata;
 
   int get totalParagraphCount => chapters.fold(
-        0,
-        (sum, c) =>
-            sum +
-            c.nodes
-                .where(
-                  (n) =>
-                      n.type == ContentNodeType.paragraph ||
-                      n.type == ContentNodeType.footnote,
-                )
-                .length,
-      );
+    0,
+    (sum, c) =>
+        sum +
+        c.nodes
+            .where(
+              (n) =>
+                  n.type == ContentNodeType.paragraph ||
+                  n.type == ContentNodeType.footnote,
+            )
+            .length,
+  );
 
   const ReaderDocument({
     required this.bookId,

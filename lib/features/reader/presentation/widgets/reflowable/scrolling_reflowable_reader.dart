@@ -294,7 +294,9 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final effectiveMargin = (screenWidth < 420.0)
         ? 18.0
-        : (screenWidth < 680.0 ? 24.0 : math.max(36.0, widget.typography.horizontalMargin));
+        : (screenWidth < 680.0
+              ? 24.0
+              : math.max(36.0, widget.typography.horizontalMargin));
     final maxContentWidth = math.min(
       660.0,
       screenWidth - (effectiveMargin * 2.0),
@@ -309,10 +311,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
           child: ListView.builder(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              vertical: 48,
-              horizontal: 0,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 0),
             itemCount: _flatItems.length,
             itemBuilder: (context, index) {
               final item = _flatItems[index];
@@ -473,14 +472,13 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         .toList();
 
     if (node.type == ContentNodeType.sectionHeading) {
-      final style = widget.typography.headingStyle(
-        level: 2,
-        color: widget.theme.textColor,
-      ).copyWith(
-        fontSize: widget.typography.fontSize * 1.15,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.3,
-      );
+      final style = widget.typography
+          .headingStyle(level: 2, color: widget.theme.textColor)
+          .copyWith(
+            fontSize: widget.typography.fontSize * 1.15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.3,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: node.text,
         sliceStartOffset: 0,
@@ -592,12 +590,12 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
     // Footnote Node
     if (node.type == ContentNodeType.footnote) {
-      final style = widget.typography.bodyStyle(
-        color: widget.theme.secondaryTextColor,
-      ).copyWith(
-        fontSize: widget.typography.fontSize * 0.85,
-        fontStyle: FontStyle.italic,
-      );
+      final style = widget.typography
+          .bodyStyle(color: widget.theme.secondaryTextColor)
+          .copyWith(
+            fontSize: widget.typography.fontSize * 0.85,
+            fontStyle: FontStyle.italic,
+          );
       final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
         text: node.text,
         sliceStartOffset: 0,

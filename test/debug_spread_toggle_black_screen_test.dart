@@ -20,13 +20,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
-  final jsonPath = '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json';
-  final pdfPath = '/Users/davindalana/Documents/DigitalBooks/originals/$bookId.pdf';
+  final jsonPath =
+      '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json';
+  final pdfPath =
+      '/Users/davindalana/Documents/DigitalBooks/originals/$bookId.pdf';
 
   setUpAll(() async {
     GoogleFonts.config.allowRuntimeFetching = false;
     for (final family in ['Palatino', 'Inter', 'Georgia']) {
-      final fontPath = File('/System/Library/Fonts/Supplemental/Georgia.ttf').existsSync()
+      final fontPath =
+          File('/System/Library/Fonts/Supplemental/Georgia.ttf').existsSync()
           ? '/System/Library/Fonts/Supplemental/Georgia.ttf'
           : '/System/Library/Fonts/Supplemental/Arial.ttf';
       final bytes = File(fontPath).readAsBytesSync();
@@ -61,7 +64,9 @@ void main() {
     await db.close();
   });
 
-  testWidgets('ReadingScreen: toggle spread button on and off in Reflowable mode', (tester) async {
+  testWidgets('ReadingScreen: toggle spread button on and off in Reflowable mode', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(934 * 2.0, 934 * 2.0);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(() {
@@ -85,7 +90,9 @@ void main() {
       ProviderScope(
         overrides: [
           databaseServiceProvider.overrideWithValue(dbService),
-          activeReadingModeProvider(bookId).overrideWith((ref) => ReadingMode.reflowable),
+          activeReadingModeProvider(
+            bookId,
+          ).overrideWith((ref) => ReadingMode.reflowable),
         ],
         child: MaterialApp(
           home: ReadingScreen(
@@ -107,17 +114,29 @@ void main() {
 
     print('Spread button found: ${spreadBtnFinder.evaluate().length}');
     print('Single button found: ${singleBtnFinder.evaluate().length}');
-    print('ReflowableReaderContainer count: ${find.byType(ReflowableReaderContainer).evaluate().length}');
-    print('OriginalPdfReader count: ${find.byType(OriginalPdfReader).evaluate().length}');
-    print('CircularProgressIndicator count: ${find.byType(CircularProgressIndicator).evaluate().length}');
-    print('Menyiapkan buku count: ${find.text('Menyiapkan buku...').evaluate().length}');
+    print(
+      'ReflowableReaderContainer count: ${find.byType(ReflowableReaderContainer).evaluate().length}',
+    );
+    print(
+      'OriginalPdfReader count: ${find.byType(OriginalPdfReader).evaluate().length}',
+    );
+    print(
+      'CircularProgressIndicator count: ${find.byType(CircularProgressIndicator).evaluate().length}',
+    );
+    print(
+      'Menyiapkan buku count: ${find.text('Menyiapkan buku...').evaluate().length}',
+    );
 
-    final initialRenderers = tester.widgetList(find.byType(ReflowablePageRenderer)).toList();
+    final initialRenderers = tester
+        .widgetList(find.byType(ReflowablePageRenderer))
+        .toList();
     print('Initial ReflowablePageRenderer count: ${initialRenderers.length}');
     expect(initialRenderers.length, inInclusiveRange(1, 2));
 
     // Tap the button to toggle
-    final btnToTap = spreadBtnFinder.evaluate().isNotEmpty ? spreadBtnFinder : singleBtnFinder;
+    final btnToTap = spreadBtnFinder.evaluate().isNotEmpty
+        ? spreadBtnFinder
+        : singleBtnFinder;
     expect(btnToTap, findsOneWidget);
 
     print('Tapping toggle button first time...');
@@ -126,8 +145,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    final afterToggle1 = tester.widgetList(find.byType(ReflowablePageRenderer)).toList();
-    print('ReflowablePageRenderer count after toggle 1: ${afterToggle1.length}');
+    final afterToggle1 = tester
+        .widgetList(find.byType(ReflowablePageRenderer))
+        .toList();
+    print(
+      'ReflowablePageRenderer count after toggle 1: ${afterToggle1.length}',
+    );
 
     // Find button to tap back
     final btnToTap2 = find.byTooltip('Tampilan 2 Halaman').evaluate().isNotEmpty
@@ -141,8 +164,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    final afterToggle2 = tester.widgetList(find.byType(ReflowablePageRenderer)).toList();
-    print('ReflowablePageRenderer count after toggle 2: ${afterToggle2.length}');
+    final afterToggle2 = tester
+        .widgetList(find.byType(ReflowablePageRenderer))
+        .toList();
+    print(
+      'ReflowablePageRenderer count after toggle 2: ${afterToggle2.length}',
+    );
 
     final err = tester.takeException();
     if (err != null) {

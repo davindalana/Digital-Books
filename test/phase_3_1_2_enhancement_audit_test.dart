@@ -34,13 +34,22 @@ int levenshteinDistance<T>(List<T> a, List<T> b) {
 
 double calculateCer(String groundTruth, String ocrText) {
   if (groundTruth.isEmpty) return ocrText.isEmpty ? 0.0 : 100.0;
-  final dist = levenshteinDistance(groundTruth.runes.toList(), ocrText.runes.toList());
+  final dist = levenshteinDistance(
+    groundTruth.runes.toList(),
+    ocrText.runes.toList(),
+  );
   return (dist / groundTruth.runes.length) * 100.0;
 }
 
 double calculateWer(String groundTruth, String ocrText) {
-  final gtWords = groundTruth.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-  final ocrWords = ocrText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  final gtWords = groundTruth
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  final ocrWords = ocrText
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
   if (gtWords.isEmpty) return ocrWords.isEmpty ? 0.0 : 100.0;
   final dist = levenshteinDistance(gtWords, ocrWords);
   return (dist / gtWords.length) * 100.0;
@@ -78,9 +87,12 @@ extension on OcrPageResult {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final lautPath = '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
-  final bicaraPath = '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
-  final mrXPath = '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
+  final lautPath =
+      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+  final bicaraPath =
+      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+  final mrXPath =
+      '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
 
   const ocrService = AppleVisionOcrService();
   late Directory tempDir;
@@ -96,7 +108,12 @@ void main() {
     }
   });
 
-  Future<File> saveBgraToPng(Uint8List bgra, int width, int height, String filename) async {
+  Future<File> saveBgraToPng(
+    Uint8List bgra,
+    int width,
+    int height,
+    String filename,
+  ) async {
     final completer = Completer<ui.Image>();
     ui.decodeImageFromPixels(
       bgra,
@@ -170,7 +187,12 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
           isLeftPage: false,
         ),
       );
-      final gentleFile = await saveBgraToPng(gentleBytes, w, h, 'laut_p15_gentle.png');
+      final gentleFile = await saveBgraToPng(
+        gentleBytes,
+        w,
+        h,
+        'laut_p15_gentle.png',
+      );
 
       final balancedBytes = ScannedImageEnhancer.enhanceBgra(
         srcPixels: rawBytes,
@@ -184,7 +206,12 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
           isLeftPage: false,
         ),
       );
-      final balancedFile = await saveBgraToPng(balancedBytes, w, h, 'laut_p15_balanced.png');
+      final balancedFile = await saveBgraToPng(
+        balancedBytes,
+        w,
+        h,
+        'laut_p15_balanced.png',
+      );
 
       final strongBytes = ScannedImageEnhancer.enhanceBgra(
         srcPixels: rawBytes,
@@ -198,7 +225,12 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
           isLeftPage: false,
         ),
       );
-      final strongFile = await saveBgraToPng(strongBytes, w, h, 'laut_p15_strong.png');
+      final strongFile = await saveBgraToPng(
+        strongBytes,
+        w,
+        h,
+        'laut_p15_strong.png',
+      );
 
       // Edge density preservation
       final rawEdge = calculateEdgeRatio(rawBytes, w, h);
@@ -216,12 +248,30 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
 
       final cerRaw = calculateCer(groundTruth.trim(), ocrRaw.plainText.trim());
       final werRaw = calculateWer(groundTruth.trim(), ocrRaw.plainText.trim());
-      final cerGentle = calculateCer(groundTruth.trim(), ocrGentle.plainText.trim());
-      final werGentle = calculateWer(groundTruth.trim(), ocrGentle.plainText.trim());
-      final cerBalanced = calculateCer(groundTruth.trim(), ocrBalanced.plainText.trim());
-      final werBalanced = calculateWer(groundTruth.trim(), ocrBalanced.plainText.trim());
-      final cerStrong = calculateCer(groundTruth.trim(), ocrStrong.plainText.trim());
-      final werStrong = calculateWer(groundTruth.trim(), ocrStrong.plainText.trim());
+      final cerGentle = calculateCer(
+        groundTruth.trim(),
+        ocrGentle.plainText.trim(),
+      );
+      final werGentle = calculateWer(
+        groundTruth.trim(),
+        ocrGentle.plainText.trim(),
+      );
+      final cerBalanced = calculateCer(
+        groundTruth.trim(),
+        ocrBalanced.plainText.trim(),
+      );
+      final werBalanced = calculateWer(
+        groundTruth.trim(),
+        ocrBalanced.plainText.trim(),
+      );
+      final cerStrong = calculateCer(
+        groundTruth.trim(),
+        ocrStrong.plainText.trim(),
+      );
+      final werStrong = calculateWer(
+        groundTruth.trim(),
+        ocrStrong.plainText.trim(),
+      );
 
       final punctRaw = countPunctuation(ocrRaw.plainText);
       final punctGentle = countPunctuation(ocrGentle.plainText);
@@ -229,26 +279,63 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
       final punctStrong = countPunctuation(ocrStrong.plainText);
       final punctGt = countPunctuation(groundTruth);
 
-      print('\n========================================================================');
+      print(
+        '\n========================================================================',
+      );
       print('4-WAY ENHANCEMENT AUDIT: LAUT BERCERITA P.15 (DEGRADED SCAN)');
-      print('========================================================================');
-      print('Metric                Raw       Gentle    Balanced  Strong    GroundTruth');
-      print('CER (%):              ${cerRaw.toStringAsFixed(2).padLeft(9)} ${cerGentle.toStringAsFixed(2).padLeft(9)} ${cerBalanced.toStringAsFixed(2).padLeft(9)} ${cerStrong.toStringAsFixed(2).padLeft(9)}      0.00%');
-      print('WER (%):              ${werRaw.toStringAsFixed(2).padLeft(9)} ${werGentle.toStringAsFixed(2).padLeft(9)} ${werBalanced.toStringAsFixed(2).padLeft(9)} ${werStrong.toStringAsFixed(2).padLeft(9)}      0.00%');
-      print('Edge Ratio (%):       ${rawEdge.toStringAsFixed(2).padLeft(9)} ${gentleEdge.toStringAsFixed(2).padLeft(9)} ${balancedEdge.toStringAsFixed(2).padLeft(9)} ${strongEdge.toStringAsFixed(2).padLeft(9)}        N/A');
-      print('Punctuation Count:    ${punctRaw.toString().padLeft(9)} ${punctGentle.toString().padLeft(9)} ${punctBalanced.toString().padLeft(9)} ${punctStrong.toString().padLeft(9)} ${punctGt.toString().padLeft(10)}');
-      print('Extracted Word Count: ${ocrRaw.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrGentle.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrBalanced.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrStrong.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${groundTruth.split(RegExp(r'\s+')).length.toString().padLeft(10)}');
-      print('========================================================================');
+      print(
+        '========================================================================',
+      );
+      print(
+        'Metric                Raw       Gentle    Balanced  Strong    GroundTruth',
+      );
+      print(
+        'CER (%):              ${cerRaw.toStringAsFixed(2).padLeft(9)} ${cerGentle.toStringAsFixed(2).padLeft(9)} ${cerBalanced.toStringAsFixed(2).padLeft(9)} ${cerStrong.toStringAsFixed(2).padLeft(9)}      0.00%',
+      );
+      print(
+        'WER (%):              ${werRaw.toStringAsFixed(2).padLeft(9)} ${werGentle.toStringAsFixed(2).padLeft(9)} ${werBalanced.toStringAsFixed(2).padLeft(9)} ${werStrong.toStringAsFixed(2).padLeft(9)}      0.00%',
+      );
+      print(
+        'Edge Ratio (%):       ${rawEdge.toStringAsFixed(2).padLeft(9)} ${gentleEdge.toStringAsFixed(2).padLeft(9)} ${balancedEdge.toStringAsFixed(2).padLeft(9)} ${strongEdge.toStringAsFixed(2).padLeft(9)}        N/A',
+      );
+      print(
+        'Punctuation Count:    ${punctRaw.toString().padLeft(9)} ${punctGentle.toString().padLeft(9)} ${punctBalanced.toString().padLeft(9)} ${punctStrong.toString().padLeft(9)} ${punctGt.toString().padLeft(10)}',
+      );
+      print(
+        'Extracted Word Count: ${ocrRaw.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrGentle.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrBalanced.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${ocrStrong.plainText.split(RegExp(r'\s+')).length.toString().padLeft(9)} ${groundTruth.split(RegExp(r'\s+')).length.toString().padLeft(10)}',
+      );
+      print(
+        '========================================================================',
+      );
 
       // Assertions
-      expect(cerGentle, lessThanOrEqualTo(cerRaw + 0.5), reason: 'Gentle enhancement must not degrade CER significantly');
-      expect(cerBalanced, lessThanOrEqualTo(cerRaw + 0.5), reason: 'Balanced enhancement must maintain reliable CER');
-      expect(punctBalanced, greaterThanOrEqualTo((punctGt * 0.90).round()), reason: 'Balanced enhancement must preserve at least 90% of ground truth punctuation');
-      expect(gentleEdge, greaterThanOrEqualTo(rawEdge * 0.85), reason: 'Gentle enhancement must preserve character edge details');
+      expect(
+        cerGentle,
+        lessThanOrEqualTo(cerRaw + 0.5),
+        reason: 'Gentle enhancement must not degrade CER significantly',
+      );
+      expect(
+        cerBalanced,
+        lessThanOrEqualTo(cerRaw + 0.5),
+        reason: 'Balanced enhancement must maintain reliable CER',
+      );
+      expect(
+        punctBalanced,
+        greaterThanOrEqualTo((punctGt * 0.90).round()),
+        reason:
+            'Balanced enhancement must preserve at least 90% of ground truth punctuation',
+      );
+      expect(
+        gentleEdge,
+        greaterThanOrEqualTo(rawEdge * 0.85),
+        reason: 'Gentle enhancement must preserve character edge details',
+      );
     });
 
-    test('2. 4-Way Evaluation on Clean Non-Fiction Scan: Bicara Itu Ada Seninya P.33', () async {
-      const groundTruth = '''
+    test(
+      '2. 4-Way Evaluation on Clean Non-Fiction Scan: Bicara Itu Ada Seninya P.33',
+      () async {
+        const groundTruth = '''
 selamanya. Lelaki tadi kemudian pulang ke kampung halaman
 dan membuat roti bagel setiap kali merindukan istrinya. Setelah
 itu, roti bagel menjadi terkenal ke seluruh dunia karena cerita
@@ -279,171 +366,249 @@ jadi penyanyi pop opera yang mendunia. Setiap orang yang
 mendengar nama Paul Robert Potts pasti akan langsung teringat
 kisahnya dan hanyut dalam keharuan.''';
 
-      final doc = await PdfDocument.openFile(bicaraPath);
-      final page = doc.pages[32]; // P.33
-      final rawRender = await page.render(
-        width: (page.width * 1.5).round(),
-        height: (page.height * 1.5).round(),
-      );
-      final rawBytes = rawRender!.pixels;
-      final w = rawRender.width;
-      final h = rawRender.height;
+        final doc = await PdfDocument.openFile(bicaraPath);
+        final page = doc.pages[32]; // P.33
+        final rawRender = await page.render(
+          width: (page.width * 1.5).round(),
+          height: (page.height * 1.5).round(),
+        );
+        final rawBytes = rawRender!.pixels;
+        final w = rawRender.width;
+        final h = rawRender.height;
 
-      final rawFile = await saveBgraToPng(rawBytes, w, h, 'bicara_p33_raw.png');
-      final gentleBytes = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: rawBytes,
-        width: w,
-        height: h,
-        config: const ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.gentle,
-          toGrayscale: true,
-          removeGutterShadow: true,
-          isLeftPage: true,
-        ),
-      );
-      final gentleFile = await saveBgraToPng(gentleBytes, w, h, 'bicara_p33_gentle.png');
+        final rawFile = await saveBgraToPng(
+          rawBytes,
+          w,
+          h,
+          'bicara_p33_raw.png',
+        );
+        final gentleBytes = ScannedImageEnhancer.enhanceBgra(
+          srcPixels: rawBytes,
+          width: w,
+          height: h,
+          config: const ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.gentle,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: true,
+          ),
+        );
+        final gentleFile = await saveBgraToPng(
+          gentleBytes,
+          w,
+          h,
+          'bicara_p33_gentle.png',
+        );
 
-      final balancedBytes = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: rawBytes,
-        width: w,
-        height: h,
-        config: const ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.balanced,
-          toGrayscale: true,
-          removeGutterShadow: true,
-          isLeftPage: true,
-        ),
-      );
-      final balancedFile = await saveBgraToPng(balancedBytes, w, h, 'bicara_p33_balanced.png');
+        final balancedBytes = ScannedImageEnhancer.enhanceBgra(
+          srcPixels: rawBytes,
+          width: w,
+          height: h,
+          config: const ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.balanced,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: true,
+          ),
+        );
+        final balancedFile = await saveBgraToPng(
+          balancedBytes,
+          w,
+          h,
+          'bicara_p33_balanced.png',
+        );
 
-      final strongBytes = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: rawBytes,
-        width: w,
-        height: h,
-        config: const ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.strong,
-          toGrayscale: true,
-          removeGutterShadow: true,
-          isLeftPage: true,
-        ),
-      );
-      final strongFile = await saveBgraToPng(strongBytes, w, h, 'bicara_p33_strong.png');
+        final strongBytes = ScannedImageEnhancer.enhanceBgra(
+          srcPixels: rawBytes,
+          width: w,
+          height: h,
+          config: const ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.strong,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: true,
+          ),
+        );
+        final strongFile = await saveBgraToPng(
+          strongBytes,
+          w,
+          h,
+          'bicara_p33_strong.png',
+        );
 
-      final rawEdge = calculateEdgeRatio(rawBytes, w, h);
-      final gentleEdge = calculateEdgeRatio(gentleBytes, w, h);
-      final balancedEdge = calculateEdgeRatio(balancedBytes, w, h);
-      final strongEdge = calculateEdgeRatio(strongBytes, w, h);
+        final rawEdge = calculateEdgeRatio(rawBytes, w, h);
+        final gentleEdge = calculateEdgeRatio(gentleBytes, w, h);
+        final balancedEdge = calculateEdgeRatio(balancedBytes, w, h);
+        final strongEdge = calculateEdgeRatio(strongBytes, w, h);
 
-      final ocrRaw = await ocrService.processImage(rawFile.path);
-      final ocrGentle = await ocrService.processImage(gentleFile.path);
-      final ocrBalanced = await ocrService.processImage(balancedFile.path);
-      final ocrStrong = await ocrService.processImage(strongFile.path);
+        final ocrRaw = await ocrService.processImage(rawFile.path);
+        final ocrGentle = await ocrService.processImage(gentleFile.path);
+        final ocrBalanced = await ocrService.processImage(balancedFile.path);
+        final ocrStrong = await ocrService.processImage(strongFile.path);
 
-      await doc.dispose();
+        await doc.dispose();
 
-      // Clean footer number line e.g. "15" from OCR text for exact comparison
-      String cleanOcr(String t) => t.split('\n').where((l) => !RegExp(r'^\d+$').hasMatch(l.trim())).join('\n');
+        // Clean footer number line e.g. "15" from OCR text for exact comparison
+        String cleanOcr(String t) => t
+            .split('\n')
+            .where((l) => !RegExp(r'^\d+$').hasMatch(l.trim()))
+            .join('\n');
 
-      final textRaw = cleanOcr(ocrRaw.plainText);
-      final textGentle = cleanOcr(ocrGentle.plainText);
-      final textBalanced = cleanOcr(ocrBalanced.plainText);
-      final textStrong = cleanOcr(ocrStrong.plainText);
+        final textRaw = cleanOcr(ocrRaw.plainText);
+        final textGentle = cleanOcr(ocrGentle.plainText);
+        final textBalanced = cleanOcr(ocrBalanced.plainText);
+        final textStrong = cleanOcr(ocrStrong.plainText);
 
-      final cerRaw = calculateCer(groundTruth.trim(), textRaw.trim());
-      final werRaw = calculateWer(groundTruth.trim(), textRaw.trim());
-      final cerGentle = calculateCer(groundTruth.trim(), textGentle.trim());
-      final werGentle = calculateWer(groundTruth.trim(), textGentle.trim());
-      final cerBalanced = calculateCer(groundTruth.trim(), textBalanced.trim());
-      final werBalanced = calculateWer(groundTruth.trim(), textBalanced.trim());
-      final cerStrong = calculateCer(groundTruth.trim(), textStrong.trim());
-      final werStrong = calculateWer(groundTruth.trim(), textStrong.trim());
+        final cerRaw = calculateCer(groundTruth.trim(), textRaw.trim());
+        final werRaw = calculateWer(groundTruth.trim(), textRaw.trim());
+        final cerGentle = calculateCer(groundTruth.trim(), textGentle.trim());
+        final werGentle = calculateWer(groundTruth.trim(), textGentle.trim());
+        final cerBalanced = calculateCer(
+          groundTruth.trim(),
+          textBalanced.trim(),
+        );
+        final werBalanced = calculateWer(
+          groundTruth.trim(),
+          textBalanced.trim(),
+        );
+        final cerStrong = calculateCer(groundTruth.trim(), textStrong.trim());
+        final werStrong = calculateWer(groundTruth.trim(), textStrong.trim());
 
-      final punctRaw = countPunctuation(textRaw);
-      final punctGentle = countPunctuation(textGentle);
-      final punctBalanced = countPunctuation(textBalanced);
-      final punctStrong = countPunctuation(textStrong);
-      final punctGt = countPunctuation(groundTruth);
+        final punctRaw = countPunctuation(textRaw);
+        final punctGentle = countPunctuation(textGentle);
+        final punctBalanced = countPunctuation(textBalanced);
+        final punctStrong = countPunctuation(textStrong);
+        final punctGt = countPunctuation(groundTruth);
 
-      print('\n========================================================================');
-      print('4-WAY ENHANCEMENT AUDIT: BICARA ITU ADA SENINYA P.33 (CLEAN SCAN)');
-      print('========================================================================');
-      print('Metric                Raw       Gentle    Balanced  Strong    GroundTruth');
-      print('CER (%):              ${cerRaw.toStringAsFixed(2).padLeft(9)} ${cerGentle.toStringAsFixed(2).padLeft(9)} ${cerBalanced.toStringAsFixed(2).padLeft(9)} ${cerStrong.toStringAsFixed(2).padLeft(9)}      0.00%');
-      print('WER (%):              ${werRaw.toStringAsFixed(2).padLeft(9)} ${werGentle.toStringAsFixed(2).padLeft(9)} ${werBalanced.toStringAsFixed(2).padLeft(9)} ${werStrong.toStringAsFixed(2).padLeft(9)}      0.00%');
-      print('Edge Ratio (%):       ${rawEdge.toStringAsFixed(2).padLeft(9)} ${gentleEdge.toStringAsFixed(2).padLeft(9)} ${balancedEdge.toStringAsFixed(2).padLeft(9)} ${strongEdge.toStringAsFixed(2).padLeft(9)}        N/A');
-      print('Punctuation Count:    ${punctRaw.toString().padLeft(9)} ${punctGentle.toString().padLeft(9)} ${punctBalanced.toString().padLeft(9)} ${punctStrong.toString().padLeft(9)} ${punctGt.toString().padLeft(10)}');
-      print('========================================================================');
+        print(
+          '\n========================================================================',
+        );
+        print(
+          '4-WAY ENHANCEMENT AUDIT: BICARA ITU ADA SENINYA P.33 (CLEAN SCAN)',
+        );
+        print(
+          '========================================================================',
+        );
+        print(
+          'Metric                Raw       Gentle    Balanced  Strong    GroundTruth',
+        );
+        print(
+          'CER (%):              ${cerRaw.toStringAsFixed(2).padLeft(9)} ${cerGentle.toStringAsFixed(2).padLeft(9)} ${cerBalanced.toStringAsFixed(2).padLeft(9)} ${cerStrong.toStringAsFixed(2).padLeft(9)}      0.00%',
+        );
+        print(
+          'WER (%):              ${werRaw.toStringAsFixed(2).padLeft(9)} ${werGentle.toStringAsFixed(2).padLeft(9)} ${werBalanced.toStringAsFixed(2).padLeft(9)} ${werStrong.toStringAsFixed(2).padLeft(9)}      0.00%',
+        );
+        print(
+          'Edge Ratio (%):       ${rawEdge.toStringAsFixed(2).padLeft(9)} ${gentleEdge.toStringAsFixed(2).padLeft(9)} ${balancedEdge.toStringAsFixed(2).padLeft(9)} ${strongEdge.toStringAsFixed(2).padLeft(9)}        N/A',
+        );
+        print(
+          'Punctuation Count:    ${punctRaw.toString().padLeft(9)} ${punctGentle.toString().padLeft(9)} ${punctBalanced.toString().padLeft(9)} ${punctStrong.toString().padLeft(9)} ${punctGt.toString().padLeft(10)}',
+        );
+        print(
+          '========================================================================',
+        );
 
-      expect(cerGentle, lessThan(4.0));
-      expect(cerBalanced, lessThan(4.0));
-      expect(werBalanced, lessThan(8.0));
-      expect(punctBalanced, greaterThanOrEqualTo(punctGt - 2));
-    });
+        expect(cerGentle, lessThan(4.0));
+        expect(cerBalanced, lessThan(4.0));
+        expect(werBalanced, lessThan(8.0));
+        expect(punctBalanced, greaterThanOrEqualTo(punctGt - 2));
+      },
+    );
 
-    test('3. 4-Way Evaluation on Narrative Novel: The Devotion of Suspect X P.11', () async {
-      final doc = await PdfDocument.openFile(mrXPath);
-      final page = doc.pages[10]; // P.11
-      final rawRender = await page.render(
-        width: (page.width * 1.5).round(),
-        height: (page.height * 1.5).round(),
-      );
-      final rawBytes = rawRender!.pixels;
-      final w = rawRender.width;
-      final h = rawRender.height;
+    test(
+      '3. 4-Way Evaluation on Narrative Novel: The Devotion of Suspect X P.11',
+      () async {
+        final doc = await PdfDocument.openFile(mrXPath);
+        final page = doc.pages[10]; // P.11
+        final rawRender = await page.render(
+          width: (page.width * 1.5).round(),
+          height: (page.height * 1.5).round(),
+        );
+        final rawBytes = rawRender!.pixels;
+        final w = rawRender.width;
+        final h = rawRender.height;
 
-      final rawFile = await saveBgraToPng(rawBytes, w, h, 'suspect_p11_raw.png');
-      final gentleBytes = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: rawBytes,
-        width: w,
-        height: h,
-        config: const ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.gentle,
-          toGrayscale: true,
-          removeGutterShadow: true,
-          isLeftPage: false,
-        ),
-      );
-      final gentleFile = await saveBgraToPng(gentleBytes, w, h, 'suspect_p11_gentle.png');
+        final rawFile = await saveBgraToPng(
+          rawBytes,
+          w,
+          h,
+          'suspect_p11_raw.png',
+        );
+        final gentleBytes = ScannedImageEnhancer.enhanceBgra(
+          srcPixels: rawBytes,
+          width: w,
+          height: h,
+          config: const ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.gentle,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: false,
+          ),
+        );
+        final gentleFile = await saveBgraToPng(
+          gentleBytes,
+          w,
+          h,
+          'suspect_p11_gentle.png',
+        );
 
-      final balancedBytes = ScannedImageEnhancer.enhanceBgra(
-        srcPixels: rawBytes,
-        width: w,
-        height: h,
-        config: const ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.balanced,
-          toGrayscale: true,
-          removeGutterShadow: true,
-          isLeftPage: false,
-        ),
-      );
-      final balancedFile = await saveBgraToPng(balancedBytes, w, h, 'suspect_p11_balanced.png');
+        final balancedBytes = ScannedImageEnhancer.enhanceBgra(
+          srcPixels: rawBytes,
+          width: w,
+          height: h,
+          config: const ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.balanced,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: false,
+          ),
+        );
+        final balancedFile = await saveBgraToPng(
+          balancedBytes,
+          w,
+          h,
+          'suspect_p11_balanced.png',
+        );
 
-      final rawEdge = calculateEdgeRatio(rawBytes, w, h);
-      final gentleEdge = calculateEdgeRatio(gentleBytes, w, h);
-      final balancedEdge = calculateEdgeRatio(balancedBytes, w, h);
+        final rawEdge = calculateEdgeRatio(rawBytes, w, h);
+        final gentleEdge = calculateEdgeRatio(gentleBytes, w, h);
+        final balancedEdge = calculateEdgeRatio(balancedBytes, w, h);
 
-      final ocrRaw = await ocrService.processImage(rawFile.path);
-      final ocrGentle = await ocrService.processImage(gentleFile.path);
-      final ocrBalanced = await ocrService.processImage(balancedFile.path);
+        final ocrRaw = await ocrService.processImage(rawFile.path);
+        final ocrGentle = await ocrService.processImage(gentleFile.path);
+        final ocrBalanced = await ocrService.processImage(balancedFile.path);
 
-      await doc.dispose();
+        await doc.dispose();
 
-      print('\n========================================================================');
-      print('4-WAY ENHANCEMENT AUDIT: THE DEVOTION OF SUSPECT X P.11');
-      print('========================================================================');
-      print('Raw Edge: ${rawEdge.toStringAsFixed(2)}% | Gentle Edge: ${gentleEdge.toStringAsFixed(2)}% | Balanced Edge: ${balancedEdge.toStringAsFixed(2)}%');
-      print('Raw Line Count: ${ocrRaw.lines.length} | Gentle Lines: ${ocrGentle.lines.length} | Balanced Lines: ${ocrBalanced.lines.length}');
-      print('Key tokens: "Benten-tei" in Raw: ${ocrRaw.plainText.contains("Benten-tei")}, in Gentle: ${ocrGentle.plainText.contains("Benten-tei")}, in Balanced: ${ocrBalanced.plainText.contains("Benten-tei")}');
-      print('========================================================================\n');
+        print(
+          '\n========================================================================',
+        );
+        print('4-WAY ENHANCEMENT AUDIT: THE DEVOTION OF SUSPECT X P.11');
+        print(
+          '========================================================================',
+        );
+        print(
+          'Raw Edge: ${rawEdge.toStringAsFixed(2)}% | Gentle Edge: ${gentleEdge.toStringAsFixed(2)}% | Balanced Edge: ${balancedEdge.toStringAsFixed(2)}%',
+        );
+        print(
+          'Raw Line Count: ${ocrRaw.lines.length} | Gentle Lines: ${ocrGentle.lines.length} | Balanced Lines: ${ocrBalanced.lines.length}',
+        );
+        print(
+          'Key tokens: "Benten-tei" in Raw: ${ocrRaw.plainText.contains("Benten-tei")}, in Gentle: ${ocrGentle.plainText.contains("Benten-tei")}, in Balanced: ${ocrBalanced.plainText.contains("Benten-tei")}',
+        );
+        print(
+          '========================================================================\n',
+        );
 
-      expect(ocrGentle.lines.length, greaterThanOrEqualTo(20));
-      expect(ocrBalanced.lines.length, greaterThanOrEqualTo(20));
-      expect(ocrBalanced.plainText, contains('Benten-tei'));
-    });
+        expect(ocrGentle.lines.length, greaterThanOrEqualTo(20));
+        expect(ocrBalanced.lines.length, greaterThanOrEqualTo(20));
+        expect(ocrBalanced.plainText, contains('Benten-tei'));
+      },
+    );
   });
 }

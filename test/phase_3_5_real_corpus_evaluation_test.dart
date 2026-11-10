@@ -31,13 +31,22 @@ int levenshteinDistance<T>(List<T> a, List<T> b) {
 
 double calculateCer(String groundTruth, String ocrText) {
   if (groundTruth.isEmpty) return ocrText.isEmpty ? 0.0 : 100.0;
-  final dist = levenshteinDistance(groundTruth.runes.toList(), ocrText.runes.toList());
+  final dist = levenshteinDistance(
+    groundTruth.runes.toList(),
+    ocrText.runes.toList(),
+  );
   return (dist / groundTruth.runes.length) * 100.0;
 }
 
 double calculateWer(String groundTruth, String ocrText) {
-  final gtWords = groundTruth.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-  final ocrWords = ocrText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  final gtWords = groundTruth
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  final ocrWords = ocrText
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
   if (gtWords.isEmpty) return ocrWords.isEmpty ? 0.0 : 100.0;
   final dist = levenshteinDistance(gtWords, ocrWords);
   return (dist / gtWords.length) * 100.0;
@@ -48,13 +57,27 @@ void main() {
   const ocrService = AppleVisionOcrService();
   const visualDir = 'docs/visual_evidence/phase_3_5';
 
-  final lautFile = File('/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf');
-  final bicaraFile = File('/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
-  final filosofiFile = File('/Users/davindalana/Downloads/filosofi-teraspdf.pdf');
-  final powerFile = File('/Users/davindalana/Downloads/The 48 Laws Of Power (Robert Greene).pdf');
-  final suspectXFile = File('/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf');
-  final jurnalFile = File('/Users/davindalana/Downloads/1259-Article Text-5284-1-10-20231024.pdf');
-  final letThemFile = File('/Users/davindalana/Downloads/The Let Them Theory (Mel Robbins).pdf');
+  final lautFile = File(
+    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+  );
+  final bicaraFile = File(
+    '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
+  );
+  final filosofiFile = File(
+    '/Users/davindalana/Downloads/filosofi-teraspdf.pdf',
+  );
+  final powerFile = File(
+    '/Users/davindalana/Downloads/The 48 Laws Of Power (Robert Greene).pdf',
+  );
+  final suspectXFile = File(
+    '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf',
+  );
+  final jurnalFile = File(
+    '/Users/davindalana/Downloads/1259-Article Text-5284-1-10-20231024.pdf',
+  );
+  final letThemFile = File(
+    '/Users/davindalana/Downloads/The Let Them Theory (Mel Robbins).pdf',
+  );
 
   setUpAll(() async {
     Directory(visualDir).createSync(recursive: true);
@@ -68,7 +91,11 @@ void main() {
     expect(ocrService.isAvailable, isTrue);
   });
 
-  Future<void> renderPageToDisk(File pdfFile, int pageIndex, String outputPath) async {
+  Future<void> renderPageToDisk(
+    File pdfFile,
+    int pageIndex,
+    String outputPath,
+  ) async {
     final doc = await PdfDocument.openFile(pdfFile.path);
     final page = doc.pages[pageIndex];
     final img = await page.render(
@@ -88,7 +115,11 @@ void main() {
     // Category A: Indonesian Fiction Prose (Laut Bercerita P.15)
     // -------------------------------------------------------------------------
     test('Category A: Indonesian Fiction Prose (Laut Bercerita P.15)', () async {
-      await renderPageToDisk(lautFile, 14, '$visualDir/category_a_laut_bercerita_p15.png');
+      await renderPageToDisk(
+        lautFile,
+        14,
+        '$visualDir/category_a_laut_bercerita_p15.png',
+      );
 
       const groundTruth = '''
 Setelah lebih dari sejam kami berada di atas mobil dengan
@@ -123,20 +154,34 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
 
       final doc = await PdfDocument.openFile(lautFile.path);
       final page = doc.pages[14];
-      final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
+      final ocrResult = await ocrService.processPdfPage(
+        page,
+        scale: 1.5,
+        languages: const ['id-ID', 'en-US'],
+      );
       await doc.dispose();
 
       final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
       final cer = calculateCer(groundTruth.trim(), ocrText.trim());
       final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
-      print('\n===============================================================');
+      print(
+        '\n===============================================================',
+      );
       print('CATEGORY A: FICTION PROSE (LAUT BERCERITA P.15)');
       print('===============================================================');
-      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
-      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
-      print('Saved visual source image: $visualDir/category_a_laut_bercerita_p15.png');
+      print(
+        'Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+      );
+      print(
+        'Saved visual source image: $visualDir/category_a_laut_bercerita_p15.png',
+      );
 
       expect(cer, lessThan(5.0));
       expect(wer, lessThan(8.0));
@@ -145,10 +190,16 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
     // -------------------------------------------------------------------------
     // Category B: Indonesian Non-Fiction (Bicara Itu Ada Seninya P.33)
     // -------------------------------------------------------------------------
-    test('Category B: Indonesian Non-Fiction (Bicara Itu Ada Seninya P.33)', () async {
-      await renderPageToDisk(bicaraFile, 32, '$visualDir/category_b_bicara_seninya_p33.png');
+    test(
+      'Category B: Indonesian Non-Fiction (Bicara Itu Ada Seninya P.33)',
+      () async {
+        await renderPageToDisk(
+          bicaraFile,
+          32,
+          '$visualDir/category_b_bicara_seninya_p33.png',
+        );
 
-      const groundTruth = '''
+        const groundTruth = '''
 selamanya. Lelaki tadi kemudian pulang ke kampung halaman
 dan membuat roti bagel setiap kali merindukan istrinya. Setelah
 itu, roti bagel menjadi terkenal ke seluruh dunia karena cerita
@@ -179,31 +230,51 @@ jadi penyanyi pop opera yang mendunia. Setiap orang yang
 mendengar nama Paul Robert Potts pasti akan langsung teringat
 kisahnya dan hanyut dalam keharuan.''';
 
-      final doc = await PdfDocument.openFile(bicaraFile.path);
-      final page = doc.pages[32];
-      final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
-      await doc.dispose();
+        final doc = await PdfDocument.openFile(bicaraFile.path);
+        final page = doc.pages[32];
+        final ocrResult = await ocrService.processPdfPage(
+          page,
+          scale: 1.5,
+          languages: const ['id-ID', 'en-US'],
+        );
+        await doc.dispose();
 
-      final filteredLines = ocrResult.lines.where((l) => !RegExp(r'^\d+$').hasMatch(l.text.trim())).map((l) => l.text).toList();
-      final ocrText = filteredLines.join('\n');
-      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
-      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
+        final filteredLines = ocrResult.lines
+            .where((l) => !RegExp(r'^\d+$').hasMatch(l.text.trim()))
+            .map((l) => l.text)
+            .toList();
+        final ocrText = filteredLines.join('\n');
+        final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+        final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
-      print('\n===============================================================');
-      print('CATEGORY B: NON-FICTION (BICARA ITU ADA SENINYA P.33)');
-      print('===============================================================');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
-      print('Saved visual source image: $visualDir/category_b_bicara_seninya_p33.png');
+        print(
+          '\n===============================================================',
+        );
+        print('CATEGORY B: NON-FICTION (BICARA ITU ADA SENINYA P.33)');
+        print(
+          '===============================================================',
+        );
+        print(
+          'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+        );
+        print(
+          'Saved visual source image: $visualDir/category_b_bicara_seninya_p33.png',
+        );
 
-      expect(cer, lessThan(2.0));
-      expect(wer, lessThan(4.0));
-    });
+        expect(cer, lessThan(2.0));
+        expect(wer, lessThan(4.0));
+      },
+    );
 
     // -------------------------------------------------------------------------
     // Category C: Indonesian Philosophy / Self-Help (Filosofi Teras P.21)
     // -------------------------------------------------------------------------
     test('Category C: Indonesian Philosophy (Filosofi Teras P.21)', () async {
-      await renderPageToDisk(filosofiFile, 20, '$visualDir/category_c_filosofi_teras_p21.png');
+      await renderPageToDisk(
+        filosofiFile,
+        20,
+        '$visualDir/category_c_filosofi_teras_p21.png',
+      );
 
       const groundTruth = '''
 yang keliru. Dengan mendefinisikan emosi negatif (pathos)
@@ -247,20 +318,34 @@ HENRY MANAMPIRING''';
 
       final doc = await PdfDocument.openFile(filosofiFile.path);
       final page = doc.pages[20];
-      final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
+      final ocrResult = await ocrService.processPdfPage(
+        page,
+        scale: 1.5,
+        languages: const ['id-ID', 'en-US'],
+      );
       await doc.dispose();
 
       final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
       final cer = calculateCer(groundTruth.trim(), ocrText.trim());
       final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
-      print('\n===============================================================');
+      print(
+        '\n===============================================================',
+      );
       print('CATEGORY C: PHILOSOPHY ESSAY (FILOSOFI TERAS P.21)');
       print('===============================================================');
-      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
-      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
-      print('Saved visual source image: $visualDir/category_c_filosofi_teras_p21.png');
+      print(
+        'Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+      );
+      print(
+        'Saved visual source image: $visualDir/category_c_filosofi_teras_p21.png',
+      );
 
       expect(cer, lessThan(2.0));
       expect(wer, lessThan(3.0));
@@ -272,10 +357,16 @@ HENRY MANAMPIRING''';
     // -------------------------------------------------------------------------
     // Category D: Multi-Style / Heading & Marginalia (48 Laws Of Power P.13)
     // -------------------------------------------------------------------------
-    test('Category D: Multi-Style & Heading Structure (The 48 Laws Of Power P.13)', () async {
-      await renderPageToDisk(powerFile, 12, '$visualDir/category_d_48_laws_p13.png');
+    test(
+      'Category D: Multi-Style & Heading Structure (The 48 Laws Of Power P.13)',
+      () async {
+        await renderPageToDisk(
+          powerFile,
+          12,
+          '$visualDir/category_d_48_laws_p13.png',
+        );
 
-      const groundTruth = '''
+        const groundTruth = '''
 HUKUM 48
 JADILAH SEPERTI UAP YANG BERBENTUK
 Dengan memiliki bentuk atau rencana yang nyata, anda rentan terhadap serangan. Alih-alih
@@ -317,37 +408,60 @@ Tidak ada prinsip; hanya ada peristiwa. Tidak ada yang baik dan yang jahat, hany
 Manusia yang superior mendukung beragam peristiwa dan situasi agar bisa membimbing
 mereka.''';
 
-      final doc = await PdfDocument.openFile(powerFile.path);
-      final page = doc.pages[12];
-      final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
-      await doc.dispose();
+        final doc = await PdfDocument.openFile(powerFile.path);
+        final page = doc.pages[12];
+        final ocrResult = await ocrService.processPdfPage(
+          page,
+          scale: 1.5,
+          languages: const ['id-ID', 'en-US'],
+        );
+        await doc.dispose();
 
-      final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
-      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
-      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
+        final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
+        final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+        final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
-      print('\n===============================================================');
-      print('CATEGORY D: MULTI-HEADING STRUCTURE (48 LAWS OF POWER P.13)');
-      print('===============================================================');
-      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
-      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
-      print('Saved visual source image: $visualDir/category_d_48_laws_p13.png');
+        print(
+          '\n===============================================================',
+        );
+        print('CATEGORY D: MULTI-HEADING STRUCTURE (48 LAWS OF POWER P.13)');
+        print(
+          '===============================================================',
+        );
+        print(
+          'Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}',
+        );
+        print(
+          'OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}',
+        );
+        print(
+          'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+        );
+        print(
+          'Saved visual source image: $visualDir/category_d_48_laws_p13.png',
+        );
 
-      expect(cer, lessThan(3.0));
-      expect(wer, lessThan(6.0));
-      expect(ocrText, contains('HUKUM 48'));
-      expect(ocrText, contains('BERBENTUK'));
-      expect(ocrResult.lines.length, greaterThanOrEqualTo(20));
-    });
+        expect(cer, lessThan(3.0));
+        expect(wer, lessThan(6.0));
+        expect(ocrText, contains('HUKUM 48'));
+        expect(ocrText, contains('BERBENTUK'));
+        expect(ocrResult.lines.length, greaterThanOrEqualTo(20));
+      },
+    );
 
     // -------------------------------------------------------------------------
     // Category E: Translated Novel Dialogue & Japanese Names (Suspect X P.11)
     // -------------------------------------------------------------------------
-    test('Category E: Translated Dialogue & Transliteration (Suspect X P.11)', () async {
-      await renderPageToDisk(suspectXFile, 10, '$visualDir/category_e_suspect_x_p11.png');
+    test(
+      'Category E: Translated Dialogue & Transliteration (Suspect X P.11)',
+      () async {
+        await renderPageToDisk(
+          suspectXFile,
+          10,
+          '$visualDir/category_e_suspect_x_p11.png',
+        );
 
-      const groundTruth = '''
+        const groundTruth = '''
 KESETIAAN MR. X
 terletak di seberang jembatan, tapi ia berbalik dan berjalan ke
 arah berlawanan.
@@ -377,35 +491,56 @@ Setelah kesibukan pagi hari berlalu, suasana di Benten-tei kini
 sepi pengunjung. Namun, proses pembuatan makan siang baru
 Bentō: makanan bekal yang dikemas praktis agar bisa dibawa ke mana-mana.''';
 
-      final doc = await PdfDocument.openFile(suspectXFile.path);
-      final page = doc.pages[10];
-      final ocrResult = await ocrService.processPdfPage(page, scale: 1.5, languages: const ['id-ID', 'en-US']);
-      await doc.dispose();
+        final doc = await PdfDocument.openFile(suspectXFile.path);
+        final page = doc.pages[10];
+        final ocrResult = await ocrService.processPdfPage(
+          page,
+          scale: 1.5,
+          languages: const ['id-ID', 'en-US'],
+        );
+        await doc.dispose();
 
-      final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
-      final cer = calculateCer(groundTruth.trim(), ocrText.trim());
-      final wer = calculateWer(groundTruth.trim(), ocrText.trim());
+        final ocrText = ocrResult.lines.map((l) => l.text).join('\n');
+        final cer = calculateCer(groundTruth.trim(), ocrText.trim());
+        final wer = calculateWer(groundTruth.trim(), ocrText.trim());
 
-      print('\n===============================================================');
-      print('CATEGORY E: TRANSLATED NOVEL DIALOGUE (SUSPECT X P.11)');
-      print('===============================================================');
-      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
-      print('OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
-      print('Saved visual source image: $visualDir/category_e_suspect_x_p11.png');
+        print(
+          '\n===============================================================',
+        );
+        print('CATEGORY E: TRANSLATED NOVEL DIALOGUE (SUSPECT X P.11)');
+        print(
+          '===============================================================',
+        );
+        print(
+          'Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}',
+        );
+        print(
+          'OCR Extracted Chars: ${ocrText.length} | Words: ${ocrText.split(RegExp(r'\s+')).length}',
+        );
+        print(
+          'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+        );
+        print(
+          'Saved visual source image: $visualDir/category_e_suspect_x_p11.png',
+        );
 
-      expect(cer, lessThan(2.0));
-      expect(wer, lessThan(5.0));
-      expect(ocrText, contains('Benten-tei'));
-      expect(ocrText, contains('Ishigami'));
-      expect(ocrResult.lines.length, greaterThanOrEqualTo(25));
-    });
+        expect(cer, lessThan(2.0));
+        expect(wer, lessThan(5.0));
+        expect(ocrText, contains('Benten-tei'));
+        expect(ocrText, contains('Ishigami'));
+        expect(ocrResult.lines.length, greaterThanOrEqualTo(25));
+      },
+    );
 
     // -------------------------------------------------------------------------
     // Category F: Two-Column Academic Paper Structure (Jurnal P.2)
     // -------------------------------------------------------------------------
     test('Category F: Two-Column Academic Paper Structure (Jurnal P.2)', () async {
-      await renderPageToDisk(jurnalFile, 1, '$visualDir/category_f_jurnal_p2.png');
+      await renderPageToDisk(
+        jurnalFile,
+        1,
+        '$visualDir/category_f_jurnal_p2.png',
+      );
 
       const groundTruth = '''
 Hielmi Sulaeman, Perancangan Aplikasi Manajemen Keuangan Berbasis Mobile Menggunakan React Native Untuk
@@ -463,18 +598,28 @@ Page 1022''';
         extractImagesToDisk: false,
       );
 
-      final page2 = extraction.pages.length >= 2 ? extraction.pages[1] : extraction.pages.first;
+      final page2 = extraction.pages.length >= 2
+          ? extraction.pages[1]
+          : extraction.pages.first;
       final resolved = ReadingOrderResolver.resolvePage(page2);
       final extractedText = resolved.orderedLines.map((l) => l.text).join('\n');
       final cer = calculateCer(groundTruth.trim(), extractedText.trim());
       final wer = calculateWer(groundTruth.trim(), extractedText.trim());
 
-      print('\n===============================================================');
+      print(
+        '\n===============================================================',
+      );
       print('CATEGORY F: TWO-COLUMN ACADEMIC PAPER (JURNAL P.2)');
       print('===============================================================');
-      print('Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}');
-      print('Extracted Chars: ${extractedText.length} | Words: ${extractedText.split(RegExp(r'\s+')).length}');
-      print('CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%');
+      print(
+        'Ground Truth Chars: ${groundTruth.length} | Words: ${groundTruth.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'Extracted Chars: ${extractedText.length} | Words: ${extractedText.split(RegExp(r'\s+')).length}',
+      );
+      print(
+        'CER: ${cer.toStringAsFixed(2)}% | WER: ${wer.toStringAsFixed(2)}%',
+      );
       print('Detected Layout: ${resolved.layoutStructure}');
       print('Saved visual source image: $visualDir/category_f_jurnal_p2.png');
 
@@ -486,26 +631,48 @@ Page 1022''';
     // -------------------------------------------------------------------------
     // Category G: Native Selectable Digital PDF (The Let Them Theory P.12)
     // -------------------------------------------------------------------------
-    test('Category G: Native Selectable Digital PDF (The Let Them Theory P.12)', () async {
-      await renderPageToDisk(letThemFile, 11, '$visualDir/category_g_let_them_theory_p12.png');
+    test(
+      'Category G: Native Selectable Digital PDF (The Let Them Theory P.12)',
+      () async {
+        await renderPageToDisk(
+          letThemFile,
+          11,
+          '$visualDir/category_g_let_them_theory_p12.png',
+        );
 
-      final docResult = await GeometryAwarePdfExtractor.extractDocument(
-        pdfFile: letThemFile,
-        bookId: 'let_them_digital_test',
-        extractImagesToDisk: false,
-      );
+        final docResult = await GeometryAwarePdfExtractor.extractDocument(
+          pdfFile: letThemFile,
+          bookId: 'let_them_digital_test',
+          extractImagesToDisk: false,
+        );
 
-      final page12 = docResult.pages.length >= 12 ? docResult.pages[11] : docResult.pages.first;
-      final extractedText = page12.lines.map((l) => l.text).join('\n');
+        final page12 = docResult.pages.length >= 12
+            ? docResult.pages[11]
+            : docResult.pages.first;
+        final extractedText = page12.lines.map((l) => l.text).join('\n');
 
-      print('\n===============================================================');
-      print('CATEGORY G: NATIVE SELECTABLE DIGITAL PDF (LET THEM THEORY P.12)');
-      print('===============================================================');
-      print('Digital Text Lines Extracted: ${page12.lines.length}');
-      print('Contains Title/Heading: ${extractedText.contains('Bibliography') || extractedText.contains('About Mel')}');
+        print(
+          '\n===============================================================',
+        );
+        print(
+          'CATEGORY G: NATIVE SELECTABLE DIGITAL PDF (LET THEM THEORY P.12)',
+        );
+        print(
+          '===============================================================',
+        );
+        print('Digital Text Lines Extracted: ${page12.lines.length}');
+        print(
+          'Contains Title/Heading: ${extractedText.contains('Bibliography') || extractedText.contains('About Mel')}',
+        );
 
-      expect(page12.lines.length, greaterThanOrEqualTo(2));
-      expect(page12.lines.any((l) => l.text.contains('Mel') || l.text.contains('Bibliography')), isTrue);
-    });
+        expect(page12.lines.length, greaterThanOrEqualTo(2));
+        expect(
+          page12.lines.any(
+            (l) => l.text.contains('Mel') || l.text.contains('Bibliography'),
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 }

@@ -22,7 +22,8 @@ class AnchorResolutionService {
   }) {
     if (annotation.isBookmark) {
       // Bookmarks resolve primarily by anchorNodeId or chapterId
-      if (annotation.anchorNodeId != null && annotation.anchorNodeId!.isNotEmpty) {
+      if (annotation.anchorNodeId != null &&
+          annotation.anchorNodeId!.isNotEmpty) {
         final nodeExists = document.chapters.any(
           (ch) => ch.nodes.any((n) => n.id == annotation.anchorNodeId),
         );
@@ -39,7 +40,8 @@ class AnchorResolutionService {
     }
 
     // Tier 1: Exact Semantic Anchor Check
-    if (annotation.anchorNodeId != null && annotation.anchorNodeId!.isNotEmpty) {
+    if (annotation.anchorNodeId != null &&
+        annotation.anchorNodeId!.isNotEmpty) {
       for (final ch in document.chapters) {
         for (final node in ch.nodes) {
           if (node.id == annotation.anchorNodeId) {
@@ -47,11 +49,16 @@ class AnchorResolutionService {
             if (annotation.startOffset >= 0 &&
                 annotation.endOffset <= nodeText.length &&
                 annotation.startOffset < annotation.endOffset) {
-              final slice = nodeText.substring(annotation.startOffset, annotation.endOffset);
+              final slice = nodeText.substring(
+                annotation.startOffset,
+                annotation.endOffset,
+              );
               if (slice.trim() == queryText) {
                 return annotation.copyWith(
                   chapterId: ch.id,
-                  pageIndex: node.sourcePdfPage > 0 ? node.sourcePdfPage : annotation.pageIndex,
+                  pageIndex: node.sourcePdfPage > 0
+                      ? node.sourcePdfPage
+                      : annotation.pageIndex,
                   anchorStatus: AnchorStatus.resolved,
                 );
               }
@@ -103,11 +110,16 @@ class AnchorResolutionService {
             final preStart = math.max(0, matchIdx - prefix.length - 15);
             final localPrefix = text.substring(preStart, matchIdx);
             final matchEnd = matchIdx + queryText.length;
-            final postEnd = math.min(text.length, matchEnd + suffix.length + 15);
+            final postEnd = math.min(
+              text.length,
+              matchEnd + suffix.length + 15,
+            );
             final localSuffix = text.substring(matchEnd, postEnd);
 
-            final prefixMatches = prefix.isEmpty || localPrefix.contains(prefix);
-            final suffixMatches = suffix.isEmpty || localSuffix.contains(suffix);
+            final prefixMatches =
+                prefix.isEmpty || localPrefix.contains(prefix);
+            final suffixMatches =
+                suffix.isEmpty || localSuffix.contains(suffix);
 
             if (prefixMatches && suffixMatches) {
               return annotation.copyWith(
@@ -115,7 +127,9 @@ class AnchorResolutionService {
                 anchorNodeId: node.id,
                 startOffset: matchIdx,
                 endOffset: matchEnd,
-                pageIndex: node.sourcePdfPage > 0 ? node.sourcePdfPage : annotation.pageIndex,
+                pageIndex: node.sourcePdfPage > 0
+                    ? node.sourcePdfPage
+                    : annotation.pageIndex,
                 anchorStatus: AnchorStatus.resolved,
               );
             }
@@ -145,21 +159,29 @@ class AnchorResolutionService {
           anchorNodeId: m.node.id,
           startOffset: m.start,
           endOffset: m.end,
-          pageIndex: m.node.sourcePdfPage > 0 ? m.node.sourcePdfPage : annotation.pageIndex,
+          pageIndex: m.node.sourcePdfPage > 0
+              ? m.node.sourcePdfPage
+              : annotation.pageIndex,
           anchorStatus: AnchorStatus.approximate,
         );
       }
     }
 
     // Tier 4: Global Search across entire Document
-    final globalMatches = <({ReaderChapter ch, ContentNode node, int start, int end})>[];
+    final globalMatches =
+        <({ReaderChapter ch, ContentNode node, int start, int end})>[];
     for (final ch in document.chapters) {
       for (final node in ch.nodes) {
         int cursor = 0;
         while (cursor < node.text.length) {
           final idx = node.text.indexOf(queryText, cursor);
           if (idx == -1) break;
-          globalMatches.add((ch: ch, node: node, start: idx, end: idx + queryText.length));
+          globalMatches.add((
+            ch: ch,
+            node: node,
+            start: idx,
+            end: idx + queryText.length,
+          ));
           cursor = idx + queryText.length;
         }
       }
@@ -172,7 +194,9 @@ class AnchorResolutionService {
         anchorNodeId: m.node.id,
         startOffset: m.start,
         endOffset: m.end,
-        pageIndex: m.node.sourcePdfPage > 0 ? m.node.sourcePdfPage : annotation.pageIndex,
+        pageIndex: m.node.sourcePdfPage > 0
+            ? m.node.sourcePdfPage
+            : annotation.pageIndex,
         anchorStatus: AnchorStatus.approximate,
       );
     }
@@ -199,10 +223,14 @@ class AnchorResolutionService {
 
     // Prioritize search on annotation.pageIndex if present
     final pagesToSearch = annotation.pageIndex != null
-        ? indexedPages.where((p) => p.pageIndex == (annotation.pageIndex! - 1)).toList()
+        ? indexedPages
+              .where((p) => p.pageIndex == (annotation.pageIndex! - 1))
+              .toList()
         : indexedPages;
 
-    final effectivePages = pagesToSearch.isNotEmpty ? pagesToSearch : indexedPages;
+    final effectivePages = pagesToSearch.isNotEmpty
+        ? pagesToSearch
+        : indexedPages;
 
     for (final page in effectivePages) {
       final lowerText = page.plainText.toLowerCase();
@@ -215,7 +243,11 @@ class AnchorResolutionService {
         if (page.geometryJson.isNotEmpty) {
           try {
             final raw = jsonDecode(page.geometryJson) as List<dynamic>;
-            tokens.addAll(raw.map((j) => SearchTokenGeometry.fromJson(j as Map<String, dynamic>)));
+            tokens.addAll(
+              raw.map(
+                (j) => SearchTokenGeometry.fromJson(j as Map<String, dynamic>),
+              ),
+            );
           } catch (_) {}
         }
 

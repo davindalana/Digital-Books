@@ -93,7 +93,9 @@ void main() {
         }
       }
 
-      print('\n===============================================================');
+      print(
+        '\n===============================================================',
+      );
       print('PHASE 3.2.1 LARGE BOOK PERFORMANCE BENCHMARK (EMPIRICAL)');
       print('===============================================================');
 
@@ -181,7 +183,11 @@ void main() {
         final geomStopwatch = Stopwatch()..start();
         for (final p in pages) {
           final rawList = jsonDecode(p.geometryJson) as List<dynamic>;
-          rawList.map((j) => SearchTokenGeometry.fromJson(j as Map<String, dynamic>)).toList();
+          rawList
+              .map(
+                (j) => SearchTokenGeometry.fromJson(j as Map<String, dynamic>),
+              )
+              .toList();
         }
         geomStopwatch.stop();
         final geomParseMs = geomStopwatch.elapsedMicroseconds / 1000.0;
@@ -206,21 +212,39 @@ void main() {
           isOcr: true,
         );
         // Prepare highlight map
-        final highlights = {sampleMatch.sourcePdfPage: sampleMatch.boundingBoxes};
+        final highlights = {
+          sampleMatch.sourcePdfPage: sampleMatch.boundingBoxes,
+        };
         expect(highlights[15]!.length, equals(1));
         navStopwatch.stop();
         final navLatencyMs = navStopwatch.elapsedMicroseconds / 1000.0;
 
         print('Corpus: $targetPages Pages');
-        print('  • Indexing Latency:          $totalIndexMs ms (${perPageIndexMs.toStringAsFixed(2)} ms/page)');
+        print(
+          '  • Indexing Latency:          $totalIndexMs ms (${perPageIndexMs.toStringAsFixed(2)} ms/page)',
+        );
         print('  • Database Page Load:        $dbLoadMs ms');
-        print('  • Text Scan + Snippet:       ${scanSnippetMs.toStringAsFixed(2)} ms');
-        print('  • Token Geometry Parse:      ${geomParseMs.toStringAsFixed(2)} ms');
-        print('  • Query Frequent ("laut"):    ${freqAvgMs.toStringAsFixed(2)} ms ($freqCount matches)');
-        print('  • Query Phrase ("Manusia P"): ${phraseAvgMs.toStringAsFixed(2)} ms ($phraseCount matches)');
-        print('  • Query Negative:            ${negAvgMs.toStringAsFixed(2)} ms (0 matches)');
-        print('  • Nav to Highlight Prep:     ${navLatencyMs.toStringAsFixed(3)} ms');
-        print('---------------------------------------------------------------');
+        print(
+          '  • Text Scan + Snippet:       ${scanSnippetMs.toStringAsFixed(2)} ms',
+        );
+        print(
+          '  • Token Geometry Parse:      ${geomParseMs.toStringAsFixed(2)} ms',
+        );
+        print(
+          '  • Query Frequent ("laut"):    ${freqAvgMs.toStringAsFixed(2)} ms ($freqCount matches)',
+        );
+        print(
+          '  • Query Phrase ("Manusia P"): ${phraseAvgMs.toStringAsFixed(2)} ms ($phraseCount matches)',
+        );
+        print(
+          '  • Query Negative:            ${negAvgMs.toStringAsFixed(2)} ms (0 matches)',
+        );
+        print(
+          '  • Nav to Highlight Prep:     ${navLatencyMs.toStringAsFixed(3)} ms',
+        );
+        print(
+          '---------------------------------------------------------------',
+        );
 
         // Latency SLA Assertions:
         // Even for 394 pages, query execution should complete well under 250 ms
@@ -228,7 +252,9 @@ void main() {
         expect(phraseAvgMs, lessThan(250.0));
         expect(negAvgMs, lessThan(250.0));
       }
-      print('===============================================================\n');
+      print(
+        '===============================================================\n',
+      );
     });
   });
 }

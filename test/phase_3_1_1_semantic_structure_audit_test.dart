@@ -132,7 +132,8 @@ void main() {
         // Body Paragraph 1 (2 lines)
         ExtractedTextLine(
           lineIndex: 3,
-          text: 'Kesan pertama seseorang terhadap kita terbentuk dalam hitungan detik.',
+          text:
+              'Kesan pertama seseorang terhadap kita terbentuk dalam hitungan detik.',
           bounds: const Rect.fromLTWH(50, 180, 450, 12),
           fontSize: 11.0,
           fontStyle: const [],
@@ -140,7 +141,8 @@ void main() {
         ),
         ExtractedTextLine(
           lineIndex: 4,
-          text: 'Sekali terbentuk, otak manusia cenderung mencari konfirmasi atas kesan tersebut.',
+          text:
+              'Sekali terbentuk, otak manusia cenderung mencari konfirmasi atas kesan tersebut.',
           bounds: const Rect.fromLTWH(50, 196, 470, 12),
           fontSize: 11.0,
           fontStyle: const [],
@@ -149,7 +151,8 @@ void main() {
         // Dialogue Block
         ExtractedTextLine(
           lineIndex: 5,
-          text: '"Bagaimana cara kita mengubah kesan buruk itu?" tanya seorang peserta seminar.',
+          text:
+              '"Bagaimana cara kita mengubah kesan buruk itu?" tanya seorang peserta seminar.',
           bounds: const Rect.fromLTWH(70, 225, 430, 12),
           fontSize: 11.0,
           fontStyle: const [PdfFontStyle.italic],
@@ -209,7 +212,8 @@ void main() {
         // Body Paragraph 2
         ExtractedTextLine(
           lineIndex: 12,
-          text: 'Komunikasi bukan sekadar kata-kata yang keluar dari bibir, melainkan seluruh gestur tubuh kita.',
+          text:
+              'Komunikasi bukan sekadar kata-kata yang keluar dari bibir, melainkan seluruh gestur tubuh kita.',
           bounds: const Rect.fromLTWH(50, 520, 480, 12),
           fontSize: 11.0,
           fontStyle: const [],
@@ -218,7 +222,8 @@ void main() {
         // Footnote at bottom
         ExtractedTextLine(
           lineIndex: 13,
-          text: '1. Penelitian Albert Mehrabian tentang komunikasi non-verbal (1971).',
+          text:
+              '1. Penelitian Albert Mehrabian tentang komunikasi non-verbal (1971).',
           bounds: const Rect.fromLTWH(50, 720, 420, 9),
           fontSize: 9.0,
           fontStyle: const [],
@@ -268,28 +273,34 @@ void main() {
       // Map blocks back to ground truth expectations
       final expectedLabels = [
         'Running Chrome / Footer', // BICARA ITU ADA SENINYA
-        'Heading (H1/H2/Title)',   // BAB 1
-        'Heading (H1/H2/Title)',   // 1. Mengapa Kesan
-        'Body Paragraph',          // Kesan pertama...
-        'Dialogue / Quote',        // "Bagaimana cara kita...
-        'Ordered List',            // 1. Perhatikan...
-        'Ordered List',            // 2. Gunakan...
-        'Ordered List',            // 3. Dengarkan...
-        'Unordered List',          // • Jangan...
-        'Unordered List',          // • Berikan...
-        'Caption',                 // Gambar 1.2...
-        'Body Paragraph',          // Komunikasi bukan...
-        'Footnote',                // 1. Penelitian...
+        'Heading (H1/H2/Title)', // BAB 1
+        'Heading (H1/H2/Title)', // 1. Mengapa Kesan
+        'Body Paragraph', // Kesan pertama...
+        'Dialogue / Quote', // "Bagaimana cara kita...
+        'Ordered List', // 1. Perhatikan...
+        'Ordered List', // 2. Gunakan...
+        'Ordered List', // 3. Dengarkan...
+        'Unordered List', // • Jangan...
+        'Unordered List', // • Berikan...
+        'Caption', // Gambar 1.2...
+        'Body Paragraph', // Komunikasi bukan...
+        'Footnote', // 1. Penelitian...
         'Running Chrome / Footer', // 33
       ];
 
-      expect(reconstructed.blocks.length, equals(expectedLabels.length),
-          reason: 'Every ground truth block should be reconstructed without merging or dropping');
+      expect(
+        reconstructed.blocks.length,
+        equals(expectedLabels.length),
+        reason:
+            'Every ground truth block should be reconstructed without merging or dropping',
+      );
 
       for (int i = 0; i < reconstructed.blocks.length; i++) {
         final block = reconstructed.blocks[i];
         final expected = expectedLabels[i];
-        print('Block $i: expected "$expected" | actual "${block.type.name}" | text: "${block.text.length > 30 ? block.text.substring(0, 30) + '...' : block.text}"');
+        print(
+          'Block $i: expected "$expected" | actual "${block.type.name}" | text: "${block.text.length > 30 ? block.text.substring(0, 30) + '...' : block.text}"',
+        );
         evaluateBlock(
           expectedCategory: expected,
           actualType: block.type,
@@ -318,7 +329,8 @@ void main() {
         ),
         ExtractedTextLine(
           lineIndex: 2,
-          text: 'Dilarang memfotokopi atau memperbanyak sebagian atau seluruh buku ini.',
+          text:
+              'Dilarang memfotokopi atau memperbanyak sebagian atau seluruh buku ini.',
           bounds: const Rect.fromLTWH(80, 275, 380, 11),
           fontSize: 10.0,
           fontStyle: const [],
@@ -400,16 +412,18 @@ void main() {
 
     test('3. Compute Confusion Matrix, Precision, Recall, and F1 per Structure', () {
       print('\n' + '=' * 75);
-      print('SEMANTIC STRUCTURE CLASSIFICATION AUDIT RESULTS (PRECISION / RECALL / F1)');
+      print(
+        'SEMANTIC STRUCTURE CLASSIFICATION AUDIT RESULTS (PRECISION / RECALL / F1)',
+      );
       print('=' * 75);
       print(
         'Category'.padRight(28) +
-        '| TP'.padRight(6) +
-        '| FP'.padRight(6) +
-        '| FN'.padRight(6) +
-        '| Precision'.padRight(12) +
-        '| Recall'.padRight(10) +
-        '| F1-Score',
+            '| TP'.padRight(6) +
+            '| FP'.padRight(6) +
+            '| FN'.padRight(6) +
+            '| Precision'.padRight(12) +
+            '| Recall'.padRight(10) +
+            '| F1-Score',
       );
       print('-' * 75);
 
@@ -423,12 +437,12 @@ void main() {
 
         print(
           category.padRight(28) +
-          '| ${stats.truePositives}'.padRight(6) +
-          '| ${stats.falsePositives}'.padRight(6) +
-          '| ${stats.falseNegatives}'.padRight(6) +
-          '| ${p.toStringAsFixed(1)}%'.padRight(12) +
-          '| ${r.toStringAsFixed(1)}%'.padRight(10) +
-          '| ${f1.toStringAsFixed(1)}%',
+              '| ${stats.truePositives}'.padRight(6) +
+              '| ${stats.falsePositives}'.padRight(6) +
+              '| ${stats.falseNegatives}'.padRight(6) +
+              '| ${p.toStringAsFixed(1)}%'.padRight(12) +
+              '| ${r.toStringAsFixed(1)}%'.padRight(10) +
+              '| ${f1.toStringAsFixed(1)}%',
         );
 
         if (stats.truePositives + stats.falseNegatives > 0) {
@@ -437,8 +451,12 @@ void main() {
         }
 
         // Precision & Recall threshold assertions: No semantic structure should fall below 80% F1
-        expect(stats.f1Score, greaterThanOrEqualTo(0.80),
-            reason: '$category F1-score should be >= 0.80 for high-quality reading experience');
+        expect(
+          stats.f1Score,
+          greaterThanOrEqualTo(0.80),
+          reason:
+              '$category F1-score should be >= 0.80 for high-quality reading experience',
+        );
       });
 
       final macroF1 = (totalF1 / activeCategories) * 100.0;
@@ -446,9 +464,12 @@ void main() {
       print('MACRO-AVERAGED F1-SCORE: ${macroF1.toStringAsFixed(2)}%');
       print('=' * 75 + '\n');
 
-      expect(macroF1, greaterThanOrEqualTo(90.0),
-          reason: 'Macro-averaged F1 across all semantic structures must be >= 90%');
+      expect(
+        macroF1,
+        greaterThanOrEqualTo(90.0),
+        reason:
+            'Macro-averaged F1 across all semantic structures must be >= 90%',
+      );
     });
   });
 }
-

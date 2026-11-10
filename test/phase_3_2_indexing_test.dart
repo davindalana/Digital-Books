@@ -32,7 +32,11 @@ void main() {
 
     for (final text in texts) {
       final page = doc.pages.add();
-      page.graphics.drawString(text, font, bounds: const Rect.fromLTWH(50, 100, 400, 30));
+      page.graphics.drawString(
+        text,
+        font,
+        bounds: const Rect.fromLTWH(50, 100, 400, 30),
+      );
     }
 
     file.writeAsBytesSync(doc.saveSync());
@@ -54,58 +58,64 @@ void main() {
   });
 
   group('Phase 3.2 — BookSearchIndexer Dual-Source & Staleness Test', () {
-    test('1. Digital PDF extraction and indexing with bounding boxes', () async {
-      final digitalPdf = createDigitalPdf(tempDir, 'digital_sample.pdf');
-      const bookId = 'book_digital_index_test';
-      final fileHash = await FileStorageService.computeFileSha256(digitalPdf);
+    test(
+      '1. Digital PDF extraction and indexing with bounding boxes',
+      () async {
+        final digitalPdf = createDigitalPdf(tempDir, 'digital_sample.pdf');
+        const bookId = 'book_digital_index_test';
+        final fileHash = await FileStorageService.computeFileSha256(digitalPdf);
 
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const drift.Value(bookId),
-          title: const drift.Value('Buku Digital'),
-          author: const drift.Value('Penulis Digital'),
-          originalPdfPath: drift.Value(digitalPdf.path),
-          fileHash: drift.Value(fileHash),
-          totalPages: const drift.Value(5),
-          createdAt: drift.Value(DateTime.now()),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
-      );
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const drift.Value(bookId),
+            title: const drift.Value('Buku Digital'),
+            author: const drift.Value('Penulis Digital'),
+            originalPdfPath: drift.Value(digitalPdf.path),
+            fileHash: drift.Value(fileHash),
+            totalPages: const drift.Value(5),
+            createdAt: drift.Value(DateTime.now()),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
 
-      final indexer = BookSearchIndexer(dbService: dbService);
+        final indexer = BookSearchIndexer(dbService: dbService);
 
-      // Index first 5 pages (pages 0..4)
-      final indexedCount = await indexer.indexBook(
-        bookId: bookId,
-        pdfPath: digitalPdf.path,
-        startPage: 0,
-        endPage: 4,
-      );
+        // Index first 5 pages (pages 0..4)
+        final indexedCount = await indexer.indexBook(
+          bookId: bookId,
+          pdfPath: digitalPdf.path,
+          startPage: 0,
+          endPage: 4,
+        );
 
-      expect(indexedCount, equals(5));
+        expect(indexedCount, equals(5));
 
-      final pages = await dbService.getSearchPagesForBook(bookId);
-      expect(pages.length, equals(5));
+        final pages = await dbService.getSearchPagesForBook(bookId);
+        expect(pages.length, equals(5));
 
-      for (final p in pages) {
-        expect(p.plainText, isNotEmpty);
-        expect(p.geometryJson, isNotEmpty);
-        expect(p.isOcr, isFalse);
+        for (final p in pages) {
+          expect(p.plainText, isNotEmpty);
+          expect(p.geometryJson, isNotEmpty);
+          expect(p.isOcr, isFalse);
 
-        final tokens = (jsonDecode(p.geometryJson) as List<dynamic>)
-            .map((item) => SearchTokenGeometry.fromJson(item as Map<String, dynamic>))
-            .toList();
+          final tokens = (jsonDecode(p.geometryJson) as List<dynamic>)
+              .map(
+                (item) =>
+                    SearchTokenGeometry.fromJson(item as Map<String, dynamic>),
+              )
+              .toList();
 
-        expect(tokens, isNotEmpty);
-        for (final t in tokens) {
-          // Bounding boxes must be strictly inside normalized [0, 1] range
-          expect(t.box.left, inInclusiveRange(0.0, 1.0));
-          expect(t.box.top, inInclusiveRange(0.0, 1.0));
-          expect(t.box.width, inInclusiveRange(0.0, 1.0));
-          expect(t.box.height, inInclusiveRange(0.0, 1.0));
+          expect(tokens, isNotEmpty);
+          for (final t in tokens) {
+            // Bounding boxes must be strictly inside normalized [0, 1] range
+            expect(t.box.left, inInclusiveRange(0.0, 1.0));
+            expect(t.box.top, inInclusiveRange(0.0, 1.0));
+            expect(t.box.width, inInclusiveRange(0.0, 1.0));
+            expect(t.box.height, inInclusiveRange(0.0, 1.0));
+          }
         }
-      }
-    });
+      },
+    );
 
     test('2. Resumable indexing: Already indexed pages are skipped', () async {
       final digitalPdf = createDigitalPdf(tempDir, 'digital_resumable.pdf');
@@ -155,117 +165,123 @@ void main() {
       expect(run3, equals(0));
     });
 
-    test('3. Staleness invalidation: PDF hash mismatch purges old index', () async {
-      final digitalPdf = createDigitalPdf(tempDir, 'digital_staleness.pdf');
-      const bookId = 'book_staleness_test';
-      const oldHash = 'outdated_stale_hash_123';
+    test(
+      '3. Staleness invalidation: PDF hash mismatch purges old index',
+      () async {
+        final digitalPdf = createDigitalPdf(tempDir, 'digital_staleness.pdf');
+        const bookId = 'book_staleness_test';
+        const oldHash = 'outdated_stale_hash_123';
 
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const drift.Value(bookId),
-          title: const drift.Value('Buku Staleness'),
-          author: const drift.Value('Penulis Staleness'),
-          originalPdfPath: drift.Value(digitalPdf.path),
-          fileHash: const drift.Value(oldHash),
-          totalPages: const drift.Value(5),
-          createdAt: drift.Value(DateTime.now()),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
-      );
-
-      // Insert dummy stale search page
-      await dbService.insertSearchPage(
-        BookSearchPagesCompanion(
-          id: const drift.Value('${bookId}_p0'),
-          bookId: const drift.Value(bookId),
-          pageIndex: const drift.Value(0),
-          plainText: const drift.Value('Stale text from old version'),
-          rawText: const drift.Value('Stale text from old version'),
-          geometryJson: const drift.Value('[]'),
-          isOcr: const drift.Value(false),
-          fileHash: const drift.Value(oldHash),
-          indexVersion: const drift.Value(1),
-          indexedAt: drift.Value(DateTime.now()),
-        ),
-      );
-
-      expect(await dbService.getIndexedSearchPageCount(bookId), equals(1));
-
-      // Run indexer with real PDF (whose hash is different from oldHash)
-      final indexer = BookSearchIndexer(dbService: dbService);
-      final indexed = await indexer.indexBook(
-        bookId: bookId,
-        pdfPath: digitalPdf.path,
-        startPage: 0,
-        endPage: 1,
-      );
-
-      expect(indexed, equals(2));
-      final updatedPages = await dbService.getSearchPagesForBook(bookId);
-      expect(updatedPages.length, equals(2));
-      // Stale text must be gone
-      expect(updatedPages.first.plainText, isNot(contains('Stale text')));
-    });
-
-    test('4. Apple Vision OCR page indexing prioritizes completed OCR lines', () async {
-      final digitalPdf = createDigitalPdf(tempDir, 'digital_ocr.pdf');
-      const bookId = 'book_ocr_source_test';
-      final fileHash = await FileStorageService.computeFileSha256(digitalPdf);
-
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const drift.Value(bookId),
-          title: const drift.Value('Buku OCR Uji'),
-          author: const drift.Value('Penulis Uji'),
-          originalPdfPath: drift.Value(digitalPdf.path),
-          fileHash: drift.Value(fileHash),
-          totalPages: const drift.Value(2),
-          createdAt: drift.Value(DateTime.now()),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
-      );
-
-      final ocrLines = [
-        const OcrLine(
-          text: 'KOMUNIKASI EFEKTIF DARI HASIL OCR',
-          box: Rect.fromLTWH(0.2, 0.1, 0.6, 0.05),
-          confidence: 0.98,
-        ),
-        const OcrLine(
-          text: 'Bab pertama membahas dasar berbicara di depan umum.',
-          box: Rect.fromLTWH(0.1, 0.2, 0.7, 0.04),
-          confidence: 0.95,
-        ),
-      ];
-
-      // Insert completed OCR page
-      await dbService.insertOcrPage(
-        OcrPagesCompanion(
-          id: const drift.Value('${bookId}_ocr_0'),
-          bookId: const drift.Value(bookId),
-          pageIndex: const drift.Value(0),
-          status: const drift.Value('completed'),
-          linesJson: drift.Value(
-            jsonEncode(ocrLines.map((l) => l.toJson()).toList()),
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const drift.Value(bookId),
+            title: const drift.Value('Buku Staleness'),
+            author: const drift.Value('Penulis Staleness'),
+            originalPdfPath: drift.Value(digitalPdf.path),
+            fileHash: const drift.Value(oldHash),
+            totalPages: const drift.Value(5),
+            createdAt: drift.Value(DateTime.now()),
+            updatedAt: drift.Value(DateTime.now()),
           ),
-          createdAt: drift.Value(DateTime.now()),
-        ),
-      );
+        );
 
-      final indexer = BookSearchIndexer(dbService: dbService);
-      final indexed = await indexer.indexBook(
-        bookId: bookId,
-        pdfPath: digitalPdf.path,
-        startPage: 0,
-        endPage: 0,
-      );
+        // Insert dummy stale search page
+        await dbService.insertSearchPage(
+          BookSearchPagesCompanion(
+            id: const drift.Value('${bookId}_p0'),
+            bookId: const drift.Value(bookId),
+            pageIndex: const drift.Value(0),
+            plainText: const drift.Value('Stale text from old version'),
+            rawText: const drift.Value('Stale text from old version'),
+            geometryJson: const drift.Value('[]'),
+            isOcr: const drift.Value(false),
+            fileHash: const drift.Value(oldHash),
+            indexVersion: const drift.Value(1),
+            indexedAt: drift.Value(DateTime.now()),
+          ),
+        );
 
-      expect(indexed, equals(1));
-      final page = await dbService.getSearchPage(bookId, 0);
-      expect(page, isNotNull);
-      expect(page!.isOcr, isTrue);
-      expect(page.plainText, contains('KOMUNIKASI EFEKTIF DARI HASIL OCR'));
-      expect(page.plainText, contains('Bab pertama membahas dasar'));
-    });
+        expect(await dbService.getIndexedSearchPageCount(bookId), equals(1));
+
+        // Run indexer with real PDF (whose hash is different from oldHash)
+        final indexer = BookSearchIndexer(dbService: dbService);
+        final indexed = await indexer.indexBook(
+          bookId: bookId,
+          pdfPath: digitalPdf.path,
+          startPage: 0,
+          endPage: 1,
+        );
+
+        expect(indexed, equals(2));
+        final updatedPages = await dbService.getSearchPagesForBook(bookId);
+        expect(updatedPages.length, equals(2));
+        // Stale text must be gone
+        expect(updatedPages.first.plainText, isNot(contains('Stale text')));
+      },
+    );
+
+    test(
+      '4. Apple Vision OCR page indexing prioritizes completed OCR lines',
+      () async {
+        final digitalPdf = createDigitalPdf(tempDir, 'digital_ocr.pdf');
+        const bookId = 'book_ocr_source_test';
+        final fileHash = await FileStorageService.computeFileSha256(digitalPdf);
+
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const drift.Value(bookId),
+            title: const drift.Value('Buku OCR Uji'),
+            author: const drift.Value('Penulis Uji'),
+            originalPdfPath: drift.Value(digitalPdf.path),
+            fileHash: drift.Value(fileHash),
+            totalPages: const drift.Value(2),
+            createdAt: drift.Value(DateTime.now()),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+
+        final ocrLines = [
+          const OcrLine(
+            text: 'KOMUNIKASI EFEKTIF DARI HASIL OCR',
+            box: Rect.fromLTWH(0.2, 0.1, 0.6, 0.05),
+            confidence: 0.98,
+          ),
+          const OcrLine(
+            text: 'Bab pertama membahas dasar berbicara di depan umum.',
+            box: Rect.fromLTWH(0.1, 0.2, 0.7, 0.04),
+            confidence: 0.95,
+          ),
+        ];
+
+        // Insert completed OCR page
+        await dbService.insertOcrPage(
+          OcrPagesCompanion(
+            id: const drift.Value('${bookId}_ocr_0'),
+            bookId: const drift.Value(bookId),
+            pageIndex: const drift.Value(0),
+            status: const drift.Value('completed'),
+            linesJson: drift.Value(
+              jsonEncode(ocrLines.map((l) => l.toJson()).toList()),
+            ),
+            createdAt: drift.Value(DateTime.now()),
+          ),
+        );
+
+        final indexer = BookSearchIndexer(dbService: dbService);
+        final indexed = await indexer.indexBook(
+          bookId: bookId,
+          pdfPath: digitalPdf.path,
+          startPage: 0,
+          endPage: 0,
+        );
+
+        expect(indexed, equals(1));
+        final page = await dbService.getSearchPage(bookId, 0);
+        expect(page, isNotNull);
+        expect(page!.isOcr, isTrue);
+        expect(page.plainText, contains('KOMUNIKASI EFEKTIF DARI HASIL OCR'));
+        expect(page.plainText, contains('Bab pertama membahas dasar'));
+      },
+    );
   });
 }

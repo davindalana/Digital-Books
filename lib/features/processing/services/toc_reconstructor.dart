@@ -117,8 +117,7 @@ class TocReconstructor {
         // with the following work title. They appear either as "- Name" on the
         // next TOC page or as an indented line without a page label. In both
         // cases the person is a sub-entry of the preceding work title.
-        final isIndented =
-            line.bounds.left - bodyLeft >= indentationThreshold;
+        final isIndented = line.bounds.left - bodyLeft >= indentationThreshold;
         final hasTrailingPage = _trailingPageNumber(text) != null;
         final isPerson =
             text.startsWith('- ') || (isIndented && !hasTrailingPage);

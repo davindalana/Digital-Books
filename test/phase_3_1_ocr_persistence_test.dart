@@ -21,9 +21,12 @@ void main() {
   });
 
   group('Phase 3.1 Checkpoint B: OCR Persistence & Drift Schema v4', () {
-    test('Database schema version is 6 (current version with persistent annotations)', () {
-      expect(db.schemaVersion, equals(6));
-    });
+    test(
+      'Database schema version is 6 (current version with persistent annotations)',
+      () {
+        expect(db.schemaVersion, equals(6));
+      },
+    );
 
     test('Can insert, query, update, and delete OcrPage records', () async {
       final now = DateTime.now();
@@ -134,38 +137,43 @@ void main() {
       expect(remaining, isEmpty);
     });
 
-    test('Cascading delete: deleting a book removes all its OCR pages', () async {
-      final now = DateTime.now();
-      await dbService.insertBook(
-        BooksCompanion(
-          id: const Value('book_ocr_cascade'),
-          title: const Value('Cascade Test Book'),
-          author: const Value('Author'),
-          originalPdfPath: const Value('/path/cascade.pdf'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
+    test(
+      'Cascading delete: deleting a book removes all its OCR pages',
+      () async {
+        final now = DateTime.now();
+        await dbService.insertBook(
+          BooksCompanion(
+            id: const Value('book_ocr_cascade'),
+            title: const Value('Cascade Test Book'),
+            author: const Value('Author'),
+            originalPdfPath: const Value('/path/cascade.pdf'),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
 
-      await dbService.insertOcrPage(
-        OcrPagesCompanion(
-          id: const Value('book_ocr_cascade_0'),
-          bookId: const Value('book_ocr_cascade'),
-          pageIndex: const Value(0),
-          status: const Value('completed'),
-          linesJson: const Value('[]'),
-          createdAt: Value(now),
-        ),
-      );
+        await dbService.insertOcrPage(
+          OcrPagesCompanion(
+            id: const Value('book_ocr_cascade_0'),
+            bookId: const Value('book_ocr_cascade'),
+            pageIndex: const Value(0),
+            status: const Value('completed'),
+            linesJson: const Value('[]'),
+            createdAt: Value(now),
+          ),
+        );
 
-      final before = await dbService.getOcrPagesForBook('book_ocr_cascade');
-      expect(before.length, equals(1));
+        final before = await dbService.getOcrPagesForBook('book_ocr_cascade');
+        expect(before.length, equals(1));
 
-      // Delete the book
-      await (db.delete(db.books)..where((t) => t.id.equals('book_ocr_cascade'))).go();
+        // Delete the book
+        await (db.delete(
+          db.books,
+        )..where((t) => t.id.equals('book_ocr_cascade'))).go();
 
-      final after = await dbService.getOcrPagesForBook('book_ocr_cascade');
-      expect(after, isEmpty);
-    });
+        final after = await dbService.getOcrPagesForBook('book_ocr_cascade');
+        expect(after, isEmpty);
+      },
+    );
   });
 }

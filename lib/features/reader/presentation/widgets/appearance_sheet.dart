@@ -16,7 +16,7 @@ class AppearanceSheet extends ConsumerWidget {
     final typoSettings = ref.watch(typographySettingsStateProvider);
     final isPdf = bookId != null
         ? ref.watch(activeReadingModeProvider(bookId!)) ==
-            ReadingMode.originalPdf
+              ReadingMode.originalPdf
         : false;
 
     return ClipRRect(
@@ -453,10 +453,8 @@ class AppearanceSheet extends ConsumerWidget {
                                     vertical: 4,
                                   ),
                                   child: Row(
-                                    children:
-                                        ScanEnhancementIntensity.values.map((
-                                          intensity,
-                                        ) {
+                                    children: ScanEnhancementIntensity.values
+                                        .map((intensity) {
                                           final isSelected =
                                               config.intensity == intensity;
                                           return Expanded(
@@ -469,8 +467,8 @@ class AppearanceSheet extends ConsumerWidget {
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                                 onTap: () {
-                                                  notifier.state =
-                                                      config.copyWith(
+                                                  notifier.state = config
+                                                      .copyWith(
                                                         intensity: intensity,
                                                       );
                                                 },
@@ -485,9 +483,10 @@ class AppearanceSheet extends ConsumerWidget {
                                                             0xFF007AFF,
                                                           )
                                                         : (activeTheme.isDark
-                                                                ? Colors.white
-                                                                : Colors.black)
-                                                            .withAlpha(12),
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .black)
+                                                              .withAlpha(12),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                           8,
@@ -503,14 +502,15 @@ class AppearanceSheet extends ConsumerWidget {
                                                       color: isSelected
                                                           ? Colors.white
                                                           : activeTheme
-                                                              .textColor,
+                                                                .textColor,
                                                     ),
                                                   ),
                                                 ),
                                               ),
                                             ),
                                           );
-                                        }).toList(),
+                                        })
+                                        .toList(),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -621,281 +621,284 @@ class AppearanceSheet extends ConsumerWidget {
                             : Colors.black.withAlpha(10),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: Text(
-                            'A',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: activeTheme.textColor,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Text(
+                              'A',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: activeTheme.textColor,
+                              ),
                             ),
+                            onPressed: typoSettings.fontSize > 13
+                                ? () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      fontSize: typoSettings.fontSize - 1.5,
+                                    );
+                                  }
+                                : null,
                           ),
-                          onPressed: typoSettings.fontSize > 13
-                              ? () {
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderThemeData(
+                                activeTrackColor: const Color(0xFF007AFF),
+                                inactiveTrackColor: activeTheme.isDark
+                                    ? Colors.white.withAlpha(40)
+                                    : Colors.black.withAlpha(30),
+                                thumbColor: Colors.white,
+                                trackHeight: 3,
+                              ),
+                              child: Slider(
+                                value: typoSettings.fontSize,
+                                min: 12.0,
+                                max: 32.0,
+                                divisions: 10,
+                                onChanged: (val) {
                                   ref
                                       .read(
                                         typographySettingsStateProvider
                                             .notifier,
                                       )
                                       .state = typoSettings.copyWith(
-                                    fontSize: typoSettings.fontSize - 1.5,
+                                    fontSize: val,
                                   );
-                                }
-                              : null,
-                        ),
-                        Expanded(
-                          child: SliderTheme(
-                            data: SliderThemeData(
-                              activeTrackColor: const Color(0xFF007AFF),
-                              inactiveTrackColor: activeTheme.isDark
-                                  ? Colors.white.withAlpha(40)
-                                  : Colors.black.withAlpha(30),
-                              thumbColor: Colors.white,
-                              trackHeight: 3,
-                            ),
-                            child: Slider(
-                              value: typoSettings.fontSize,
-                              min: 12.0,
-                              max: 32.0,
-                              divisions: 10,
-                              onChanged: (val) {
-                                ref
-                                    .read(
-                                      typographySettingsStateProvider.notifier,
-                                    )
-                                    .state = typoSettings.copyWith(
-                                  fontSize: val,
-                                );
-                              },
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                        IconButton(
-                          icon: Text(
-                            'A',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: activeTheme.textColor,
+                          IconButton(
+                            icon: Text(
+                              'A',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: activeTheme.textColor,
+                              ),
                             ),
+                            onPressed: typoSettings.fontSize < 30
+                                ? () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      fontSize: typoSettings.fontSize + 1.5,
+                                    );
+                                  }
+                                : null,
                           ),
-                          onPressed: typoSettings.fontSize < 30
-                              ? () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    fontSize: typoSettings.fontSize + 1.5,
-                                  );
-                                }
-                              : null,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // Font Family Selector
-                  Text(
-                    'FONT',
-                    style: TextStyle(
-                      fontSize: 12,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w600,
-                      color: activeTheme.secondaryTextColor,
+                    // Font Family Selector
+                    Text(
+                      'FONT',
+                      style: TextStyle(
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                        color: activeTheme.secondaryTextColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: activeTheme.isDark
-                          ? Colors.white.withAlpha(18)
-                          : Colors.black.withAlpha(10),
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: activeTheme.isDark
+                            ? Colors.white.withAlpha(18)
+                            : Colors.black.withAlpha(10),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: ReadingFontFamily.values.map((font) {
+                          final isSelected = typoSettings.fontFamily == font;
+                          return InkWell(
+                            onTap: () {
+                              ref
+                                  .read(
+                                    typographySettingsStateProvider.notifier,
+                                  )
+                                  .state = typoSettings.copyWith(
+                                fontFamily: font,
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    font.label,
+                                    style: font.getTextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: activeTheme.textColor,
+                                      height: 1.2,
+                                      letterSpacing: 0,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  if (isSelected)
+                                    const Icon(
+                                      Icons.check,
+                                      color: Color(0xFF007AFF),
+                                      size: 18,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
-                    child: Column(
-                      children: ReadingFontFamily.values.map((font) {
-                        final isSelected = typoSettings.fontFamily == font;
-                        return InkWell(
-                          onTap: () {
-                            ref
-                                .read(typographySettingsStateProvider.notifier)
-                                .state = typoSettings.copyWith(
-                              fontFamily: font,
-                            );
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+                    const SizedBox(height: 16),
+
+                    // Line Height & Alignment Controls
+                    Row(
+                      children: [
+                        // Text Alignment
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: activeTheme.isDark
+                                  ? Colors.white.withAlpha(18)
+                                  : Colors.black.withAlpha(10),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                Text(
-                                  font.label,
-                                  style: font.getTextStyle(
-                                    fontSize: 16,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: activeTheme.textColor,
-                                    height: 1.2,
-                                    letterSpacing: 0,
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.format_align_left,
+                                    color:
+                                        (typoSettings.textAlign ==
+                                                TextAlign.left ||
+                                            typoSettings.textAlign ==
+                                                TextAlign.start)
+                                        ? const Color(0xFF007AFF)
+                                        : activeTheme.secondaryTextColor,
                                   ),
+                                  onPressed: () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      textAlign: TextAlign.left,
+                                    );
+                                  },
                                 ),
-                                const Spacer(),
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check,
-                                    color: Color(0xFF007AFF),
-                                    size: 18,
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.format_align_justify,
+                                    color:
+                                        typoSettings.textAlign ==
+                                            TextAlign.justify
+                                        ? const Color(0xFF007AFF)
+                                        : activeTheme.secondaryTextColor,
                                   ),
+                                  onPressed: () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      textAlign: TextAlign.justify,
+                                    );
+                                  },
+                                ),
                               ],
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                        const SizedBox(width: 12),
+                        // Line Spacing toggle
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: activeTheme.isDark
+                                  ? Colors.white.withAlpha(18)
+                                  : Colors.black.withAlpha(10),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _SpacingButton(
+                                  label: '1.4',
+                                  isSelected: typoSettings.lineSpacing < 1.5,
+                                  onTap: () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      lineSpacing: 1.4,
+                                    );
+                                  },
+                                  activeTheme: activeTheme,
+                                ),
+                                _SpacingButton(
+                                  label: '1.7',
+                                  isSelected:
+                                      typoSettings.lineSpacing >= 1.5 &&
+                                      typoSettings.lineSpacing < 1.9,
+                                  onTap: () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      lineSpacing: 1.7,
+                                    );
+                                  },
+                                  activeTheme: activeTheme,
+                                ),
+                                _SpacingButton(
+                                  label: '2.0',
+                                  isSelected: typoSettings.lineSpacing >= 1.9,
+                                  onTap: () {
+                                    ref
+                                        .read(
+                                          typographySettingsStateProvider
+                                              .notifier,
+                                        )
+                                        .state = typoSettings.copyWith(
+                                      lineSpacing: 2.0,
+                                    );
+                                  },
+                                  activeTheme: activeTheme,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Line Height & Alignment Controls
-                  Row(
-                    children: [
-                      // Text Alignment
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: activeTheme.isDark
-                                ? Colors.white.withAlpha(18)
-                                : Colors.black.withAlpha(10),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.format_align_left,
-                                  color:
-                                      (typoSettings.textAlign ==
-                                              TextAlign.left ||
-                                          typoSettings.textAlign ==
-                                              TextAlign.start)
-                                      ? const Color(0xFF007AFF)
-                                      : activeTheme.secondaryTextColor,
-                                ),
-                                onPressed: () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    textAlign: TextAlign.left,
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                icon: Icon(
-                                  Icons.format_align_justify,
-                                  color:
-                                      typoSettings.textAlign ==
-                                          TextAlign.justify
-                                      ? const Color(0xFF007AFF)
-                                      : activeTheme.secondaryTextColor,
-                                ),
-                                onPressed: () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    textAlign: TextAlign.justify,
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Line Spacing toggle
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: activeTheme.isDark
-                                ? Colors.white.withAlpha(18)
-                                : Colors.black.withAlpha(10),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _SpacingButton(
-                                label: '1.4',
-                                isSelected: typoSettings.lineSpacing < 1.5,
-                                onTap: () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    lineSpacing: 1.4,
-                                  );
-                                },
-                                activeTheme: activeTheme,
-                              ),
-                              _SpacingButton(
-                                label: '1.7',
-                                isSelected:
-                                    typoSettings.lineSpacing >= 1.5 &&
-                                    typoSettings.lineSpacing < 1.9,
-                                onTap: () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    lineSpacing: 1.7,
-                                  );
-                                },
-                                activeTheme: activeTheme,
-                              ),
-                              _SpacingButton(
-                                label: '2.0',
-                                isSelected: typoSettings.lineSpacing >= 1.9,
-                                onTap: () {
-                                  ref
-                                      .read(
-                                        typographySettingsStateProvider
-                                            .notifier,
-                                      )
-                                      .state = typoSettings.copyWith(
-                                    lineSpacing: 2.0,
-                                  );
-                                },
-                                activeTheme: activeTheme,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ],
-              ],
-            ),
+              ),
             ),
           ),
         ),

@@ -264,52 +264,57 @@ void main() {
   });
 
   group('overflow and slice budget guards', () {
-    test('a paragraph whose text fits but text+padding exceeds availableHeight is split cleanly without overflow', () {
-      // Craft a paragraph that fills nearly the entire available height on a fresh page.
-      // availableHeight for height=700: 700 - 16 - 28 - 24 = 632.0.
-      // Typography paragraphSpacing = 14.0.
-      // Text taking ~625.0px fits without padding (625 <= 632), but with padding takes 639.0px (> 632).
-      // The engine must split the paragraph cleanly without allowing height to overflow availableHeight.
-      final repeatedText = List.generate(
-        22,
-        (i) => 'Kalimat baris ke-$i dalam paragraf uji ini untuk mengukur tinggi rendering secara presisi.',
-      ).join(' ');
+    test(
+      'a paragraph whose text fits but text+padding exceeds availableHeight is split cleanly without overflow',
+      () {
+        // Craft a paragraph that fills nearly the entire available height on a fresh page.
+        // availableHeight for height=700: 700 - 16 - 28 - 24 = 632.0.
+        // Typography paragraphSpacing = 14.0.
+        // Text taking ~625.0px fits without padding (625 <= 632), but with padding takes 639.0px (> 632).
+        // The engine must split the paragraph cleanly without allowing height to overflow availableHeight.
+        final repeatedText = List.generate(
+          22,
+          (i) =>
+              'Kalimat baris ke-$i dalam paragraf uji ini untuk mengukur tinggi rendering secara presisi.',
+        ).join(' ');
 
-      final chapter = ReaderChapter(
-        id: 'overflow_guard_chap',
-        index: 0,
-        title: 'Overflow guard',
-        nodes: [
-          ContentNode(
-            id: 'overflow_para',
-            type: ContentNodeType.paragraph,
-            text: repeatedText,
-          ),
-        ],
-      );
-
-      final pages = _paginate(chapter, width: 420, height: 700);
-
-      // Verify each page's total height + padding does not exceed availableHeight.
-      const typography = TypographySettings(twoPageSpread: false);
-      const availableHeight = 700.0 - 16.0 - 28.0 - 24.0; // 632.0
-
-      for (final p in pages) {
-        var pageHeight = 0.0;
-        for (final s in p.slices) {
-          final tp = TextPainter(
-            text: TextSpan(text: s.textSlice, style: typography.bodyStyle()),
-            textDirection: TextDirection.ltr,
-          )..layout(maxWidth: 356.0); // 420 - 2 * 32
-          pageHeight += tp.height + typography.paragraphSpacing;
-          tp.dispose();
-        }
-        expect(
-          pageHeight,
-          lessThanOrEqualTo(availableHeight + 0.5),
-          reason: 'Page ${p.pageIndexInBook} height $pageHeight exceeds availableHeight $availableHeight',
+        final chapter = ReaderChapter(
+          id: 'overflow_guard_chap',
+          index: 0,
+          title: 'Overflow guard',
+          nodes: [
+            ContentNode(
+              id: 'overflow_para',
+              type: ContentNodeType.paragraph,
+              text: repeatedText,
+            ),
+          ],
         );
-      }
-    });
+
+        final pages = _paginate(chapter, width: 420, height: 700);
+
+        // Verify each page's total height + padding does not exceed availableHeight.
+        const typography = TypographySettings(twoPageSpread: false);
+        const availableHeight = 700.0 - 16.0 - 28.0 - 24.0; // 632.0
+
+        for (final p in pages) {
+          var pageHeight = 0.0;
+          for (final s in p.slices) {
+            final tp = TextPainter(
+              text: TextSpan(text: s.textSlice, style: typography.bodyStyle()),
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: 356.0); // 420 - 2 * 32
+            pageHeight += tp.height + typography.paragraphSpacing;
+            tp.dispose();
+          }
+          expect(
+            pageHeight,
+            lessThanOrEqualTo(availableHeight + 0.5),
+            reason:
+                'Page ${p.pageIndexInBook} height $pageHeight exceeds availableHeight $availableHeight',
+          );
+        }
+      },
+    );
   });
 }

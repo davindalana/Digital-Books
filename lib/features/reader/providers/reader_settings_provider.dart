@@ -46,5 +46,5 @@ final readerBrightnessDimmerProvider = StateProvider<double>((ref) => 0.0);
 /// Scanned PDF image enhancement settings per book
 final scanEnhancementConfigProvider =
     StateProvider.family<ScanEnhancementConfig, String>(
-  (ref, bookId) => const ScanEnhancementConfig(),
-);
+      (ref, bookId) => const ScanEnhancementConfig(),
+    );

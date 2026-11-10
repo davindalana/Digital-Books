@@ -19,7 +19,8 @@ class InBookSearchResult {
   final String snippet;
   final String prefixContext;
   final String suffixContext;
-  final List<Rect> boundingBoxes; // Normalized [0, 1] bounding boxes for PDF highlighting
+  final List<Rect>
+  boundingBoxes; // Normalized [0, 1] bounding boxes for PDF highlighting
   final bool isCrossPage; // True if match spans page boundary
   final bool isOcr; // True if from OCR extraction
 
@@ -207,8 +208,10 @@ class InBookSearchEngine {
         try {
           final list = jsonDecode(page.geometryJson) as List<dynamic>;
           return list
-              .map((item) =>
-                  SearchTokenGeometry.fromJson(item as Map<String, dynamic>))
+              .map(
+                (item) =>
+                    SearchTokenGeometry.fromJson(item as Map<String, dynamic>),
+              )
               .toList();
         } catch (_) {
           return const [];
@@ -372,10 +375,14 @@ class InBookSearchEngine {
             final preContextStart = math.max(0, startOffsetA - 30);
             final postContextEnd = math.min(lowerB.length, endOffsetB + 30);
 
-            final prefixContext =
-                pageA.plainText.substring(preContextStart, startOffsetA);
-            final suffixContext =
-                pageB.plainText.substring(endOffsetB, postContextEnd);
+            final prefixContext = pageA.plainText.substring(
+              preContextStart,
+              startOffsetA,
+            );
+            final suffixContext = pageB.plainText.substring(
+              endOffsetB,
+              postContextEnd,
+            );
             final snippet = '…$prefixContext$combinedMatch$suffixContext…';
 
             final sourcePdfPage = pageA.pageIndex + 1;
@@ -422,7 +429,8 @@ class InBookSearchEngine {
     String nodeId,
     int startOffset,
     int endOffset,
-  })? _mapToReaderDocument({
+  })?
+  _mapToReaderDocument({
     required ReaderDocument readerDocument,
     required int sourcePdfPage,
     required String matchedText,

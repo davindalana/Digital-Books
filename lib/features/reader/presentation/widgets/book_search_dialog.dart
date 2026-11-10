@@ -50,7 +50,8 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
   @override
   void initState() {
     super.initState();
-    _effectiveDoc = widget.readerDocument ??
+    _effectiveDoc =
+        widget.readerDocument ??
         (widget.document != null
             ? ReaderDocument.fromBookDocument(widget.document!)
             : null);
@@ -70,8 +71,9 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
     }
 
     try {
-      final count =
-          await widget.dbService!.getIndexedSearchPageCount(widget.bookId!);
+      final count = await widget.dbService!.getIndexedSearchPageCount(
+        widget.bookId!,
+      );
       if (count == 0 && mounted) {
         setState(() {
           _isIndexing = true;
@@ -275,7 +277,9 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                         horizontal: 18,
                         vertical: 6,
                       ),
-                      color: const Color(0xFF007AFF).withAlpha(isDark ? 30 : 20),
+                      color: const Color(
+                        0xFF007AFF,
+                      ).withAlpha(isDark ? 30 : 20),
                       child: Row(
                         children: [
                           const SizedBox(
@@ -319,8 +323,8 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                           _searchController.text.trim().length < 2
                               ? 'Ketik minimal 2 karakter untuk mencari'
                               : (_isSearching
-                                  ? 'Mencari...'
-                                  : '${_results.length} hasil ditemukan'),
+                                    ? 'Mencari...'
+                                    : '${_results.length} hasil ditemukan'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,

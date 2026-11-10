@@ -41,10 +41,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          fontFamily: 'Inter',
-          brightness: Brightness.light,
-        ),
+        theme: ThemeData(fontFamily: 'Inter', brightness: Brightness.light),
         home: Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           body: Center(
@@ -170,7 +167,9 @@ void main() {
                     TextSpan(
                       text: 'tikar pandan yang mulai koyak di pinggirannya',
                       style: TextStyle(
-                        backgroundColor: const Color(0xFF007AFF).withValues(alpha: 0.28),
+                        backgroundColor: const Color(
+                          0xFF007AFF,
+                        ).withValues(alpha: 0.28),
                         decoration: TextDecoration.underline,
                         decorationColor: const Color(0xFF007AFF),
                       ),
@@ -186,7 +185,10 @@ void main() {
               // Floating macOS Text Selection Contextual Toolbar
               Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2C2C2E),
                     borderRadius: BorderRadius.circular(14),
@@ -202,30 +204,49 @@ void main() {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Palette mini pills
-                      ...HighlightColorType.values.map((c) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Container(
-                              width: 18,
-                              height: 18,
-                              decoration: BoxDecoration(
-                                color: c.primaryColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white24, width: 1.2),
+                      ...HighlightColorType.values.map(
+                        (c) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: c.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white24,
+                                width: 1.2,
                               ),
                             ),
-                          )),
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Container(width: 1, height: 18, color: Colors.white24),
                       const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () {},
-                        icon: const Icon(Icons.edit_note_rounded, color: Colors.white, size: 16),
-                        label: const Text('Catatan', style: TextStyle(color: Colors.white, fontSize: 13)),
+                        icon: const Icon(
+                          Icons.edit_note_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'Catatan',
+                          style: TextStyle(color: Colors.white, fontSize: 13),
+                        ),
                       ),
                       TextButton.icon(
                         onPressed: () {},
-                        icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 15),
-                        label: const Text('Salin', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                        icon: const Icon(
+                          Icons.copy_rounded,
+                          color: Colors.white70,
+                          size: 15,
+                        ),
+                        label: const Text(
+                          'Salin',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
                       ),
                     ],
                   ),
@@ -273,7 +294,9 @@ void main() {
                           color: color.primaryColor,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected ? Colors.white : Colors.transparent,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.transparent,
                             width: 3.0,
                           ),
                           boxShadow: [
@@ -285,7 +308,11 @@ void main() {
                           ],
                         ),
                         child: isSelected
-                            ? const Icon(Icons.check, color: Colors.black87, size: 24)
+                            ? const Icon(
+                                Icons.check,
+                                color: Colors.black87,
+                                size: 24,
+                              )
                             : null,
                       ),
                       const SizedBox(height: 10),
@@ -294,7 +321,9 @@ void main() {
                         style: TextStyle(
                           color: isSelected ? Colors.white : Colors.white60,
                           fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -345,7 +374,10 @@ void main() {
             children: [
               // Top Action Bar with Active Bookmark
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -365,13 +397,28 @@ void main() {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Laut Bercerita', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('Halaman 12 dari 379 • Rumah Hantu Seyegan', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                          Text(
+                            'Laut Bercerita',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Halaman 12 dari 379 • Rumah Hantu Seyegan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.black54,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.collections_bookmark_rounded, size: 20),
+                      icon: const Icon(
+                        Icons.collections_bookmark_rounded,
+                        size: 20,
+                      ),
                       onPressed: () {},
                     ),
                     // Active Bookmark Button
@@ -383,9 +430,20 @@ void main() {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.bookmark_rounded, color: Color(0xFF007AFF), size: 22),
+                          Icon(
+                            Icons.bookmark_rounded,
+                            color: Color(0xFF007AFF),
+                            size: 22,
+                          ),
                           SizedBox(width: 6),
-                          Text('Tandai', style: TextStyle(color: Color(0xFF007AFF), fontWeight: FontWeight.bold, fontSize: 13)),
+                          Text(
+                            'Tandai',
+                            style: TextStyle(
+                              color: Color(0xFF007AFF),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -395,7 +453,10 @@ void main() {
               const SizedBox(height: 24),
               // Floating Toast Notification
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E1E22),
                   borderRadius: BorderRadius.circular(20),
@@ -410,11 +471,19 @@ void main() {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.bookmark_added_rounded, color: Color(0xFF007AFF), size: 18),
+                    Icon(
+                      Icons.bookmark_added_rounded,
+                      color: Color(0xFF007AFF),
+                      size: 18,
+                    ),
                     SizedBox(width: 10),
                     Text(
                       'Markah ditambahkan: Halaman 12',
-                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -436,7 +505,8 @@ void main() {
           pageIndex: 13,
           chapterId: 'ch-0',
           color: 'gold',
-          note: 'Pesan penting Mas Biru mengenai keberanian aktivis mahasiswa di Seyegan.',
+          note:
+              'Pesan penting Mas Biru mengenai keberanian aktivis mahasiswa di Seyegan.',
           createdAt: DateTime.now().subtract(const Duration(hours: 2)),
         ),
         BookAnnotation(
@@ -483,12 +553,15 @@ void main() {
       );
     });
 
-    testWidgets('06. Capture Navigation From Annotation Library', (tester) async {
+    testWidgets('06. Capture Navigation From Annotation Library', (
+      tester,
+    ) async {
       final annotationToJump = BookAnnotation(
         id: 'ann-target-nav',
         bookId: 'book-vis-laut',
         type: AnnotationType.note,
-        selectedText: 'Matamu harus tetap awas, Laut. Ketakutan yang kita biarkan tumbuh...',
+        selectedText:
+            'Matamu harus tetap awas, Laut. Ketakutan yang kita biarkan tumbuh...',
         pageIndex: 13,
         chapterId: 'ch-0',
         color: 'gold',
@@ -509,16 +582,30 @@ void main() {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF34C759).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.touch_app_rounded, color: Color(0xFF34C759), size: 16),
+                        Icon(
+                          Icons.touch_app_rounded,
+                          color: Color(0xFF34C759),
+                          size: 16,
+                        ),
                         SizedBox(width: 6),
-                        Text('Navigasi Presisi Lintas Mode', style: TextStyle(color: Color(0xFF34C759), fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          'Navigasi Presisi Lintas Mode',
+                          style: TextStyle(
+                            color: Color(0xFF34C759),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -541,17 +628,34 @@ void main() {
                 ),
                 child: Row(
                   children: [
-                    Container(width: 6, height: 50, decoration: BoxDecoration(color: const Color(0xFFD4AF37), borderRadius: BorderRadius.circular(3))),
+                    Container(
+                      width: 6,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('"${annotationToJump.selectedText}"', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                          Text(
+                            '"${annotationToJump.selectedText}"',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           const Row(
                             children: [
-                              Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF007AFF)),
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 14,
+                                color: Color(0xFF007AFF),
+                              ),
                               SizedBox(width: 4),
                               Expanded(
                                 child: Text(
@@ -569,7 +673,11 @@ void main() {
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF007AFF), size: 18),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFF007AFF),
+                      size: 18,
+                    ),
                   ],
                 ),
               ),
@@ -585,18 +693,28 @@ void main() {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Halaman 13 — Target Navigasi Terfokus:', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const Text(
+                      'Halaman 13 — Target Navigasi Terfokus:',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
                     const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFE082).withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFD4AF37), width: 1.2),
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37),
+                          width: 1.2,
+                        ),
                       ),
                       child: const Text(
                         '"Matamu harus tetap awas, Laut. Ketakutan yang kita biarkan tumbuh akan menjadi penjara paling kukuh bagi pikiran kita sendiri."',
-                        style: TextStyle(fontSize: 15, height: 1.6, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          fontSize: 15,
+                          height: 1.6,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ),
                   ],
@@ -616,9 +734,7 @@ void main() {
           type: AnnotationType.note,
           selectedText: 'RUMAH HANTU SEYEGAN',
           pageIndex: 1,
-          boundingBoxes: const [
-            Rect.fromLTWH(0.25, 0.12, 0.50, 0.04),
-          ],
+          boundingBoxes: const [Rect.fromLTWH(0.25, 0.12, 0.50, 0.04)],
           color: 'gold',
           note: 'Judul bagian awal.',
           createdAt: DateTime(2026),
@@ -627,7 +743,8 @@ void main() {
           id: 'ann-pdf-box-2',
           bookId: 'book-vis-laut',
           type: AnnotationType.highlight,
-          selectedText: 'Malam itu angin dingin berembus menembus celah-celah papan rumah di Seyegan.',
+          selectedText:
+              'Malam itu angin dingin berembus menembus celah-celah papan rumah di Seyegan.',
           pageIndex: 1,
           boundingBoxes: const [
             Rect.fromLTWH(0.12, 0.22, 0.76, 0.035),
@@ -649,7 +766,10 @@ void main() {
             children: [
               // Simulated scanned PDF page content
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 72),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 56,
+                  vertical: 72,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -701,7 +821,9 @@ void main() {
       );
     });
 
-    testWidgets('08. Capture Highlight in Reflowable Paginated Reader', (tester) async {
+    testWidgets('08. Capture Highlight in Reflowable Paginated Reader', (
+      tester,
+    ) async {
       final doc = createSampleDocument();
       final highlights = [
         Highlight(
@@ -748,50 +870,56 @@ void main() {
       );
     });
 
-    testWidgets('09. Capture Highlight in Reflowable Continuous Scrolling Reader', (tester) async {
-      final doc = createSampleDocument();
-      final highlights = [
-        Highlight(
-          id: 'hl-scroll-1',
-          bookId: 'book-vis-laut',
-          selectedText: 'tikar pandan yang mulai koyak di pinggirannya',
-          startPosition: 1,
-          endPosition: 1,
-          color: 'green',
-          anchorNodeId: 'node-p1',
-          startOffset: 110,
-          endOffset: 155,
-          anchorVersion: 1,
-          createdAt: DateTime.now(),
-        ),
-        Highlight(
-          id: 'hl-scroll-2',
-          bookId: 'book-vis-laut',
-          selectedText: 'Olympia. Suara ketukan logamnya berirama',
-          startPosition: 1,
-          endPosition: 1,
-          color: 'pink',
-          anchorNodeId: 'node-p2',
-          startOffset: 48,
-          endOffset: 87,
-          anchorVersion: 1,
-          createdAt: DateTime.now(),
-        ),
-      ];
+    testWidgets(
+      '09. Capture Highlight in Reflowable Continuous Scrolling Reader',
+      (tester) async {
+        final doc = createSampleDocument();
+        final highlights = [
+          Highlight(
+            id: 'hl-scroll-1',
+            bookId: 'book-vis-laut',
+            selectedText: 'tikar pandan yang mulai koyak di pinggirannya',
+            startPosition: 1,
+            endPosition: 1,
+            color: 'green',
+            anchorNodeId: 'node-p1',
+            startOffset: 110,
+            endOffset: 155,
+            anchorVersion: 1,
+            createdAt: DateTime.now(),
+          ),
+          Highlight(
+            id: 'hl-scroll-2',
+            bookId: 'book-vis-laut',
+            selectedText: 'Olympia. Suara ketukan logamnya berirama',
+            startPosition: 1,
+            endPosition: 1,
+            color: 'pink',
+            anchorNodeId: 'node-p2',
+            startOffset: 48,
+            endOffset: 87,
+            anchorVersion: 1,
+            createdAt: DateTime.now(),
+          ),
+        ];
 
-      await captureWidget(
-        tester: tester,
-        size: const Size(680, 720),
-        filename: '09_highlight_reflowable_scrolling.png',
-        widget: ScrollingReflowableReader(
-          document: doc,
-          theme: ReadingThemeType.sepia,
-          typography: const TypographySettings(fontSize: 17, lineSpacing: 1.7),
-          highlights: highlights,
-          onTapContent: () {},
-          onProgressChanged: (ch, p, pct, node, offset) {},
-        ),
-      );
-    });
+        await captureWidget(
+          tester: tester,
+          size: const Size(680, 720),
+          filename: '09_highlight_reflowable_scrolling.png',
+          widget: ScrollingReflowableReader(
+            document: doc,
+            theme: ReadingThemeType.sepia,
+            typography: const TypographySettings(
+              fontSize: 17,
+              lineSpacing: 1.7,
+            ),
+            highlights: highlights,
+            onTapContent: () {},
+            onProgressChanged: (ch, p, pct, node, offset) {},
+          ),
+        );
+      },
+    );
   });
 }

@@ -3,17 +3,9 @@ import 'dart:ui' show Rect;
 import 'package:drift/drift.dart' as drift;
 import '../../../../core/database/app_database.dart';
 
-enum AnnotationType {
-  highlight,
-  note,
-  bookmark,
-}
+enum AnnotationType { highlight, note, bookmark }
 
-enum AnchorStatus {
-  resolved,
-  unresolved,
-  approximate,
-}
+enum AnchorStatus { resolved, unresolved, approximate }
 
 /// Unified domain model for book annotations: highlights, notes, and bookmarks.
 /// Supports cross-mode anchor references across Original PDF and Reflowable reader.
@@ -177,12 +169,14 @@ class BookAnnotation {
     final boxesJson = boundingBoxes.isNotEmpty
         ? jsonEncode(
             boundingBoxes
-                .map((r) => {
-                      'left': r.left,
-                      'top': r.top,
-                      'width': r.width,
-                      'height': r.height,
-                    })
+                .map(
+                  (r) => {
+                    'left': r.left,
+                    'top': r.top,
+                    'width': r.width,
+                    'height': r.height,
+                  },
+                )
                 .toList(),
           )
         : null;
@@ -234,12 +228,14 @@ class BookAnnotation {
     final boxesJson = boundingBoxes.isNotEmpty
         ? jsonEncode(
             boundingBoxes
-                .map((r) => {
-                      'left': r.left,
-                      'top': r.top,
-                      'width': r.width,
-                      'height': r.height,
-                    })
+                .map(
+                  (r) => {
+                    'left': r.left,
+                    'top': r.top,
+                    'width': r.width,
+                    'height': r.height,
+                  },
+                )
                 .toList(),
           )
         : null;

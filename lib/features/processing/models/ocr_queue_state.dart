@@ -1,11 +1,4 @@
-enum OcrQueueStatus {
-  idle,
-  running,
-  paused,
-  completed,
-  cancelled,
-  error,
-}
+enum OcrQueueStatus { idle, running, paused, completed, cancelled, error }
 
 /// Represents the live status of the background OCR processing queue for a book.
 class OcrQueueProgress {
@@ -28,13 +21,13 @@ class OcrQueueProgress {
   });
 
   factory OcrQueueProgress.idle([String bookId = '']) => OcrQueueProgress(
-        bookId: bookId,
-        status: OcrQueueStatus.idle,
-        currentPageIndex: 0,
-        totalPages: 0,
-        completedPages: 0,
-        averagePageDurationMs: 0.0,
-      );
+    bookId: bookId,
+    status: OcrQueueStatus.idle,
+    currentPageIndex: 0,
+    totalPages: 0,
+    completedPages: 0,
+    averagePageDurationMs: 0.0,
+  );
 
   bool get isRunning => status == OcrQueueStatus.running;
   bool get isPaused => status == OcrQueueStatus.paused;

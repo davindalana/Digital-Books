@@ -96,8 +96,12 @@ void main() {
       await dbService.deleteBook('test-book-integrity-1');
 
       pages = await dbService.getOcrPagesForBook('test-book-integrity-1');
-      expect(pages.isEmpty, isTrue,
-          reason: 'Deleting parent Book must cascade and delete all associated OcrPages');
+      expect(
+        pages.isEmpty,
+        isTrue,
+        reason:
+            'Deleting parent Book must cascade and delete all associated OcrPages',
+      );
     });
 
     test('2. Resumability & Partial Failure Isolation Audit', () async {
@@ -149,8 +153,12 @@ void main() {
 
       // Verify resumed page determination
       final remainingCount = 20 - completedIndices.length;
-      expect(remainingCount, equals(17),
-          reason: 'Resumed session must skip the 3 completed pages and process only remaining 17');
+      expect(
+        remainingCount,
+        equals(17),
+        reason:
+            'Resumed session must skip the 3 completed pages and process only remaining 17',
+      );
     });
 
     test('3. Source PDF Hash Mismatch & Stale Cache Invalidation Audit', () async {
@@ -160,7 +168,9 @@ void main() {
       // Create a temporary mock PDF file
       final mockPdfFile = File('${tempDir.path}/mock_doc.pdf');
       await mockPdfFile.writeAsString('Original PDF Content Version 1');
-      final originalHash = await FileStorageService.computeFileSha256(mockPdfFile);
+      final originalHash = await FileStorageService.computeFileSha256(
+        mockPdfFile,
+      );
 
       await dbService.insertBook(
         BooksCompanion.insert(
@@ -202,7 +212,9 @@ void main() {
       expect(oldPages.length, equals(2));
 
       // Modify the PDF file on disk (simulating user replacing the scanned PDF with an updated scan)
-      await mockPdfFile.writeAsString('MODIFIED PDF Content Version 2 with new scans');
+      await mockPdfFile.writeAsString(
+        'MODIFIED PDF Content Version 2 with new scans',
+      );
       final newHash = await FileStorageService.computeFileSha256(mockPdfFile);
       expect(newHash, isNot(equals(originalHash)));
 
@@ -220,8 +232,12 @@ void main() {
       // Verify that old stale OCR pages were purged
       final refreshedBook = await dbService.getBookById(bookId);
       expect(refreshedBook?.fileHash, equals(newHash));
-      expect(refreshedBook?.processedBookPath, isNull,
-          reason: 'Stale processedBookPath must be invalidated upon PDF hash mismatch');
+      expect(
+        refreshedBook?.processedBookPath,
+        isNull,
+        reason:
+            'Stale processedBookPath must be invalidated upon PDF hash mismatch',
+      );
     });
 
     test('4. Idempotent Execution & Duplicate Prevention Audit', () async {
@@ -269,8 +285,12 @@ void main() {
       );
 
       final pages = await dbService.getOcrPagesForBook(bookId);
-      expect(pages.length, equals(1),
-          reason: 'Repeated insertion of same OCR page ID must update existing row without duplicating');
+      expect(
+        pages.length,
+        equals(1),
+        reason:
+            'Repeated insertion of same OCR page ID must update existing row without duplicating',
+      );
       expect(pages.first.charCount, equals(350));
     });
   });

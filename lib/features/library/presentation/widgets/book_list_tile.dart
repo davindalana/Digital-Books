@@ -410,10 +410,8 @@ class BookListTile extends ConsumerWidget {
       if (req != null && context.mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ReadingScreen(
-              book: req.book,
-              initialMode: req.mode,
-            ),
+            builder: (_) =>
+                ReadingScreen(book: req.book, initialMode: req.mode),
           ),
         );
       }

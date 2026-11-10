@@ -81,7 +81,10 @@ void main() {
       expect(res1.first.matchedText, equals('Laut'));
       expect(res1.first.sourcePdfPage, equals(1)); // 1-based page
       expect(res1.first.boundingBoxes.length, equals(1));
-      expect(res1.first.boundingBoxes.first, equals(const Rect.fromLTWH(0.1, 0.2, 0.15, 0.05)));
+      expect(
+        res1.first.boundingBoxes.first,
+        equals(const Rect.fromLTWH(0.1, 0.2, 0.15, 0.05)),
+      );
 
       // Substring search
       final res2 = await InBookSearchEngine.searchIndexedBook(
@@ -100,8 +103,12 @@ void main() {
           id: const drift.Value('${testBookId}_p0'),
           bookId: const drift.Value(testBookId),
           pageIndex: const drift.Value(0),
-          plainText: const drift.Value('Kamar itu terasa sangat dingin di malam hari.'),
-          rawText: const drift.Value('Kamar itu terasa sangat dingin di malam hari.'),
+          plainText: const drift.Value(
+            'Kamar itu terasa sangat dingin di malam hari.',
+          ),
+          rawText: const drift.Value(
+            'Kamar itu terasa sangat dingin di malam hari.',
+          ),
           geometryJson: const drift.Value('[]'),
           isOcr: const drift.Value(false),
           indexVersion: const drift.Value(1),
@@ -119,54 +126,57 @@ void main() {
       expect(results.first.matchedText, equals('sangat dingin di'));
     });
 
-    test('3. Dehyphenation across line breaks with dual token bounding boxes', () async {
-      // Line 1: 'men-' at box1, Line 2: 'jadi' at box2 -> PlainText: 'menjadi'
-      const box1 = Rect.fromLTWH(0.8, 0.3, 0.15, 0.04);
-      const box2 = Rect.fromLTWH(0.1, 0.35, 0.18, 0.04);
+    test(
+      '3. Dehyphenation across line breaks with dual token bounding boxes',
+      () async {
+        // Line 1: 'men-' at box1, Line 2: 'jadi' at box2 -> PlainText: 'menjadi'
+        const box1 = Rect.fromLTWH(0.8, 0.3, 0.15, 0.04);
+        const box2 = Rect.fromLTWH(0.1, 0.35, 0.18, 0.04);
 
-      final tokens = [
-        const SearchTokenGeometry(text: 'men', start: 0, end: 3, box: box1),
-        const SearchTokenGeometry(text: 'jadi', start: 3, end: 7, box: box2),
-      ];
+        final tokens = [
+          const SearchTokenGeometry(text: 'men', start: 0, end: 3, box: box1),
+          const SearchTokenGeometry(text: 'jadi', start: 3, end: 7, box: box2),
+        ];
 
-      await dbService.insertSearchPage(
-        BookSearchPagesCompanion(
-          id: const drift.Value('${testBookId}_p0'),
-          bookId: const drift.Value(testBookId),
-          pageIndex: const drift.Value(0),
-          plainText: const drift.Value('menjadi kenyataan'),
-          rawText: const drift.Value('men-\njadi kenyataan'),
-          geometryJson: drift.Value(
-            jsonEncode(tokens.map((t) => t.toJson()).toList()),
+        await dbService.insertSearchPage(
+          BookSearchPagesCompanion(
+            id: const drift.Value('${testBookId}_p0'),
+            bookId: const drift.Value(testBookId),
+            pageIndex: const drift.Value(0),
+            plainText: const drift.Value('menjadi kenyataan'),
+            rawText: const drift.Value('men-\njadi kenyataan'),
+            geometryJson: drift.Value(
+              jsonEncode(tokens.map((t) => t.toJson()).toList()),
+            ),
+            isOcr: const drift.Value(true),
+            indexVersion: const drift.Value(1),
+            indexedAt: drift.Value(DateTime.now()),
           ),
-          isOcr: const drift.Value(true),
-          indexVersion: const drift.Value(1),
-          indexedAt: drift.Value(DateTime.now()),
-        ),
-      );
+        );
 
-      // Search for unhyphenated word
-      final res1 = await InBookSearchEngine.searchIndexedBook(
-        bookId: testBookId,
-        dbService: dbService,
-        query: 'menjadi',
-      );
-      expect(res1.length, equals(1));
-      expect(res1.first.matchedText, equals('menjadi'));
-      expect(res1.first.boundingBoxes.length, equals(2));
-      expect(res1.first.boundingBoxes[0], equals(box1));
-      expect(res1.first.boundingBoxes[1], equals(box2));
+        // Search for unhyphenated word
+        final res1 = await InBookSearchEngine.searchIndexedBook(
+          bookId: testBookId,
+          dbService: dbService,
+          query: 'menjadi',
+        );
+        expect(res1.length, equals(1));
+        expect(res1.first.matchedText, equals('menjadi'));
+        expect(res1.first.boundingBoxes.length, equals(2));
+        expect(res1.first.boundingBoxes[0], equals(box1));
+        expect(res1.first.boundingBoxes[1], equals(box2));
 
-      // Search for hyphenated query variant "men-jadi"
-      final res2 = await InBookSearchEngine.searchIndexedBook(
-        bookId: testBookId,
-        dbService: dbService,
-        query: 'men-jadi',
-      );
-      expect(res2.length, equals(1));
-      expect(res2.first.matchedText, equals('menjadi'));
-      expect(res2.first.boundingBoxes.length, equals(2));
-    });
+        // Search for hyphenated query variant "men-jadi"
+        final res2 = await InBookSearchEngine.searchIndexedBook(
+          bookId: testBookId,
+          dbService: dbService,
+          query: 'men-jadi',
+        );
+        expect(res2.length, equals(1));
+        expect(res2.first.matchedText, equals('menjadi'));
+        expect(res2.first.boundingBoxes.length, equals(2));
+      },
+    );
 
     test('4. Cross-page phrase search across page boundary', () async {
       const boxPage0 = Rect.fromLTWH(0.7, 0.9, 0.25, 0.04);
@@ -236,62 +246,65 @@ void main() {
       expect(r.boundingBoxes[1], equals(boxPage1));
     });
 
-    test('5. Chrome filtering (Running headers & Standalone page numbers)', () async {
-      final tokens = [
-        // Running header chrome
-        const SearchTokenGeometry(
-          text: 'BAB I',
-          start: 0,
-          end: 5,
-          box: Rect.fromLTWH(0.4, 0.02, 0.2, 0.03),
-          isChrome: true,
-        ),
-        // Content
-        const SearchTokenGeometry(
-          text: 'BAB ini menceritakan kisah',
-          start: 6,
-          end: 32,
-          box: Rect.fromLTWH(0.1, 0.2, 0.6, 0.04),
-          isChrome: false,
-        ),
-      ];
-
-      await dbService.insertSearchPage(
-        BookSearchPagesCompanion(
-          id: const drift.Value('${testBookId}_p0'),
-          bookId: const drift.Value(testBookId),
-          pageIndex: const drift.Value(0),
-          plainText: const drift.Value('BAB I BAB ini menceritakan kisah'),
-          rawText: const drift.Value('BAB I\nBAB ini menceritakan kisah'),
-          geometryJson: drift.Value(
-            jsonEncode(tokens.map((t) => t.toJson()).toList()),
+    test(
+      '5. Chrome filtering (Running headers & Standalone page numbers)',
+      () async {
+        final tokens = [
+          // Running header chrome
+          const SearchTokenGeometry(
+            text: 'BAB I',
+            start: 0,
+            end: 5,
+            box: Rect.fromLTWH(0.4, 0.02, 0.2, 0.03),
+            isChrome: true,
           ),
-          isOcr: const drift.Value(false),
-          indexVersion: const drift.Value(1),
-          indexedAt: drift.Value(DateTime.now()),
-        ),
-      );
+          // Content
+          const SearchTokenGeometry(
+            text: 'BAB ini menceritakan kisah',
+            start: 6,
+            end: 32,
+            box: Rect.fromLTWH(0.1, 0.2, 0.6, 0.04),
+            isChrome: false,
+          ),
+        ];
 
-      // When includeChrome = false (default)
-      final filtered = await InBookSearchEngine.searchIndexedBook(
-        bookId: testBookId,
-        dbService: dbService,
-        query: 'BAB',
-        includeChrome: false,
-      );
-      // Only the content 'BAB' should be returned, chrome 'BAB I' filtered out
-      expect(filtered.length, equals(1));
-      expect(filtered.first.startOffset, equals(6));
+        await dbService.insertSearchPage(
+          BookSearchPagesCompanion(
+            id: const drift.Value('${testBookId}_p0'),
+            bookId: const drift.Value(testBookId),
+            pageIndex: const drift.Value(0),
+            plainText: const drift.Value('BAB I BAB ini menceritakan kisah'),
+            rawText: const drift.Value('BAB I\nBAB ini menceritakan kisah'),
+            geometryJson: drift.Value(
+              jsonEncode(tokens.map((t) => t.toJson()).toList()),
+            ),
+            isOcr: const drift.Value(false),
+            indexVersion: const drift.Value(1),
+            indexedAt: drift.Value(DateTime.now()),
+          ),
+        );
 
-      // When includeChrome = true
-      final unfiltered = await InBookSearchEngine.searchIndexedBook(
-        bookId: testBookId,
-        dbService: dbService,
-        query: 'BAB',
-        includeChrome: true,
-      );
-      expect(unfiltered.length, equals(2));
-    });
+        // When includeChrome = false (default)
+        final filtered = await InBookSearchEngine.searchIndexedBook(
+          bookId: testBookId,
+          dbService: dbService,
+          query: 'BAB',
+          includeChrome: false,
+        );
+        // Only the content 'BAB' should be returned, chrome 'BAB I' filtered out
+        expect(filtered.length, equals(1));
+        expect(filtered.first.startOffset, equals(6));
+
+        // When includeChrome = true
+        final unfiltered = await InBookSearchEngine.searchIndexedBook(
+          bookId: testBookId,
+          dbService: dbService,
+          query: 'BAB',
+          includeChrome: true,
+        );
+        expect(unfiltered.length, equals(2));
+      },
+    );
 
     test('6. Result ordering by page ascending and offset ascending', () async {
       await dbService.insertSearchPage(

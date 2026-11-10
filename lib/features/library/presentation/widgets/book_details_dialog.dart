@@ -303,11 +303,12 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                   ),
                                   _DetailRow(
                                     label: 'Reflowable',
-                                    value: _currentBook.processedBookPath != null
+                                    value:
+                                        _currentBook.processedBookPath != null
                                         ? 'Tersedia (OCR Selesai)'
                                         : (_currentBook.isScanned
-                                            ? 'Belum diproses'
-                                            : 'Bawaan'),
+                                              ? 'Belum diproses'
+                                              : 'Bawaan'),
                                   ),
                                   _DetailRow(
                                     label: 'Added',
@@ -361,19 +362,22 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                   if (!_isEditing && _currentBook.isScanned)
                     Consumer(
                       builder: (context, ref, _) {
-                        final ocrProgressAsync =
-                            ref.watch(ocrQueueProgressStreamProvider);
+                        final ocrProgressAsync = ref.watch(
+                          ocrQueueProgressStreamProvider,
+                        );
                         final ocrProgress = ocrProgressAsync.valueOrNull;
-                        final isRunning = ocrProgress != null &&
+                        final isRunning =
+                            ocrProgress != null &&
                             ocrProgress.bookId == _currentBook.id &&
                             ocrProgress.isRunning;
-                        final isPaused = ocrProgress != null &&
+                        final isPaused =
+                            ocrProgress != null &&
                             ocrProgress.bookId == _currentBook.id &&
                             ocrProgress.isPaused;
 
                         if (isRunning || isPaused) {
-                          final pct =
-                              (ocrProgress.progressPercentage * 100).toInt();
+                          final pct = (ocrProgress.progressPercentage * 100)
+                              .toInt();
                           return Container(
                             margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(12),
@@ -414,8 +418,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                 const SizedBox(height: 8),
                                 LinearProgressIndicator(
                                   value: ocrProgress.progressPercentage,
-                                  backgroundColor:
-                                      const Color(0xFF007AFF).withAlpha(30),
+                                  backgroundColor: const Color(
+                                    0xFF007AFF,
+                                  ).withAlpha(30),
                                   valueColor: const AlwaysStoppedAnimation(
                                     Color(0xFF007AFF),
                                   ),
@@ -454,8 +459,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                           },
                                           child: Text(
                                             isPaused ? 'Lanjutkan' : 'Jeda',
-                                            style:
-                                                const TextStyle(fontSize: 12),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                         TextButton(
@@ -530,7 +536,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                 ),
                                 OutlinedButton(
                                   onPressed: () {
-                                    ref.read(backgroundOcrQueueProvider).start(
+                                    ref
+                                        .read(backgroundOcrQueueProvider)
+                                        .start(
                                           bookId: _currentBook.id,
                                           pdfPath: _currentBook.originalPdfPath,
                                           autoReconstruct: true,
@@ -643,16 +651,13 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                             ),
                           ),
                           onPressed: () {
-                            final mode = (_currentBook.processedBookPath !=
-                                        null ||
+                            final mode =
+                                (_currentBook.processedBookPath != null ||
                                     !_currentBook.isScanned)
                                 ? ReadingMode.reflowable
                                 : ReadingMode.originalPdf;
                             Navigator.of(context).pop(
-                              BookLaunchRequest(
-                                book: _currentBook,
-                                mode: mode,
-                              ),
+                              BookLaunchRequest(book: _currentBook, mode: mode),
                             );
                           },
                           child: const Text('Read Book'),

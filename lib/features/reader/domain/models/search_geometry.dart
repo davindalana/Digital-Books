@@ -6,7 +6,8 @@ class SearchTokenGeometry {
   final int start;
   final int end;
   final Rect box; // Normalized coordinates: left, top, width, height in [0, 1]
-  final bool isChrome; // Running header, running footer, or standalone page number
+  final bool
+  isChrome; // Running header, running footer, or standalone page number
 
   const SearchTokenGeometry({
     required this.text,
@@ -17,15 +18,16 @@ class SearchTokenGeometry {
   });
 
   Map<String, dynamic> toJson() => {
-        'text': text,
-        'start': start,
-        'end': end,
-        'box': [box.left, box.top, box.width, box.height],
-        'isChrome': isChrome,
-      };
+    'text': text,
+    'start': start,
+    'end': end,
+    'box': [box.left, box.top, box.width, box.height],
+    'isChrome': isChrome,
+  };
 
   factory SearchTokenGeometry.fromJson(Map<String, dynamic> json) {
-    final b = (json['box'] as List<dynamic>?)
+    final b =
+        (json['box'] as List<dynamic>?)
             ?.map((e) => (e as num).toDouble())
             .toList() ??
         [0.0, 0.0, 0.0, 0.0];

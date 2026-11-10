@@ -16,8 +16,12 @@ void main() {
     const String downloadsDir = '/Users/davindalana/Downloads';
     const String evidenceDir = 'docs/visual_evidence/native_transitions';
 
-    final lautBerceritaFile = File('$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf');
-    final bicaraFile = File('$downloadsDir/Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
+    final lautBerceritaFile = File(
+      '$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf',
+    );
+    final bicaraFile = File(
+      '$downloadsDir/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
+    );
 
     setUpAll(() {
       Directory(evidenceDir).createSync(recursive: true);
@@ -26,10 +30,13 @@ void main() {
     });
 
     Future<Uint8List?> captureBoundaryBytes(GlobalKey key) async {
-      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return null;
       final image = await boundary.toImage(pixelRatio: 1.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
       image.dispose();
       return byteData?.buffer.asUint8List();
     }
@@ -56,259 +63,320 @@ void main() {
     // =========================================================================
     // SCENARIO 1: HIGH-FREQUENCY 60Hz/120Hz SINGLE FORWARD & BACKWARD TURN
     // =========================================================================
-    testWidgets('1. High-Frequency Sampling: Single Forward & Backward (35+ frames @ 10ms)', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      final readerKey = GlobalKey();
-      int currentPage = 1;
+    testWidgets(
+      '1. High-Frequency Sampling: Single Forward & Backward (35+ frames @ 10ms)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        final readerKey = GlobalKey();
+        int currentPage = 1;
 
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: RepaintBoundary(
-                key: readerKey,
-                child: OriginalPdfReader(
-                  pdfPath: lautBerceritaFile.path,
-                  initialPage: 1,
-                  theme: ReadingThemeType.warmPaper,
-                  onPageChanged: (p, t) => currentPage = p,
-                  onTapContent: () {},
+        await tester.runAsync(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: readerKey,
+                  child: OriginalPdfReader(
+                    pdfPath: lautBerceritaFile.path,
+                    initialPage: 1,
+                    theme: ReadingThemeType.warmPaper,
+                    onPageChanged: (p, t) => currentPage = p,
+                    onTapContent: () {},
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
-        for (var i = 0; i < 40; i++) {
-          if (!state.isLoading && state.document != null) break;
-          await Future.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-        }
-
-        expect(state.currentPage, equals(1));
-        print('\n===============================================================');
-        print('SCENARIO 1: HIGH-FREQUENCY TRANSITION SAMPLING (35+ FRAMES @ 10ms)');
-        print('===============================================================');
-
-        // Trigger Next Page
-        state.nextPage();
-
-        int sampledFrames = 0;
-        int blankFramesDetected = 0;
-
-        // Sample at 10ms intervals (100 Hz sampling rate across 350ms window = 35 frames)
-        for (int i = 0; i < 35; i++) {
-          await Future.delayed(const Duration(milliseconds: 10));
-          await tester.pump();
-          sampledFrames++;
-
-          final bytes = await captureBoundaryBytes(readerKey);
-          if (bytes != null) {
-            final isBlank = isFrameBlankWhite(bytes, 1200, 800);
-            if (isBlank) {
-              blankFramesDetected++;
-              print('FRAME $i: CRITICAL DEFECT! BLANK WHITE FRAME DETECTED IN COMPOSITOR!');
-            }
+          final state = tester.state<OriginalPdfReaderState>(
+            find.byType(OriginalPdfReader),
+          );
+          for (var i = 0; i < 40; i++) {
+            if (!state.isLoading && state.document != null) break;
+            await Future.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
           }
 
-          // Save snapshots at frames 0, 8, 17, 26, 34
-          if (i == 0 || i == 8 || i == 17 || i == 26 || i == 34) {
-            final boundary = readerKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-            if (boundary != null) {
-              final img = await boundary.toImage(pixelRatio: 1.0);
-              final png = await img.toByteData(format: ui.ImageByteFormat.png);
-              if (png != null) {
-                await File('$evidenceDir/turn_frame_${i.toString().padLeft(2, '0')}.png')
-                    .writeAsBytes(png.buffer.asUint8List());
+          expect(state.currentPage, equals(1));
+          print(
+            '\n===============================================================',
+          );
+          print(
+            'SCENARIO 1: HIGH-FREQUENCY TRANSITION SAMPLING (35+ FRAMES @ 10ms)',
+          );
+          print(
+            '===============================================================',
+          );
+
+          // Trigger Next Page
+          state.nextPage();
+
+          int sampledFrames = 0;
+          int blankFramesDetected = 0;
+
+          // Sample at 10ms intervals (100 Hz sampling rate across 350ms window = 35 frames)
+          for (int i = 0; i < 35; i++) {
+            await Future.delayed(const Duration(milliseconds: 10));
+            await tester.pump();
+            sampledFrames++;
+
+            final bytes = await captureBoundaryBytes(readerKey);
+            if (bytes != null) {
+              final isBlank = isFrameBlankWhite(bytes, 1200, 800);
+              if (isBlank) {
+                blankFramesDetected++;
+                print(
+                  'FRAME $i: CRITICAL DEFECT! BLANK WHITE FRAME DETECTED IN COMPOSITOR!',
+                );
               }
-              img.dispose();
+            }
+
+            // Save snapshots at frames 0, 8, 17, 26, 34
+            if (i == 0 || i == 8 || i == 17 || i == 26 || i == 34) {
+              final boundary =
+                  readerKey.currentContext?.findRenderObject()
+                      as RenderRepaintBoundary?;
+              if (boundary != null) {
+                final img = await boundary.toImage(pixelRatio: 1.0);
+                final png = await img.toByteData(
+                  format: ui.ImageByteFormat.png,
+                );
+                if (png != null) {
+                  await File(
+                    '$evidenceDir/turn_frame_${i.toString().padLeft(2, '0')}.png',
+                  ).writeAsBytes(png.buffer.asUint8List());
+                }
+                img.dispose();
+              }
             }
           }
-        }
 
-        // Wait to settle
-        for (int s = 0; s < 10; s++) {
-          await Future.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-        }
+          // Wait to settle
+          for (int s = 0; s < 10; s++) {
+            await Future.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
+          }
 
-        print('Sampled $sampledFrames frames @ 10ms. Blank Frames Detected: $blankFramesDetected');
-        print('Final state: currentPage=${state.currentPage}, isFlipping=${state.isFlipping}, callback currentPage=$currentPage');
-        expect(blankFramesDetected, equals(0), reason: 'Zero blank white frames must occur at 100 Hz sampling');
-        expect(state.currentPage, greaterThanOrEqualTo(1));
-      });
-    });
+          print(
+            'Sampled $sampledFrames frames @ 10ms. Blank Frames Detected: $blankFramesDetected',
+          );
+          print(
+            'Final state: currentPage=${state.currentPage}, isFlipping=${state.isFlipping}, callback currentPage=$currentPage',
+          );
+          expect(
+            blankFramesDetected,
+            equals(0),
+            reason: 'Zero blank white frames must occur at 100 Hz sampling',
+          );
+          expect(state.currentPage, greaterThanOrEqualTo(1));
+        });
+      },
+    );
 
     // =========================================================================
     // SCENARIO 2: IMMEDIATE REVERSE DURING ACTIVE 3D CURL
     // =========================================================================
-    testWidgets('2. Immediate Reverse: Mid-flight direction change without flash or lockup', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      final readerKey = GlobalKey();
+    testWidgets(
+      '2. Immediate Reverse: Mid-flight direction change without flash or lockup',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        final readerKey = GlobalKey();
 
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: RepaintBoundary(
-                key: readerKey,
-                child: OriginalPdfReader(
-                  pdfPath: lautBerceritaFile.path,
-                  initialPage: 2,
-                  theme: ReadingThemeType.warmPaper,
-                  onPageChanged: (_, total) {},
-                  onTapContent: () {},
+        await tester.runAsync(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: readerKey,
+                  child: OriginalPdfReader(
+                    pdfPath: lautBerceritaFile.path,
+                    initialPage: 2,
+                    theme: ReadingThemeType.warmPaper,
+                    onPageChanged: (_, total) {},
+                    onTapContent: () {},
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
-        for (var i = 0; i < 40; i++) {
-          if (!state.isLoading && state.document != null) break;
-          await Future.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-        }
-
-        // Flip next, then immediately reverse after 60ms (during active curl)
-        state.nextPage();
-        await Future.delayed(const Duration(milliseconds: 60));
-        await tester.pump();
-
-        // Immediate reverse
-        state.previousPage();
-
-        int blankCount = 0;
-        for (int i = 0; i < 25; i++) {
-          await Future.delayed(const Duration(milliseconds: 12));
-          await tester.pump();
-          final bytes = await captureBoundaryBytes(readerKey);
-          if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
-            blankCount++;
+          final state = tester.state<OriginalPdfReaderState>(
+            find.byType(OriginalPdfReader),
+          );
+          for (var i = 0; i < 40; i++) {
+            if (!state.isLoading && state.document != null) break;
+            await Future.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
           }
-        }
 
-        await Future.delayed(const Duration(milliseconds: 100));
-        await tester.pump();
+          // Flip next, then immediately reverse after 60ms (during active curl)
+          state.nextPage();
+          await Future.delayed(const Duration(milliseconds: 60));
+          await tester.pump();
 
-        print('Immediate Reverse Audit: Blank Frames: $blankCount');
-        expect(blankCount, equals(0), reason: 'Immediate reverse mid-flight must not produce blank frames');
-      });
-    });
+          // Immediate reverse
+          state.previousPage();
+
+          int blankCount = 0;
+          for (int i = 0; i < 25; i++) {
+            await Future.delayed(const Duration(milliseconds: 12));
+            await tester.pump();
+            final bytes = await captureBoundaryBytes(readerKey);
+            if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
+              blankCount++;
+            }
+          }
+
+          await Future.delayed(const Duration(milliseconds: 100));
+          await tester.pump();
+
+          print('Immediate Reverse Audit: Blank Frames: $blankCount');
+          expect(
+            blankCount,
+            equals(0),
+            reason:
+                'Immediate reverse mid-flight must not produce blank frames',
+          );
+        });
+      },
+    );
 
     // =========================================================================
     // SCENARIO 3: RAPID NAVIGATION COALESCING (8 RAPID FLIPS)
     // =========================================================================
-    testWidgets('3. Rapid Navigation: 8 rapid flips without race condition or blank canvas', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      final readerKey = GlobalKey();
+    testWidgets(
+      '3. Rapid Navigation: 8 rapid flips without race condition or blank canvas',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        final readerKey = GlobalKey();
 
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: RepaintBoundary(
-                key: readerKey,
-                child: OriginalPdfReader(
-                  pdfPath: lautBerceritaFile.path,
-                  initialPage: 1,
-                  theme: ReadingThemeType.warmPaper,
-                  onPageChanged: (_, total) {},
-                  onTapContent: () {},
+        await tester.runAsync(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: readerKey,
+                  child: OriginalPdfReader(
+                    pdfPath: lautBerceritaFile.path,
+                    initialPage: 1,
+                    theme: ReadingThemeType.warmPaper,
+                    onPageChanged: (_, total) {},
+                    onTapContent: () {},
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
-        for (var i = 0; i < 40; i++) {
-          if (!state.isLoading && state.document != null) break;
-          await Future.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-        }
-
-        int blankFrames = 0;
-        // Fire 8 rapid flips with 20ms gap
-        for (int flip = 0; flip < 8; flip++) {
-          state.nextPage();
-          await Future.delayed(const Duration(milliseconds: 20));
-          await tester.pump();
-          final bytes = await captureBoundaryBytes(readerKey);
-          if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
-            blankFrames++;
+          final state = tester.state<OriginalPdfReaderState>(
+            find.byType(OriginalPdfReader),
+          );
+          for (var i = 0; i < 40; i++) {
+            if (!state.isLoading && state.document != null) break;
+            await Future.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
           }
-        }
 
-        // Follow the settling queue
-        for (int i = 0; i < 30; i++) {
-          await Future.delayed(const Duration(milliseconds: 15));
-          await tester.pump();
-          final bytes = await captureBoundaryBytes(readerKey);
-          if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
-            blankFrames++;
+          int blankFrames = 0;
+          // Fire 8 rapid flips with 20ms gap
+          for (int flip = 0; flip < 8; flip++) {
+            state.nextPage();
+            await Future.delayed(const Duration(milliseconds: 20));
+            await tester.pump();
+            final bytes = await captureBoundaryBytes(readerKey);
+            if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
+              blankFrames++;
+            }
           }
-        }
 
-        print('Rapid Navigation Coalescing: Blank Frames: $blankFrames');
-        expect(blankFrames, equals(0), reason: 'Rapid navigation coalescing must never produce a blank frame');
-      });
-    });
+          // Follow the settling queue
+          for (int i = 0; i < 30; i++) {
+            await Future.delayed(const Duration(milliseconds: 15));
+            await tester.pump();
+            final bytes = await captureBoundaryBytes(readerKey);
+            if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
+              blankFrames++;
+            }
+          }
+
+          print('Rapid Navigation Coalescing: Blank Frames: $blankFrames');
+          expect(
+            blankFrames,
+            equals(0),
+            reason:
+                'Rapid navigation coalescing must never produce a blank frame',
+          );
+        });
+      },
+    );
 
     // =========================================================================
     // SCENARIO 4: LARGE 64MB SCANNED PDF TRANSITION STABILITY
     // =========================================================================
-    testWidgets('4. Large 64MB PDF: Transition stability with cold & warm cache', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      final readerKey = GlobalKey();
+    testWidgets(
+      '4. Large 64MB PDF: Transition stability with cold & warm cache',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        final readerKey = GlobalKey();
 
-      await tester.runAsync(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: RepaintBoundary(
-                key: readerKey,
-                child: OriginalPdfReader(
-                  pdfPath: bicaraFile.path,
-                  initialPage: 32,
-                  theme: ReadingThemeType.warmPaper,
-                  onPageChanged: (_, total) {},
-                  onTapContent: () {},
+        await tester.runAsync(() async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: readerKey,
+                  child: OriginalPdfReader(
+                    pdfPath: bicaraFile.path,
+                    initialPage: 32,
+                    theme: ReadingThemeType.warmPaper,
+                    onPageChanged: (_, total) {},
+                    onTapContent: () {},
+                  ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        final state = tester.state<OriginalPdfReaderState>(find.byType(OriginalPdfReader));
-        for (var i = 0; i < 40; i++) {
-          if (!state.isLoading && state.document != null) break;
-          await Future.delayed(const Duration(milliseconds: 50));
-          await tester.pump();
-        }
-
-        expect(state.currentPage, equals(32));
-        print('\n===============================================================');
-        print('SCENARIO 4: 64MB SCANNED PDF TRANSITION AUDIT (Bicara Itu Ada Seninya)');
-        print('===============================================================');
-
-        // Turn page 32 -> 33
-        state.nextPage();
-        int blankCount = 0;
-        for (int i = 0; i < 30; i++) {
-          await Future.delayed(const Duration(milliseconds: 12));
-          await tester.pump();
-          final bytes = await captureBoundaryBytes(readerKey);
-          if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
-            blankCount++;
+          final state = tester.state<OriginalPdfReaderState>(
+            find.byType(OriginalPdfReader),
+          );
+          for (var i = 0; i < 40; i++) {
+            if (!state.isLoading && state.document != null) break;
+            await Future.delayed(const Duration(milliseconds: 50));
+            await tester.pump();
           }
-        }
 
-        print('64MB PDF Transition Audit: Blank Frames: $blankCount');
-        expect(blankCount, equals(0), reason: 'Heavy 64MB scanned PDF must maintain 100% frame stability');
-      });
-    });
+          expect(state.currentPage, equals(32));
+          print(
+            '\n===============================================================',
+          );
+          print(
+            'SCENARIO 4: 64MB SCANNED PDF TRANSITION AUDIT (Bicara Itu Ada Seninya)',
+          );
+          print(
+            '===============================================================',
+          );
+
+          // Turn page 32 -> 33
+          state.nextPage();
+          int blankCount = 0;
+          for (int i = 0; i < 30; i++) {
+            await Future.delayed(const Duration(milliseconds: 12));
+            await tester.pump();
+            final bytes = await captureBoundaryBytes(readerKey);
+            if (bytes != null && isFrameBlankWhite(bytes, 1200, 800)) {
+              blankCount++;
+            }
+          }
+
+          print('64MB PDF Transition Audit: Blank Frames: $blankCount');
+          expect(
+            blankCount,
+            equals(0),
+            reason: 'Heavy 64MB scanned PDF must maintain 100% frame stability',
+          );
+        });
+      },
+    );
   });
 }

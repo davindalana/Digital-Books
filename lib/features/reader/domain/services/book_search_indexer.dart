@@ -44,7 +44,9 @@ class BookSearchIndexer {
     if (book != null && book.fileHash != null && book.fileHash != currentHash) {
       await dbService.deleteSearchPagesForBook(bookId);
       await dbService.insertBook(
-        book.toCompanion(true).copyWith(
+        book
+            .toCompanion(true)
+            .copyWith(
               fileHash: drift.Value(currentHash),
               updatedAt: drift.Value(DateTime.now()),
             ),
@@ -57,20 +59,27 @@ class BookSearchIndexer {
     final sfExtractor = sf.PdfTextExtractor(sfDoc);
 
     final effectiveStart = (startPage ?? 0).clamp(0, totalBookPages - 1);
-    final effectiveEnd =
-        (endPage ?? (totalBookPages - 1)).clamp(effectiveStart, totalBookPages - 1);
+    final effectiveEnd = (endPage ?? (totalBookPages - 1)).clamp(
+      effectiveStart,
+      totalBookPages - 1,
+    );
     final targetCount = effectiveEnd - effectiveStart + 1;
 
     // Check existing indexed pages
     final existingPages = await dbService.getSearchPagesForBook(bookId);
     final indexedSet = existingPages
-        .where((p) => p.fileHash == currentHash && p.indexVersion == currentVersion)
+        .where(
+          (p) => p.fileHash == currentHash && p.indexVersion == currentVersion,
+        )
         .map((p) => p.pageIndex)
         .toSet();
 
     // Check existing OCR completed pages
     final ocrPages = await dbService.getOcrPagesForBook(bookId);
-    final ocrMap = {for (final p in ocrPages) if (p.status == 'completed') p.pageIndex: p};
+    final ocrMap = {
+      for (final p in ocrPages)
+        if (p.status == 'completed') p.pageIndex: p,
+    };
 
     int newlyIndexed = 0;
 
@@ -149,13 +158,13 @@ class BookSearchIndexer {
   /// Visible for testing OCR lines bounding-box processing and token geometry alignment.
   @visibleForTesting
   static ({String plainText, String rawText, List<SearchTokenGeometry> tokens})
-      processOcrLinesForTesting(List<OcrLine> lines, Size pageSize) {
+  processOcrLinesForTesting(List<OcrLine> lines, Size pageSize) {
     return _processOcrLines(lines, pageSize);
   }
 
   /// Processes Apple Vision OCR lines into normalized dehyphenated plainText and token geometries.
   static ({String plainText, String rawText, List<SearchTokenGeometry> tokens})
-      _processOcrLines(List<OcrLine> lines, Size pageSize) {
+  _processOcrLines(List<OcrLine> lines, Size pageSize) {
     final rawBuffer = StringBuffer();
     final plainBuffer = StringBuffer();
     final tokens = <SearchTokenGeometry>[];
@@ -174,11 +183,15 @@ class BookSearchIndexer {
       final isDigitOnly = RegExp(r'^\d+$').hasMatch(lineText);
       final isTopMargin = line.box.top < 0.055;
       final isBottomMargin = line.box.top > 0.945;
-      final isChrome = (isDigitOnly && (isTopMargin || isBottomMargin)) ||
+      final isChrome =
+          (isDigitOnly && (isTopMargin || isBottomMargin)) ||
           (isTopMargin && lineText.length < 50);
 
       // Split words inside line
-      final words = lineText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final words = lineText
+          .split(RegExp(r'\s+'))
+          .where((w) => w.isNotEmpty)
+          .toList();
       if (words.isEmpty) continue;
 
       final totalLineLen = lineText.isNotEmpty ? lineText.length : 1;
@@ -198,7 +211,10 @@ class BookSearchIndexer {
         final wordFractionWidth = word.length / totalLineLen;
 
         final wordBox = Rect.fromLTWH(
-          (line.box.left + (wordFractionStart * line.box.width)).clamp(0.0, 1.0),
+          (line.box.left + (wordFractionStart * line.box.width)).clamp(
+            0.0,
+            1.0,
+          ),
           line.box.top.clamp(0.0, 1.0),
           (wordFractionWidth * line.box.width).clamp(0.0, 1.0),
           line.box.height.clamp(0.0, 1.0),
@@ -214,28 +230,35 @@ class BookSearchIndexer {
 
           final prefixLen = pendingHyphenPrefix.length;
           // First token fragment (on previous line)
-          tokens.add(SearchTokenGeometry(
-            text: pendingHyphenPrefix,
-            start: startPos,
-            end: startPos + prefixLen,
-            box: pendingHyphenBox ?? wordBox,
-            isChrome: isChrome,
-          ));
+          tokens.add(
+            SearchTokenGeometry(
+              text: pendingHyphenPrefix,
+              start: startPos,
+              end: startPos + prefixLen,
+              box: pendingHyphenBox ?? wordBox,
+              isChrome: isChrome,
+            ),
+          );
           // Second token fragment (on current line)
-          tokens.add(SearchTokenGeometry(
-            text: word,
-            start: startPos + prefixLen,
-            end: endPos,
-            box: wordBox,
-            isChrome: isChrome,
-          ));
+          tokens.add(
+            SearchTokenGeometry(
+              text: word,
+              start: startPos + prefixLen,
+              end: endPos,
+              box: wordBox,
+              isChrome: isChrome,
+            ),
+          );
 
           pendingHyphenPrefix = null;
           pendingHyphenBox = null;
           continue;
         }
 
-        if (isLastWordInLine && word.endsWith('-') && word.length > 2 && i < lines.length - 1) {
+        if (isLastWordInLine &&
+            word.endsWith('-') &&
+            word.length > 2 &&
+            i < lines.length - 1) {
           // Store pending hyphenation
           pendingHyphenPrefix = word.substring(0, word.length - 1);
           pendingHyphenBox = wordBox;
@@ -247,13 +270,15 @@ class BookSearchIndexer {
         final endPos = plainBuffer.length;
         plainBuffer.write(' ');
 
-        tokens.add(SearchTokenGeometry(
-          text: word,
-          start: startPos,
-          end: endPos,
-          box: wordBox,
-          isChrome: isChrome,
-        ));
+        tokens.add(
+          SearchTokenGeometry(
+            text: word,
+            start: startPos,
+            end: endPos,
+            box: wordBox,
+            isChrome: isChrome,
+          ),
+        );
       }
     }
 
@@ -266,7 +291,7 @@ class BookSearchIndexer {
 
   /// Processes Syncfusion digital PDF lines into normalized dehyphenated plainText and token geometries.
   static ({String plainText, String rawText, List<SearchTokenGeometry> tokens})
-      _processDigitalLines(List<sf.TextLine> lines, Size pageSize) {
+  _processDigitalLines(List<sf.TextLine> lines, Size pageSize) {
     final rawBuffer = StringBuffer();
     final plainBuffer = StringBuffer();
     final tokens = <SearchTokenGeometry>[];
@@ -294,7 +319,8 @@ class BookSearchIndexer {
       final isDigitOnly = RegExp(r'^\d+$').hasMatch(lineText);
       final isTopMargin = normLineBox.top < 0.055;
       final isBottomMargin = normLineBox.top > 0.945;
-      final isChrome = (isDigitOnly && (isTopMargin || isBottomMargin)) ||
+      final isChrome =
+          (isDigitOnly && (isTopMargin || isBottomMargin)) ||
           (isTopMargin && lineText.length < 50);
 
       final words = line.wordCollection.toList();
@@ -323,27 +349,34 @@ class BookSearchIndexer {
           plainBuffer.write(' ');
 
           final prefixLen = pendingHyphenPrefix.length;
-          tokens.add(SearchTokenGeometry(
-            text: pendingHyphenPrefix,
-            start: startPos,
-            end: startPos + prefixLen,
-            box: pendingHyphenBox ?? wordBox,
-            isChrome: isChrome,
-          ));
-          tokens.add(SearchTokenGeometry(
-            text: wordText,
-            start: startPos + prefixLen,
-            end: endPos,
-            box: wordBox,
-            isChrome: isChrome,
-          ));
+          tokens.add(
+            SearchTokenGeometry(
+              text: pendingHyphenPrefix,
+              start: startPos,
+              end: startPos + prefixLen,
+              box: pendingHyphenBox ?? wordBox,
+              isChrome: isChrome,
+            ),
+          );
+          tokens.add(
+            SearchTokenGeometry(
+              text: wordText,
+              start: startPos + prefixLen,
+              end: endPos,
+              box: wordBox,
+              isChrome: isChrome,
+            ),
+          );
 
           pendingHyphenPrefix = null;
           pendingHyphenBox = null;
           continue;
         }
 
-        if (isLastWord && wordText.endsWith('-') && wordText.length > 2 && i < lines.length - 1) {
+        if (isLastWord &&
+            wordText.endsWith('-') &&
+            wordText.length > 2 &&
+            i < lines.length - 1) {
           pendingHyphenPrefix = wordText.substring(0, wordText.length - 1);
           pendingHyphenBox = wordBox;
           continue;
@@ -354,13 +387,15 @@ class BookSearchIndexer {
         final endPos = plainBuffer.length;
         plainBuffer.write(' ');
 
-        tokens.add(SearchTokenGeometry(
-          text: wordText,
-          start: startPos,
-          end: endPos,
-          box: wordBox,
-          isChrome: isChrome,
-        ));
+        tokens.add(
+          SearchTokenGeometry(
+            text: wordText,
+            start: startPos,
+            end: endPos,
+            box: wordBox,
+            isChrome: isChrome,
+          ),
+        );
       }
     }
 

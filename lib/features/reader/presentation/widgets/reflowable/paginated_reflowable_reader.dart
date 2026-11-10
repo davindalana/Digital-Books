@@ -128,10 +128,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     }
 
     _pages = newPages;
-    _currentPageIndex = targetIndex.clamp(
-      0,
-      math.max(0, newPages.length - 1),
-    );
+    _currentPageIndex = targetIndex.clamp(0, math.max(0, newPages.length - 1));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

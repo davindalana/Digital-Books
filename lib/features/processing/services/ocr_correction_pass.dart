@@ -73,7 +73,9 @@ class OcrCorrectionPass {
 
   /// Corrects a single text fragment without touching block structure.
   static OcrCorrectionResult correct(String text) {
-    if (text.isEmpty) return OcrCorrectionResult(text: text, corrections: const []);
+    if (text.isEmpty) {
+      return OcrCorrectionResult(text: text, corrections: const []);
+    }
 
     var result = text;
     final corrections = <Map<String, String>>[];
@@ -154,10 +156,7 @@ class OcrCorrectionPass {
       image: block.image,
       captionText: block.captionText,
       confidence: block.confidence,
-      metadata: {
-        ...block.metadata,
-        'ocrCorrections': result.corrections,
-      },
+      metadata: {...block.metadata, 'ocrCorrections': result.corrections},
     );
   }
 }

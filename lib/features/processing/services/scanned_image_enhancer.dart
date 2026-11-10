@@ -170,28 +170,48 @@ class ScannedImageEnhancer {
       // Sample core background
       for (int x = coreStart; x < coreEnd; x += 16) {
         final idx = rowOffset + (x * 4);
-        final lum = (srcPixels[idx + 2] * 77 + srcPixels[idx + 1] * 150 + srcPixels[idx] * 29) >> 8;
+        final lum =
+            (srcPixels[idx + 2] * 77 +
+                srcPixels[idx + 1] * 150 +
+                srcPixels[idx] * 29) >>
+            8;
         coreSamples.add(lum);
       }
 
       // Sample gutter edge strip (outer 4% of page)
-      final edgeXStart = isLeftPage ? (width - (maxGutterWidth * 0.25).round()) : 0;
+      final edgeXStart = isLeftPage
+          ? (width - (maxGutterWidth * 0.25).round())
+          : 0;
       final edgeXEnd = isLeftPage ? width : (maxGutterWidth * 0.25).round();
       for (int x = edgeXStart; x < edgeXEnd; x += 4) {
         final idx = rowOffset + (x * 4);
-        final lum = (srcPixels[idx + 2] * 77 + srcPixels[idx + 1] * 150 + srcPixels[idx] * 29) >> 8;
+        final lum =
+            (srcPixels[idx + 2] * 77 +
+                srcPixels[idx + 1] * 150 +
+                srcPixels[idx] * 29) >>
+            8;
         edgeSamples.add(lum);
       }
     }
 
-    if (coreSamples.isEmpty || edgeSamples.isEmpty) return GutterShadowProfile.none;
+    if (coreSamples.isEmpty || edgeSamples.isEmpty) {
+      return GutterShadowProfile.none;
+    }
 
     coreSamples.sort();
     edgeSamples.sort();
 
     // 90th percentile gives background paper luminance (free from text/illustration pixels)
-    final coreBg = coreSamples[(coreSamples.length * 0.90).round().clamp(0, coreSamples.length - 1)];
-    final edgeBg = edgeSamples[(edgeSamples.length * 0.90).round().clamp(0, edgeSamples.length - 1)];
+    final coreBg =
+        coreSamples[(coreSamples.length * 0.90).round().clamp(
+          0,
+          coreSamples.length - 1,
+        )];
+    final edgeBg =
+        edgeSamples[(edgeSamples.length * 0.90).round().clamp(
+          0,
+          edgeSamples.length - 1,
+        )];
 
     // If edge is already clean white (>= 242) or edge is not darker than core by at least 12 luminance:
     // Page has no gutter shadow! Do not apply compensation.

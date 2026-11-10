@@ -28,14 +28,16 @@ void main() {
   });
 
   group('Phase 3.3 — Schema v5 to v6 Migration & Annotation Integrity Audit', () {
-    test('1. Full Schema v5 to v6 Migration preserves existing highlights/bookmarks and adds v6 columns', () async {
-      // Step A: Create a realistic v5 database with raw SQLite
-      final rawDb = raw_sqlite.sqlite3.open(dbPath);
-      rawDb.execute('PRAGMA user_version = 5;');
-      rawDb.execute('PRAGMA foreign_keys = ON;');
+    test(
+      '1. Full Schema v5 to v6 Migration preserves existing highlights/bookmarks and adds v6 columns',
+      () async {
+        // Step A: Create a realistic v5 database with raw SQLite
+        final rawDb = raw_sqlite.sqlite3.open(dbPath);
+        rawDb.execute('PRAGMA user_version = 5;');
+        rawDb.execute('PRAGMA foreign_keys = ON;');
 
-      // 1. Books
-      rawDb.execute('''
+        // 1. Books
+        rawDb.execute('''
         CREATE TABLE books (
           id TEXT NOT NULL PRIMARY KEY,
           title TEXT NOT NULL,
@@ -54,8 +56,8 @@ void main() {
         );
       ''');
 
-      // 2. Chapters
-      rawDb.execute('''
+        // 2. Chapters
+        rawDb.execute('''
         CREATE TABLE chapters (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -66,8 +68,8 @@ void main() {
         );
       ''');
 
-      // 3. Reading Progresses
-      rawDb.execute('''
+        // 3. Reading Progresses
+        rawDb.execute('''
         CREATE TABLE reading_progresses (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL UNIQUE REFERENCES books(id) ON DELETE CASCADE,
@@ -78,8 +80,8 @@ void main() {
         );
       ''');
 
-      // 4. Bookmarks (v5 schema without page_index or updated_at)
-      rawDb.execute('''
+        // 4. Bookmarks (v5 schema without page_index or updated_at)
+        rawDb.execute('''
         CREATE TABLE bookmarks (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -93,8 +95,8 @@ void main() {
         );
       ''');
 
-      // 5. Highlights (v5 schema without page_index, bounding_boxes_json, anchor_status, updated_at)
-      rawDb.execute('''
+        // 5. Highlights (v5 schema without page_index, bounding_boxes_json, anchor_status, updated_at)
+        rawDb.execute('''
         CREATE TABLE highlights (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -114,8 +116,8 @@ void main() {
         );
       ''');
 
-      // 6. OcrPages
-      rawDb.execute('''
+        // 6. OcrPages
+        rawDb.execute('''
         CREATE TABLE ocr_pages (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -129,8 +131,8 @@ void main() {
         );
       ''');
 
-      // 7. BookSearchPages (v5)
-      rawDb.execute('''
+        // 7. BookSearchPages (v5)
+        rawDb.execute('''
         CREATE TABLE book_search_pages (
           id TEXT NOT NULL PRIMARY KEY,
           book_id TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -141,97 +143,131 @@ void main() {
         );
       ''');
 
-      final nowMs = DateTime.now().millisecondsSinceEpoch;
+        final nowMs = DateTime.now().millisecondsSinceEpoch;
 
-      // Insert pre-existing v5 book
-      rawDb.execute('''
+        // Insert pre-existing v5 book
+        rawDb.execute('''
         INSERT INTO books (id, title, author, original_pdf_path, created_at, updated_at)
         VALUES ('book-v5-legacy', 'Laut Bercerita (Edisi Lawas)', 'Leila S. Chudori', '/path/to/legacy.pdf', $nowMs, $nowMs);
       ''');
 
-      // Insert pre-existing v5 bookmark
-      rawDb.execute('''
+        // Insert pre-existing v5 bookmark
+        rawDb.execute('''
         INSERT INTO bookmarks (id, book_id, chapter_id, position, label, anchor_node_id, character_offset, progress_percentage, created_at)
         VALUES ('bm-legacy-1', 'book-v5-legacy', 'ch-1', 42, 'Bab 1 Penanda', 'node-101', 120, 0.15, $nowMs);
       ''');
 
-      // Insert pre-existing v5 highlight
-      rawDb.execute('''
+        // Insert pre-existing v5 highlight
+        rawDb.execute('''
         INSERT INTO highlights (id, book_id, chapter_id, selected_text, start_position, end_position, color, note, anchor_node_id, start_offset, end_offset, prefix_context, suffix_context, anchor_version, created_at)
         VALUES ('hl-legacy-1', 'book-v5-legacy', 'ch-1', 'Matanya menatap ombak yang berkejaran di kejauhan.', 42, 42, 'yellow', 'Kutipan penting halaman awal', 'node-101', 50, 102, 'Di sana, ', ' dan membisu.', 1, $nowMs);
       ''');
 
-      rawDb.close();
+        rawDb.close();
 
-      // Step B: Open through Drift AppDatabase and trigger migration to v6
-      final appDb = AppDatabase(NativeDatabase(File(dbPath)));
-      final dbService = DatabaseService(appDb);
+        // Step B: Open through Drift AppDatabase and trigger migration to v6
+        final appDb = AppDatabase(NativeDatabase(File(dbPath)));
+        final dbService = DatabaseService(appDb);
 
-      // Verify PRAGMA user_version is updated to 6
-      final versionResult = await appDb.customSelect('PRAGMA user_version;').getSingle();
-      final currentVersion = versionResult.data['user_version'] as int;
-      expect(currentVersion, equals(6), reason: 'Database schema version must be bumped to 6');
+        // Verify PRAGMA user_version is updated to 6
+        final versionResult = await appDb
+            .customSelect('PRAGMA user_version;')
+            .getSingle();
+        final currentVersion = versionResult.data['user_version'] as int;
+        expect(
+          currentVersion,
+          equals(6),
+          reason: 'Database schema version must be bumped to 6',
+        );
 
-      // Verify legacy highlight is intact and v6 default columns are populated
-      final highlights = await dbService.getHighlightsForBook('book-v5-legacy');
-      expect(highlights.length, equals(1));
-      final legacyHl = highlights.first;
-      expect(legacyHl.id, equals('hl-legacy-1'));
-      expect(legacyHl.selectedText, equals('Matanya menatap ombak yang berkejaran di kejauhan.'));
-      expect(legacyHl.note, equals('Kutipan penting halaman awal'));
-      expect(legacyHl.color, equals('yellow'));
-      expect(legacyHl.anchorStatus, equals('resolved'), reason: 'Default anchor_status for migrated highlights must be resolved');
-      expect(legacyHl.boundingBoxesJson, isNull);
-      expect(legacyHl.pageIndex, isNull);
+        // Verify legacy highlight is intact and v6 default columns are populated
+        final highlights = await dbService.getHighlightsForBook(
+          'book-v5-legacy',
+        );
+        expect(highlights.length, equals(1));
+        final legacyHl = highlights.first;
+        expect(legacyHl.id, equals('hl-legacy-1'));
+        expect(
+          legacyHl.selectedText,
+          equals('Matanya menatap ombak yang berkejaran di kejauhan.'),
+        );
+        expect(legacyHl.note, equals('Kutipan penting halaman awal'));
+        expect(legacyHl.color, equals('yellow'));
+        expect(
+          legacyHl.anchorStatus,
+          equals('resolved'),
+          reason:
+              'Default anchor_status for migrated highlights must be resolved',
+        );
+        expect(legacyHl.boundingBoxesJson, isNull);
+        expect(legacyHl.pageIndex, isNull);
 
-      // Verify legacy bookmark is intact
-      final bookmarks = await dbService.getBookmarksForBook('book-v5-legacy');
-      expect(bookmarks.length, equals(1));
-      final legacyBm = bookmarks.first;
-      expect(legacyBm.id, equals('bm-legacy-1'));
-      expect(legacyBm.label, equals('Bab 1 Penanda'));
-      expect(legacyBm.position, equals(42));
-      expect(legacyBm.pageIndex, isNull);
+        // Verify legacy bookmark is intact
+        final bookmarks = await dbService.getBookmarksForBook('book-v5-legacy');
+        expect(bookmarks.length, equals(1));
+        final legacyBm = bookmarks.first;
+        expect(legacyBm.id, equals('bm-legacy-1'));
+        expect(legacyBm.label, equals('Bab 1 Penanda'));
+        expect(legacyBm.position, equals(42));
+        expect(legacyBm.pageIndex, isNull);
 
-      // Step C: Test insertion of new v6 annotation with bounding boxes and updated timestamp
-      final v6Annotation = BookAnnotation(
-        id: 'ann-v6-new-1',
-        bookId: 'book-v5-legacy',
-        type: AnnotationType.note,
-        selectedText: 'Teks dengan bounding box dan catatan v6',
-        pageIndex: 5,
-        boundingBoxes: const [
-          Rect.fromLTWH(0.1, 0.2, 0.8, 0.05),
-          Rect.fromLTWH(0.1, 0.26, 0.6, 0.05),
-        ],
-        color: 'pink',
-        note: 'Catatan multi-baris pada mode PDF asli.',
-        anchorStatus: AnchorStatus.resolved,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
+        // Step C: Test insertion of new v6 annotation with bounding boxes and updated timestamp
+        final v6Annotation = BookAnnotation(
+          id: 'ann-v6-new-1',
+          bookId: 'book-v5-legacy',
+          type: AnnotationType.note,
+          selectedText: 'Teks dengan bounding box dan catatan v6',
+          pageIndex: 5,
+          boundingBoxes: const [
+            Rect.fromLTWH(0.1, 0.2, 0.8, 0.05),
+            Rect.fromLTWH(0.1, 0.26, 0.6, 0.05),
+          ],
+          color: 'pink',
+          note: 'Catatan multi-baris pada mode PDF asli.',
+          anchorStatus: AnchorStatus.resolved,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-      await dbService.saveAnnotation(v6Annotation);
+        await dbService.saveAnnotation(v6Annotation);
 
-      // Retrieve via unified domain API
-      final allAnnotations = await dbService.getAnnotationsForBook('book-v5-legacy');
-      expect(allAnnotations.length, equals(3), reason: 'Legacy highlight + legacy bookmark + new v6 annotation');
+        // Retrieve via unified domain API
+        final allAnnotations = await dbService.getAnnotationsForBook(
+          'book-v5-legacy',
+        );
+        expect(
+          allAnnotations.length,
+          equals(3),
+          reason: 'Legacy highlight + legacy bookmark + new v6 annotation',
+        );
 
-      final retrievedV6 = allAnnotations.firstWhere((a) => a.id == 'ann-v6-new-1');
-      expect(retrievedV6.color, equals('pink'));
-      expect(retrievedV6.pageIndex, equals(5));
-      expect(retrievedV6.boundingBoxes.length, equals(2));
-      expect(retrievedV6.boundingBoxes.first.left, closeTo(0.1, 0.001));
-      expect(retrievedV6.hasNote, isTrue);
-      expect(retrievedV6.note, equals('Catatan multi-baris pada mode PDF asli.'));
+        final retrievedV6 = allAnnotations.firstWhere(
+          (a) => a.id == 'ann-v6-new-1',
+        );
+        expect(retrievedV6.color, equals('pink'));
+        expect(retrievedV6.pageIndex, equals(5));
+        expect(retrievedV6.boundingBoxes.length, equals(2));
+        expect(retrievedV6.boundingBoxes.first.left, closeTo(0.1, 0.001));
+        expect(retrievedV6.hasNote, isTrue);
+        expect(
+          retrievedV6.note,
+          equals('Catatan multi-baris pada mode PDF asli.'),
+        );
 
-      // Step D: Test foreign key cascading deletion
-      await dbService.deleteBook('book-v5-legacy');
+        // Step D: Test foreign key cascading deletion
+        await dbService.deleteBook('book-v5-legacy');
 
-      final remainingAnnotations = await dbService.getAnnotationsForBook('book-v5-legacy');
-      expect(remainingAnnotations.isEmpty, isTrue, reason: 'Annotations must be cascade-deleted when book is deleted');
+        final remainingAnnotations = await dbService.getAnnotationsForBook(
+          'book-v5-legacy',
+        );
+        expect(
+          remainingAnnotations.isEmpty,
+          isTrue,
+          reason: 'Annotations must be cascade-deleted when book is deleted',
+        );
 
-      await appDb.close();
-    });
+        await appDb.close();
+      },
+    );
   });
 }

@@ -46,11 +46,13 @@ class BookTextNormalizer {
     caseSensitive: false,
   );
 
-  static final RegExp _orderedListRegex =
-      RegExp(r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+');
+  static final RegExp _orderedListRegex = RegExp(
+    r'^(\d+[\.\)]|[a-zA-Z][\.\)]|\([0-9a-zA-Z]+\))\s+',
+  );
 
-  static final RegExp _unorderedListRegex =
-      RegExp(r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+');
+  static final RegExp _unorderedListRegex = RegExp(
+    r'^([•\-\*–—]|[\u2022\u2023\u25E6\u2043\u2219])\s+',
+  );
 
   static final RegExp _copyrightMetaRegex = RegExp(
     r'^(hak cipta|all rights reserved|dilarang|katalog dalam terbitan|kdt|isbn|diterbitkan|penerbit|cetakan|desain sampul|penata letak|penerjemah|editor:|pemeriksa aksara|ilustrasi:|sanksi pelanggaran|undang-undang)\b',
@@ -206,7 +208,10 @@ class BookTextNormalizer {
       final text = currentParagraphText.trim();
 
       if (_copyrightMetaRegex.hasMatch(text) ||
-          RegExp(r'\b(isbn|katalog dalam terbitan|kdt)\b', caseSensitive: false).hasMatch(text)) {
+          RegExp(
+            r'\b(isbn|katalog dalam terbitan|kdt)\b',
+            caseSensitive: false,
+          ).hasMatch(text)) {
         currentBlocks.add(
           BookBlock(
             id: const Uuid().v4(),
@@ -325,14 +330,20 @@ class BookTextNormalizer {
       // seal and flush the copyright block immediately!
       if (!isCopyrightLine &&
           (_copyrightMetaRegex.hasMatch(currentParagraphText) ||
-              RegExp(r'\b(isbn|kdt|hak cipta|penerbit)\b', caseSensitive: false).hasMatch(currentParagraphText))) {
+              RegExp(
+                r'\b(isbn|kdt|hak cipta|penerbit)\b',
+                caseSensitive: false,
+              ).hasMatch(currentParagraphText))) {
         flushParagraph();
       }
 
       // If line is copyright/imprint information, accumulate all copyright lines together
       if (isCopyrightLine) {
         if (_copyrightMetaRegex.hasMatch(currentParagraphText) ||
-            RegExp(r'\b(isbn|kdt|hak cipta|penerbit|katalog)\b', caseSensitive: false).hasMatch(currentParagraphText)) {
+            RegExp(
+              r'\b(isbn|kdt|hak cipta|penerbit|katalog)\b',
+              caseSensitive: false,
+            ).hasMatch(currentParagraphText)) {
           currentParagraphText = '$currentParagraphText\n$line';
         } else {
           flushParagraph();
@@ -386,8 +397,11 @@ class BookTextNormalizer {
                   firstWord.toLowerCase().startsWith(lastWord.toLowerCase()) ||
                   lastWord.toLowerCase().endsWith(firstWord.toLowerCase()))) {
             joined = '$base-$firstWord';
-          } else if ((lastWord.toLowerCase() == 'di' || lastWord.toLowerCase() == 'ke') &&
-              ParagraphReconstructor.indonesianPrepositionComplements.contains(firstWord.toLowerCase())) {
+          } else if ((lastWord.toLowerCase() == 'di' ||
+                  lastWord.toLowerCase() == 'ke') &&
+              ParagraphReconstructor.indonesianPrepositionComplements.contains(
+                firstWord.toLowerCase(),
+              )) {
             joined = '$base $firstWord';
           } else {
             joined = '$base$firstWord';

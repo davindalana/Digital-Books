@@ -26,7 +26,9 @@ class ImagePlacementResolver {
     final imagesByPage = <int, List<ExtractedImage>>{};
 
     for (final img in images) {
-      final normalizedPage = (img.sourcePage > 0 && !pages.any((p) => p.pageIndex == img.sourcePage))
+      final normalizedPage =
+          (img.sourcePage > 0 &&
+              !pages.any((p) => p.pageIndex == img.sourcePage))
           ? img.sourcePage - 1
           : img.sourcePage;
       imagesByPage.putIfAbsent(normalizedPage, () => []).add(img);
@@ -112,7 +114,11 @@ class ImagePlacementResolver {
           double minDistance = double.infinity;
           for (final c in candidateCaptions) {
             final cTop = c.sourceBounds?.top ?? 0.0;
-            final imgY = img.bounds?.top ?? (pageGeometry.pageSize.height * (i + 1) / (pageImages.length + 1));
+            final imgY =
+                img.bounds?.top ??
+                (pageGeometry.pageSize.height *
+                    (i + 1) /
+                    (pageImages.length + 1));
             final dist = (cTop - imgY).abs();
             if (dist < minDistance) {
               minDistance = dist;
@@ -131,10 +137,14 @@ class ImagePlacementResolver {
       // 2. Classify semantic role
       ImageSemanticRole role;
       if (captionText != null &&
-          RegExp(r'(diagram|denah|blueprint|map|peta|chart)', caseSensitive: false)
-              .hasMatch(captionText)) {
+          RegExp(
+            r'(diagram|denah|blueprint|map|peta|chart)',
+            caseSensitive: false,
+          ).hasMatch(captionText)) {
         role = ImageSemanticRole.diagram;
-      } else if ((img.isCover || img.sourcePage == 0) && captionText == null && imgArea > pageArea * 0.4) {
+      } else if ((img.isCover || img.sourcePage == 0) &&
+          captionText == null &&
+          imgArea > pageArea * 0.4) {
         role = ImageSemanticRole.coverImage;
       } else if (imgArea > pageArea * 0.65) {
         role = ImageSemanticRole.fullPageIllustration;
@@ -175,7 +185,10 @@ class ImagePlacementResolver {
     }
 
     // 3. Merge image blocks and text blocks in vertical coordinate order
-    final combined = <SemanticReconstructedBlock>[...remainingBlocks, ...imageBlocks];
+    final combined = <SemanticReconstructedBlock>[
+      ...remainingBlocks,
+      ...imageBlocks,
+    ];
     combined.sort((a, b) {
       final aTop = a.sourceBounds?.top ?? 9999.0;
       final bTop = b.sourceBounds?.top ?? 9999.0;

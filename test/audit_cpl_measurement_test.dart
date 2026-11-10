@@ -33,11 +33,19 @@ void main() {
       1400.0, // Legacy unclamped upper limit
     ];
 
-    print('\n========================================================================================');
+    print(
+      '\n========================================================================================',
+    );
     print('CHARACTERS PER LINE (CPL) EMPIRICAL MEASUREMENT TABLE');
-    print('========================================================================================');
-    print('Font Family   | Size | Width (pt) | Avg CPL | Min CPL | Max CPL | Line Count | Ergonomic Assessment');
-    print('--------------+------+------------+---------+---------+---------+------------+---------------------');
+    print(
+      '========================================================================================',
+    );
+    print(
+      'Font Family   | Size | Width (pt) | Avg CPL | Min CPL | Max CPL | Line Count | Ergonomic Assessment',
+    );
+    print(
+      '--------------+------+------------+---------+---------+---------+------------+---------------------',
+    );
 
     for (final family in fontFamilies) {
       for (final size in fontSizes) {
@@ -68,7 +76,10 @@ void main() {
           }
 
           // Print selected representative widths to avoid huge log flood
-          if (width == 498.0 || width == 800.0 || width == 900.0 || width == 1400.0) {
+          if (width == 498.0 ||
+              width == 800.0 ||
+              width == 900.0 ||
+              width == 1400.0) {
             print(
               '${family.padRight(13)} | ${size.toString().padRight(4)} | ${width.toString().padRight(10)} | ${avgCpl.toString().padRight(7)} | ${(avgCpl * 0.85).round().toString().padRight(7)} | ${(avgCpl * 1.15).round().toString().padRight(7)} | ${lineCount.toString().padRight(10)} | $assessment',
             );
@@ -77,7 +88,8 @@ void main() {
         }
       }
     }
-    print('========================================================================================\n');
+    print(
+      '========================================================================================\n',
+    );
   });
 }
-

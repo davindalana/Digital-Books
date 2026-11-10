@@ -17,153 +17,172 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
-  final jsonFile =
-      File('/Users/davindalana/Documents/DigitalBooks/books/$bookId.json');
+  final jsonFile = File(
+    '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json',
+  );
 
   group('Front Matter Centering and Pagination Quality', () {
     testWidgets(
-        'ReflowablePageRenderer vertically centers all front matter pages',
-        (tester) async {
-      // 1. Cover page
-      final coverPage = PaginatedPage(
-        pageIndexInChapter: 0,
-        pageIndexInBook: 0,
-        chapterIndex: 0,
-        chapterTitle: 'Bagian Awal',
-        firstAnchorNodeId: 'node_cover',
-        lastAnchorNodeId: 'node_cover',
-        slices: [
-          PaginatedNodeSlice(
-            node: ContentNode(
-              id: 'node_cover',
-              type: ContentNodeType.documentTitle,
-              text: 'BICARA ITU ADA SENINYA',
-              attributes: const {'frontMatter': 'cover'},
+      'ReflowablePageRenderer vertically centers all front matter pages',
+      (tester) async {
+        // 1. Cover page
+        final coverPage = PaginatedPage(
+          pageIndexInChapter: 0,
+          pageIndexInBook: 0,
+          chapterIndex: 0,
+          chapterTitle: 'Bagian Awal',
+          firstAnchorNodeId: 'node_cover',
+          lastAnchorNodeId: 'node_cover',
+          slices: [
+            PaginatedNodeSlice(
+              node: ContentNode(
+                id: 'node_cover',
+                type: ContentNodeType.documentTitle,
+                text: 'BICARA ITU ADA SENINYA',
+                attributes: const {'frontMatter': 'cover'},
+              ),
+              textSlice: 'BICARA ITU ADA SENINYA',
+              startCharOffset: 0,
+              endCharOffset: 23,
             ),
-            textSlice: 'BICARA ITU ADA SENINYA',
-            startCharOffset: 0,
-            endCharOffset: 23,
-          ),
-        ],
-      );
-
-      // 2. Copyright page
-      final copyrightPage = PaginatedPage(
-        pageIndexInChapter: 1,
-        pageIndexInBook: 1,
-        chapterIndex: 0,
-        chapterTitle: 'Bagian Awal',
-        firstAnchorNodeId: 'node_copy',
-        lastAnchorNodeId: 'node_copy',
-        slices: [
-          PaginatedNodeSlice(
-            node: ContentNode(
-              id: 'node_copy',
-              type: ContentNodeType.metadataBlock,
-              text: 'THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING',
-              attributes: const {
-                'frontMatter': 'copyright',
-                'kind': 'identity',
-              },
-            ),
-            textSlice: 'THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING',
-            startCharOffset: 0,
-            endCharOffset: 48,
-          ),
-        ],
-      );
-
-      // 3. Body page (must remain top-centered)
-      final bodyPage = PaginatedPage(
-        pageIndexInChapter: 0,
-        pageIndexInBook: 14,
-        chapterIndex: 4,
-        chapterTitle: 'BAB I',
-        firstAnchorNodeId: 'node_body',
-        lastAnchorNodeId: 'node_body',
-        slices: [
-          PaginatedNodeSlice(
-            node: ContentNode(
-              id: 'node_body',
-              type: ContentNodeType.paragraph,
-              text: 'Perbedaan Juara 1 dan Juara 2.',
-            ),
-            textSlice: 'Perbedaan Juara 1 dan Juara 2.',
-            startCharOffset: 0,
-            endCharOffset: 30,
-          ),
-        ],
-      );
-
-      Widget buildPage(PaginatedPage p) {
-        return MaterialApp(
-          home: Scaffold(
-            body: ReflowablePageRenderer(
-              page: p,
-              totalPagesInBook: 200,
-              contentWidth: 400,
-              typography: const TypographySettings(),
-              theme: ReadingThemeType.dark,
-            ),
-          ),
+          ],
         );
-      }
 
-      // Verify cover is centered
-      await tester.pumpWidget(buildPage(coverPage));
-      var fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-      expect(fittedBox.alignment, Alignment.center,
-          reason: 'Cover page must be centered');
+        // 2. Copyright page
+        final copyrightPage = PaginatedPage(
+          pageIndexInChapter: 1,
+          pageIndexInBook: 1,
+          chapterIndex: 0,
+          chapterTitle: 'Bagian Awal',
+          firstAnchorNodeId: 'node_copy',
+          lastAnchorNodeId: 'node_copy',
+          slices: [
+            PaginatedNodeSlice(
+              node: ContentNode(
+                id: 'node_copy',
+                type: ContentNodeType.metadataBlock,
+                text: 'THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING',
+                attributes: const {
+                  'frontMatter': 'copyright',
+                  'kind': 'identity',
+                },
+              ),
+              textSlice: 'THE SECRET HABITS TO MASTER YOUR ART OF SPEAKING',
+              startCharOffset: 0,
+              endCharOffset: 48,
+            ),
+          ],
+        );
 
-      // Verify copyright page is centered (preventing asymmetric empty space at bottom)
-      await tester.pumpWidget(buildPage(copyrightPage));
-      fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-      expect(fittedBox.alignment, Alignment.center,
-          reason: 'Copyright page must be centered');
+        // 3. Body page (must remain top-centered)
+        final bodyPage = PaginatedPage(
+          pageIndexInChapter: 0,
+          pageIndexInBook: 14,
+          chapterIndex: 4,
+          chapterTitle: 'BAB I',
+          firstAnchorNodeId: 'node_body',
+          lastAnchorNodeId: 'node_body',
+          slices: [
+            PaginatedNodeSlice(
+              node: ContentNode(
+                id: 'node_body',
+                type: ContentNodeType.paragraph,
+                text: 'Perbedaan Juara 1 dan Juara 2.',
+              ),
+              textSlice: 'Perbedaan Juara 1 dan Juara 2.',
+              startCharOffset: 0,
+              endCharOffset: 30,
+            ),
+          ],
+        );
 
-      // Verify regular body page is topCenter (standard reading flow)
-      await tester.pumpWidget(buildPage(bodyPage));
-      fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
-      expect(fittedBox.alignment, Alignment.topCenter,
-          reason: 'Body page must align to topCenter');
-    });
+        Widget buildPage(PaginatedPage p) {
+          return MaterialApp(
+            home: Scaffold(
+              body: ReflowablePageRenderer(
+                page: p,
+                totalPagesInBook: 200,
+                contentWidth: 400,
+                typography: const TypographySettings(),
+                theme: ReadingThemeType.dark,
+              ),
+            ),
+          );
+        }
 
-    test('PaginationEngine styles copyright and metadata blocks faithfully', () {
-      final typo = const TypographySettings(fontSize: 18.0);
+        // Verify cover is centered
+        await tester.pumpWidget(buildPage(coverPage));
+        var fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+        expect(
+          fittedBox.alignment,
+          Alignment.center,
+          reason: 'Cover page must be centered',
+        );
 
-      // OrderedList with legalClause uses 0.80x bodyStyle
-      final legalNode = ContentNode(
-        id: 'legal1',
-        type: ContentNodeType.orderedList,
-        text: '1. Setiap orang yang dengan tanpa hak...',
-        attributes: const {'legalClause': true},
-      );
-      final legalStyle = PaginationEngine.textStyleFor(legalNode, typo);
-      expect(legalStyle.fontSize, closeTo(18.0 * 0.80, 0.01));
-      expect(PaginationEngine.paddingFor(legalNode, typo), 5.0);
+        // Verify copyright page is centered (preventing asymmetric empty space at bottom)
+        await tester.pumpWidget(buildPage(copyrightPage));
+        fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+        expect(
+          fittedBox.alignment,
+          Alignment.center,
+          reason: 'Copyright page must be centered',
+        );
 
-      // MetadataBlock publisher uses 0.72x
-      final publisherNode = ContentNode(
-        id: 'pub1',
-        type: ContentNodeType.metadataBlock,
-        text: 'Penerbit Bhuana Ilmu Populer',
-        attributes: const {'kind': 'publisher'},
-      );
-      final pubStyle = PaginationEngine.textStyleFor(publisherNode, typo);
-      expect(pubStyle.fontSize, closeTo(18.0 * 0.72, 0.01));
+        // Verify regular body page is topCenter (standard reading flow)
+        await tester.pumpWidget(buildPage(bodyPage));
+        fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+        expect(
+          fittedBox.alignment,
+          Alignment.topCenter,
+          reason: 'Body page must align to topCenter',
+        );
+      },
+    );
 
-      // MetadataBlock catalog with sectionLabel
-      final catalogNode = ContentNode(
-        id: 'cat1',
-        type: ContentNodeType.metadataBlock,
-        text: 'ISBN 978-602-455-392-0',
-        attributes: const {'kind': 'catalog', 'sectionLabel': 'Informasi Penerbitan'},
-      );
-      final catStyle = PaginationEngine.textStyleFor(catalogNode, typo);
-      expect(catStyle.fontSize, closeTo(18.0 * 0.80, 0.01));
-      expect(PaginationEngine.paddingFor(catalogNode, typo),
-          closeTo(22.0 + (typo.paragraphSpacing * 0.5), 0.01));
-    });
+    test(
+      'PaginationEngine styles copyright and metadata blocks faithfully',
+      () {
+        final typo = const TypographySettings(fontSize: 18.0);
+
+        // OrderedList with legalClause uses 0.80x bodyStyle
+        final legalNode = ContentNode(
+          id: 'legal1',
+          type: ContentNodeType.orderedList,
+          text: '1. Setiap orang yang dengan tanpa hak...',
+          attributes: const {'legalClause': true},
+        );
+        final legalStyle = PaginationEngine.textStyleFor(legalNode, typo);
+        expect(legalStyle.fontSize, closeTo(18.0 * 0.80, 0.01));
+        expect(PaginationEngine.paddingFor(legalNode, typo), 5.0);
+
+        // MetadataBlock publisher uses 0.72x
+        final publisherNode = ContentNode(
+          id: 'pub1',
+          type: ContentNodeType.metadataBlock,
+          text: 'Penerbit Bhuana Ilmu Populer',
+          attributes: const {'kind': 'publisher'},
+        );
+        final pubStyle = PaginationEngine.textStyleFor(publisherNode, typo);
+        expect(pubStyle.fontSize, closeTo(18.0 * 0.72, 0.01));
+
+        // MetadataBlock catalog with sectionLabel
+        final catalogNode = ContentNode(
+          id: 'cat1',
+          type: ContentNodeType.metadataBlock,
+          text: 'ISBN 978-602-455-392-0',
+          attributes: const {
+            'kind': 'catalog',
+            'sectionLabel': 'Informasi Penerbitan',
+          },
+        );
+        final catStyle = PaginationEngine.textStyleFor(catalogNode, typo);
+        expect(catStyle.fontSize, closeTo(18.0 * 0.80, 0.01));
+        expect(
+          PaginationEngine.paddingFor(catalogNode, typo),
+          closeTo(22.0 + (typo.paragraphSpacing * 0.5), 0.01),
+        );
+      },
+    );
 
     test('Real book Chapter 0 paginates cleanly without fragmentation', () {
       if (!jsonFile.existsSync()) return;
@@ -192,10 +211,14 @@ void main() {
       expect(ch0Pages.length, lessThanOrEqualTo(5));
 
       final page2 = ch0Pages[1];
-      final page2Kinds =
-          page2.slices.map((s) => s.node.attributes['kind']).toSet();
-      expect(page2Kinds, containsAll(['identity', 'catalog', 'publisher', 'legal']),
-          reason: 'Page 2 should contain all imprint and catalog metadata');
+      final page2Kinds = page2.slices
+          .map((s) => s.node.attributes['kind'])
+          .toSet();
+      expect(
+        page2Kinds,
+        containsAll(['identity', 'catalog', 'publisher', 'legal']),
+        reason: 'Page 2 should contain all imprint and catalog metadata',
+      );
     });
   });
 }

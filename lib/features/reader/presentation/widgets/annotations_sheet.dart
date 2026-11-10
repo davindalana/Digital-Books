@@ -111,7 +111,11 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 18, 16, 12),
                 child: Row(
                   children: [
-                    Icon(Icons.collections_bookmark_rounded, size: 20, color: const Color(0xFFFF9500)),
+                    Icon(
+                      Icons.collections_bookmark_rounded,
+                      size: 20,
+                      color: const Color(0xFFFF9500),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -147,18 +151,30 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
 
               // Search Filter Field
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
                 child: TextField(
                   key: const ValueKey('annotations_search_field'),
                   decoration: InputDecoration(
                     hintText: 'Cari dalam catatan atau teks sorotan...',
                     hintStyle: TextStyle(fontSize: 13, color: secondaryColor),
-                    prefixIcon: Icon(Icons.search, size: 18, color: secondaryColor),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      size: 18,
+                      color: secondaryColor,
+                    ),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: secondaryColor.withValues(alpha: 0.3)),
+                      borderSide: BorderSide(
+                        color: secondaryColor.withValues(alpha: 0.3),
+                      ),
                     ),
                   ),
                   style: TextStyle(fontSize: 13, color: textColor),
@@ -172,12 +188,19 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
 
               // Filter Chips
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 4,
+                ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFilterChip('Semua (${widget.annotations.length})', null, isDark),
+                      _buildFilterChip(
+                        'Semua (${widget.annotations.length})',
+                        null,
+                        isDark,
+                      ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
                         'Sorotan (${widget.annotations.where((a) => !a.isBookmark && !a.hasNote).length})',
@@ -228,12 +251,21 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         itemCount: filtered.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 8),
                         itemBuilder: (ctx, idx) {
                           final a = filtered[idx];
-                          return _buildAnnotationTile(a, isDark, textColor, secondaryColor);
+                          return _buildAnnotationTile(
+                            a,
+                            isDark,
+                            textColor,
+                            secondaryColor,
+                          );
                         },
                       ),
               ),
@@ -260,7 +292,9 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
         decoration: BoxDecoration(
           color: isSelected
               ? activeColor.withValues(alpha: 0.22)
-              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.black.withValues(alpha: 0.05)),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? activeColor : Colors.transparent,
@@ -272,7 +306,9 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? activeColor : (isDark ? Colors.white70 : Colors.black87),
+            color: isSelected
+                ? activeColor
+                : (isDark ? Colors.white70 : Colors.black87),
           ),
         ),
       ),
@@ -286,9 +322,7 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
     Color secondaryColor,
   ) {
     final colorType = HighlightColorType.fromKey(a.color);
-    final cardBg = isDark
-        ? const Color(0xFF28282D)
-        : const Color(0xFFF7F7FA);
+    final cardBg = isDark ? const Color(0xFF28282D) : const Color(0xFFF7F7FA);
 
     return Material(
       color: Colors.transparent,
@@ -301,7 +335,9 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
             color: cardBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
             ),
           ),
           child: Column(
@@ -314,7 +350,9 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: a.isBookmark ? const Color(0xFFFF9500) : colorType.primaryColor,
+                      color: a.isBookmark
+                          ? const Color(0xFFFF9500)
+                          : colorType.primaryColor,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -326,13 +364,18 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: a.isBookmark ? const Color(0xFFFF9500) : colorType.primaryColor,
+                      color: a.isBookmark
+                          ? const Color(0xFFFF9500)
+                          : colorType.primaryColor,
                     ),
                   ),
                   const SizedBox(width: 8),
                   if (a.pageIndex != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark ? Colors.white12 : Colors.black12,
                         borderRadius: BorderRadius.circular(6),
@@ -349,7 +392,10 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                   if (a.isUnresolved) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orangeAccent.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -370,7 +416,10 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                       iconSize: 16,
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                      constraints: const BoxConstraints(
+                        minWidth: 26,
+                        minHeight: 26,
+                      ),
                       icon: Icon(Icons.edit_outlined, color: secondaryColor),
                       onPressed: () => widget.onEditAnnotation!(a),
                     ),
@@ -379,8 +428,14 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                       iconSize: 16,
                       visualDensity: VisualDensity.compact,
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      icon: Icon(Icons.delete_outline_rounded, color: secondaryColor),
+                      constraints: const BoxConstraints(
+                        minWidth: 26,
+                        minHeight: 26,
+                      ),
+                      icon: Icon(
+                        Icons.delete_outline_rounded,
+                        color: secondaryColor,
+                      ),
                       onPressed: () => widget.onDeleteAnnotation!(a),
                     ),
                 ],
@@ -404,7 +459,10 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
               if (a.hasNote) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? Colors.black26 : Colors.white,
                     borderRadius: BorderRadius.circular(8),
@@ -415,7 +473,11 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFFFF9500)),
+                      const Icon(
+                        Icons.edit_note_rounded,
+                        size: 16,
+                        color: Color(0xFFFF9500),
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(

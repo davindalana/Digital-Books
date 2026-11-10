@@ -60,7 +60,8 @@ void main() {
             ContentNode(
               id: 'n_1',
               type: ContentNodeType.paragraph,
-              text: 'This is a test paragraph to verify stable widget lifecycles.',
+              text:
+                  'This is a test paragraph to verify stable widget lifecycles.',
               sourcePdfPage: 1,
             ),
           ],
@@ -95,175 +96,194 @@ void main() {
   });
 
   group('Lifecycle & _dependents.isEmpty Elimination Audit', () {
-    testWidgets('1. BookDetailsDialog cleanly launches ReadingScreen via BookLaunchRequest without InheritedElement leakage', (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      '1. BookDetailsDialog cleanly launches ReadingScreen via BookLaunchRequest without InheritedElement leakage',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      final book = await dbService.getBookById('lifecycle_test_book');
-      expect(book, isNotNull);
+        final book = await dbService.getBookById('lifecycle_test_book');
+        expect(book, isNotNull);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            databaseServiceProvider.overrideWithValue(dbService),
-          ],
-          child: const MaterialApp(
-            home: LibraryScreen(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              databaseServiceProvider.overrideWithValue(dbService),
+            ],
+            child: const MaterialApp(home: LibraryScreen()),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Ensure library rendered
-      expect(find.text('Lifecycle Stress Book'), findsWidgets);
+        // Ensure library rendered
+        expect(find.text('Lifecycle Stress Book'), findsWidgets);
 
-      // Open Book Details Dialog via long press on BookCard
-      await tester.longPress(find.byType(BookCard).first);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(BookDetailsDialog), findsOneWidget);
-
-      // Tap "Read Book"
-      final readButton = find.text('Read Book');
-      expect(readButton, findsOneWidget);
-      await tester.tap(readButton);
-
-      // Let dialog pop and ReadingScreen push cleanly
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
-
-      // Dialog should be gone, ReadingScreen should be mounted with controls visible
-      expect(find.byType(BookDetailsDialog), findsNothing);
-      expect(find.byType(ReadingScreen), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      // Close ReadingScreen via top back button
-      final backButton = find.byKey(const ValueKey('reader_top_back_button'));
-      expect(backButton, findsOneWidget);
-      await tester.tap(backButton);
-
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
-      await tester.pumpAndSettle();
-
-      // Back at LibraryScreen cleanly
-      expect(find.byType(ReadingScreen), findsNothing);
-      expect(find.byType(LibraryScreen), findsOneWidget);
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    });
-
-    testWidgets('2. Rapid repeated reader open/close loop (15 cycles) does not trigger _dependents.isEmpty or memory leak', (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      final book = await dbService.getBookById('lifecycle_test_book');
-      expect(book, isNotNull);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            databaseServiceProvider.overrideWithValue(dbService),
-          ],
-          child: const MaterialApp(
-            home: LibraryScreen(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final stopwatch = Stopwatch()..start();
-
-      for (int i = 0; i < 15; i++) {
-        // Open details via long press
+        // Open Book Details Dialog via long press on BookCard
         await tester.longPress(find.byType(BookCard).first);
         await tester.pumpAndSettle();
 
-        // Launch reader
-        await tester.tap(find.text('Read Book'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pumpAndSettle();
+        expect(find.byType(BookDetailsDialog), findsOneWidget);
 
+        // Tap "Read Book"
+        final readButton = find.text('Read Book');
+        expect(readButton, findsOneWidget);
+        await tester.tap(readButton);
+
+        // Let dialog pop and ReadingScreen push cleanly
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Dialog should be gone, ReadingScreen should be mounted with controls visible
+        expect(find.byType(BookDetailsDialog), findsNothing);
         expect(find.byType(ReadingScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-        // Close reader via Escape key shortcut
-        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        // Close ReadingScreen via top back button
+        final backButton = find.byKey(const ValueKey('reader_top_back_button'));
+        expect(backButton, findsOneWidget);
+        await tester.tap(backButton);
+
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.pumpAndSettle();
 
+        // Back at LibraryScreen cleanly
         expect(find.byType(ReadingScreen), findsNothing);
-        expect(tester.takeException(), isNull, reason: 'Cycle $i must not throw any exception');
-      }
+        expect(find.byType(LibraryScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      stopwatch.stop();
-      print('\n===============================================================');
-      print('RAPID 15-CYCLE OPEN/CLOSE LIFECYCLE AUDIT');
-      print('===============================================================');
-      print('Total Duration: ${stopwatch.elapsedMilliseconds} ms (${(stopwatch.elapsedMilliseconds / 15).toStringAsFixed(1)} ms/cycle)');
-      print('Exceptions / Crashes: 0 (Zero _dependents.isEmpty assertions)');
-      print('===============================================================');
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
-      // Unmount the widget tree and flush any stream cancellation timers
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+    testWidgets(
+      '2. Rapid repeated reader open/close loop (15 cycles) does not trigger _dependents.isEmpty or memory leak',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-    testWidgets('3. Annotations Sheet open/close within ReadingScreen does not disrupt route tree', (tester) async {
-      tester.view.physicalSize = const Size(1200, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+        final book = await dbService.getBookById('lifecycle_test_book');
+        expect(book, isNotNull);
 
-      final book = await dbService.getBookById('lifecycle_test_book');
-      expect(book, isNotNull);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              databaseServiceProvider.overrideWithValue(dbService),
+            ],
+            child: const MaterialApp(home: LibraryScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            databaseServiceProvider.overrideWithValue(dbService),
-          ],
-          child: MaterialApp(
-            home: ReadingScreen(
-              book: book!,
-              initialMode: ReadingMode.reflowable,
+        final stopwatch = Stopwatch()..start();
+
+        for (int i = 0; i < 15; i++) {
+          // Open details via long press
+          await tester.longPress(find.byType(BookCard).first);
+          await tester.pumpAndSettle();
+
+          // Launch reader
+          await tester.tap(find.text('Read Book'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(ReadingScreen), findsOneWidget);
+
+          // Close reader via Escape key shortcut
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(ReadingScreen), findsNothing);
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Cycle $i must not throw any exception',
+          );
+        }
+
+        stopwatch.stop();
+        print(
+          '\n===============================================================',
+        );
+        print('RAPID 15-CYCLE OPEN/CLOSE LIFECYCLE AUDIT');
+        print(
+          '===============================================================',
+        );
+        print(
+          'Total Duration: ${stopwatch.elapsedMilliseconds} ms (${(stopwatch.elapsedMilliseconds / 15).toStringAsFixed(1)} ms/cycle)',
+        );
+        print('Exceptions / Crashes: 0 (Zero _dependents.isEmpty assertions)');
+        print(
+          '===============================================================',
+        );
+
+        // Unmount the widget tree and flush any stream cancellation timers
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      '3. Annotations Sheet open/close within ReadingScreen does not disrupt route tree',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        final book = await dbService.getBookById('lifecycle_test_book');
+        expect(book, isNotNull);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              databaseServiceProvider.overrideWithValue(dbService),
+            ],
+            child: MaterialApp(
+              home: ReadingScreen(
+                book: book!,
+                initialMode: ReadingMode.reflowable,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-      // Open Annotations Sheet (controls are visible on launch)
-      final annotBtn = find.byKey(const ValueKey('reader_annotations_button'));
-      expect(annotBtn, findsOneWidget);
-      await tester.tap(annotBtn);
-      await tester.pumpAndSettle();
+        // Open Annotations Sheet (controls are visible on launch)
+        final annotBtn = find.byKey(
+          const ValueKey('reader_annotations_button'),
+        );
+        expect(annotBtn, findsOneWidget);
+        await tester.tap(annotBtn);
+        await tester.pumpAndSettle();
 
-      // Verify sheet is open
-      expect(find.text('Anotasi & Penanda Buku'), findsOneWidget);
+        // Verify sheet is open
+        expect(find.text('Anotasi & Penanda Buku'), findsOneWidget);
 
-      // Press Escape: Should dismiss modal sheet, NOT ReadingScreen!
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
+        // Press Escape: Should dismiss modal sheet, NOT ReadingScreen!
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
 
-      // ReadingScreen is STILL mounted!
-      expect(find.byType(ReadingScreen), findsOneWidget);
-      expect(find.text('Anotasi & Penanda Buku'), findsNothing);
-      expect(tester.takeException(), isNull);
+        // ReadingScreen is STILL mounted!
+        expect(find.byType(ReadingScreen), findsOneWidget);
+        expect(find.text('Anotasi & Penanda Buku'), findsNothing);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }

@@ -292,7 +292,14 @@ void main() {
     'Indented TOC person names become sub-entries of the preceding title',
     () {
       final toc = _page(14, [
-        _line('Daftar Isi', page: 14, top: 100, left: 220, height: 20, index: 0),
+        _line(
+          'Daftar Isi',
+          page: 14,
+          top: 100,
+          left: 220,
+          height: 20,
+          index: 0,
+        ),
         _line('Sosok yang Menawan Telinga ....', page: 14, top: 200, index: 1),
         _line('.... 203', page: 14, top: 202, left: 440, width: 30, index: 2),
         _line(
@@ -315,12 +322,7 @@ void main() {
         ),
         _line('Annatainer Kaya Karakter ..', page: 14, top: 360, index: 7),
         _line('214', page: 14, top: 362, left: 440, width: 30, index: 8),
-        _line(
-          '- Kim Seong Joo/Jun Hyun Moo',
-          page: 14,
-          top: 390,
-          index: 9,
-        ),
+        _line('- Kim Seong Joo/Jun Hyun Moo', page: 14, top: 390, index: 9),
         _line('Pembawa Acara Komedi ....', page: 14, top: 440, index: 10),
         _line('... 219', page: 14, top: 442, left: 440, width: 30, index: 11),
         _line('- Yoo Jae Suk/Kim Gur', page: 14, top: 470, index: 12),
@@ -354,7 +356,10 @@ void main() {
         'Kim Seong Joo/Jun Hyun Moo',
         'Yoo Jae Suk/Kim Gur',
       ]);
-      expect(persons.first.metadata['parentTocTitle'], 'Sosok yang Menawan Telinga');
+      expect(
+        persons.first.metadata['parentTocTitle'],
+        'Sosok yang Menawan Telinga',
+      );
       expect(persons[1].metadata['parentTocTitle'], 'Laut yang Jernih');
       expect(persons[2].metadata['parentTocTitle'], 'Annatainer Kaya Karakter');
     },

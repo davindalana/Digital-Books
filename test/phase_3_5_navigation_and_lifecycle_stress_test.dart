@@ -61,7 +61,8 @@ void main() {
             ContentNode(
               id: 'n_1',
               type: ContentNodeType.paragraph,
-              text: 'This is a long test paragraph to verify complete navigation lifecycle stability across 100 cycles without leaks or dangling inherited dependencies.',
+              text:
+                  'This is a long test paragraph to verify complete navigation lifecycle stability across 100 cycles without leaks or dangling inherited dependencies.',
               sourcePdfPage: 1,
             ),
           ],
@@ -97,7 +98,9 @@ void main() {
   });
 
   group('Phase 3.5 — 100-Cycle Multi-Pathway Navigation & Lifecycle Stress Matrix', () {
-    testWidgets('100-Cycle Comprehensive Stress Across 8 Navigation Pathways', (tester) async {
+    testWidgets('100-Cycle Comprehensive Stress Across 8 Navigation Pathways', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -118,9 +121,7 @@ void main() {
             appDatabaseProvider.overrideWithValue(db),
             databaseServiceProvider.overrideWithValue(dbService),
           ],
-          child: const MaterialApp(
-            home: LibraryScreen(),
-          ),
+          child: const MaterialApp(home: LibraryScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -252,7 +253,9 @@ void main() {
       for (int i = 0; i < 15; i++) {
         try {
           await ensureControlsVisible();
-          final appearanceBtn = find.byKey(const ValueKey('reader_appearance_button'));
+          final appearanceBtn = find.byKey(
+            const ValueKey('reader_appearance_button'),
+          );
           if (appearanceBtn.evaluate().isNotEmpty) {
             await tester.tap(appearanceBtn);
             await tester.pumpAndSettle();
@@ -280,7 +283,9 @@ void main() {
       for (int i = 0; i < 15; i++) {
         try {
           await ensureControlsVisible();
-          final annotBtn = find.byKey(const ValueKey('reader_annotations_button'));
+          final annotBtn = find.byKey(
+            const ValueKey('reader_annotations_button'),
+          );
           if (annotBtn.evaluate().isNotEmpty) {
             await tester.tap(annotBtn);
             await tester.pumpAndSettle();
@@ -388,7 +393,9 @@ void main() {
       final netRssDeltaMb = (finalRss - initialRss) / (1024 * 1024);
       final peakRssDeltaMb = (peakRss - initialRss) / (1024 * 1024);
 
-      print('\n===============================================================');
+      print(
+        '\n===============================================================',
+      );
       print('PHASE 3.5: 120-CYCLE MULTI-PATHWAY LIFECYCLE STRESS REPORT');
       print('===============================================================');
       print('Total Navigation Cycles: 120 cycles across 8 pathways');
@@ -400,16 +407,31 @@ void main() {
       print('  - Path 6 (Reader -> Bookmark Toggle): 10 cycles');
       print('  - Path 7 (Reader -> Page Flip Traversal): 10 cycles');
       print('  - Path 8 (Rapid Open & Abort In-Flight): 10 cycles');
-      print('Total Execution Duration: ${sw.elapsedMilliseconds} ms (${(sw.elapsedMilliseconds / 120).toStringAsFixed(1)} ms/cycle)');
+      print(
+        'Total Execution Duration: ${sw.elapsedMilliseconds} ms (${(sw.elapsedMilliseconds / 120).toStringAsFixed(1)} ms/cycle)',
+      );
       print('Unhandled Exceptions: $totalExceptions');
       print('Flutter Assertions (_dependents.isEmpty): $assertionCount');
-      print('Initial RSS: ${(initialRss / (1024 * 1024)).toStringAsFixed(2)} MB');
+      print(
+        'Initial RSS: ${(initialRss / (1024 * 1024)).toStringAsFixed(2)} MB',
+      );
       print('Peak RSS Delta: +${peakRssDeltaMb.toStringAsFixed(2)} MB');
-      print('Final RSS Delta: ${netRssDeltaMb >= 0 ? "+" : ""}${netRssDeltaMb.toStringAsFixed(2)} MB');
+      print(
+        'Final RSS Delta: ${netRssDeltaMb >= 0 ? "+" : ""}${netRssDeltaMb.toStringAsFixed(2)} MB',
+      );
       print('===============================================================');
 
-      expect(totalExceptions, equals(0), reason: 'All 120 navigation cycles must complete with 0 unhandled exceptions');
-      expect(assertionCount, equals(0), reason: 'Zero _dependents.isEmpty assertions must be thrown');
+      expect(
+        totalExceptions,
+        equals(0),
+        reason:
+            'All 120 navigation cycles must complete with 0 unhandled exceptions',
+      );
+      expect(
+        assertionCount,
+        equals(0),
+        reason: 'Zero _dependents.isEmpty assertions must be thrown',
+      );
     });
   });
 }

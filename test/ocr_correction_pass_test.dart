@@ -11,7 +11,10 @@ void main() {
         'Negosiasi memiliki makna iproses perundingan yang menentukan.',
       );
 
-      expect(result.text, 'Negosiasi memiliki makna proses perundingan yang menentukan.');
+      expect(
+        result.text,
+        'Negosiasi memiliki makna proses perundingan yang menentukan.',
+      );
       expect(result.corrections, hasLength(1));
       expect(result.corrections.single, {
         'rule': 'token',
@@ -41,10 +44,7 @@ void main() {
         'Kompetisi. Latihan memuji. Wisata akan dimulai.',
       );
       expect(result.corrections, hasLength(6));
-      expect(
-        result.corrections.every((c) => c['rule'] == 'token'),
-        isTrue,
-      );
+      expect(result.corrections.every((c) => c['rule'] == 'token'), isTrue);
     });
 
     test('removes italic markers before quoted speech', () {
@@ -67,7 +67,10 @@ void main() {
         'Lebih baik kami tidak berbicarai"i dan "sekolah di mana?i',
       );
 
-      expect(result.text, 'Lebih baik kami tidak berbicara" dan "sekolah di mana?');
+      expect(
+        result.text,
+        'Lebih baik kami tidak berbicara" dan "sekolah di mana?',
+      );
       expect(result.changed, isTrue);
     });
 
@@ -102,10 +105,10 @@ void main() {
       );
 
       expect(result.text, 'Kecepatan\nGema Suara yang Menarik Orang');
-      expect(
-        result.corrections.map((c) => c['original']),
-        ['Kcepatan', 'yanga'],
-      );
+      expect(result.corrections.map((c) => c['original']), [
+        'Kcepatan',
+        'yanga',
+      ]);
 
       // `yanga` must only match as a standalone token, not inside `Goyangan`.
       final guarded = OcrCorrectionPass.correct('Goyangan tubuhnya lembut.');
@@ -118,16 +121,9 @@ void main() {
         'Ucapan yang Membuat Lawan Bicara MEMHAK Kita',
       );
 
-      expect(
-        result.text,
-        'Ucapan yang Membuat Lawan Bicara MEMIHAK Kita',
-      );
+      expect(result.text, 'Ucapan yang Membuat Lawan Bicara MEMIHAK Kita');
       expect(result.corrections, [
-        {
-          'rule': 'token',
-          'original': 'MEMHAK',
-          'corrected': 'MEMIHAK',
-        },
+        {'rule': 'token', 'original': 'MEMHAK', 'corrected': 'MEMIHAK'},
       ]);
       expect(
         OcrCorrectionPass.correct('MEMHAKAN bukan token yang sama').changed,
@@ -140,16 +136,9 @@ void main() {
         'Dimulai dengan Pukulan, Diakhiri dengan Sentuha',
       );
 
-      expect(
-        result.text,
-        'Dimulai dengan Pukulan, Diakhiri dengan Sentuhan',
-      );
+      expect(result.text, 'Dimulai dengan Pukulan, Diakhiri dengan Sentuhan');
       expect(result.corrections, [
-        {
-          'rule': 'token',
-          'original': 'Sentuha',
-          'corrected': 'Sentuhan',
-        },
+        {'rule': 'token', 'original': 'Sentuha', 'corrected': 'Sentuhan'},
       ]);
     });
   });
@@ -173,16 +162,9 @@ void main() {
         applied.single.text,
         'BAB III: UCAPAN YANG MEMBUAT LAWAN BICARA MEMIHAK KITA',
       );
-      expect(
-        applied.single.metadata['ocrCorrections'],
-        [
-          {
-            'rule': 'token',
-            'original': 'MEMHAK',
-            'corrected': 'MEMIHAK',
-          },
-        ],
-      );
+      expect(applied.single.metadata['ocrCorrections'], [
+        {'rule': 'token', 'original': 'MEMHAK', 'corrected': 'MEMIHAK'},
+      ]);
       expect(applied.single.metadata['role'], 'chapterHeading');
     });
     test('attaches corrections to metadata and preserves block identity', () {
@@ -205,16 +187,9 @@ void main() {
       expect(result.single.confidence, 0.93);
       expect(result.single.text, 'Ia diperbaiki setelah berlatih.');
       expect(result.single.metadata['kind'], 'body');
-      expect(
-        result.single.metadata['ocrCorrections'],
-        [
-          {
-            'rule': 'token',
-            'original': 'diperbaikii',
-            'corrected': 'diperbaiki',
-          },
-        ],
-      );
+      expect(result.single.metadata['ocrCorrections'], [
+        {'rule': 'token', 'original': 'diperbaikii', 'corrected': 'diperbaiki'},
+      ]);
     });
 
     test('returns the original block when no correction is needed', () {

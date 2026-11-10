@@ -109,202 +109,233 @@ void main() {
     return reconstructed.toBookDocument();
   }
 
-  testWidgets('1. Capture Visual Comparison: Laut Bercerita Page 15 (Scan vs Reflowable)', (tester) async {
-    tester.view.physicalSize = const Size(1000, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.view.resetPhysicalSize());
+  testWidgets(
+    '1. Capture Visual Comparison: Laut Bercerita Page 15 (Scan vs Reflowable)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
 
-    // 1. Render and save raw scanned page
-    final scanOut = '$visualEvidenceDir/laut_bercerita_p15_scan.png';
-    await tester.runAsync(() async {
-      await renderAndSaveScanPage(
-        pdfPath: lautBerceritaPath,
-        pageIndex: 14,
-        outputPath: scanOut,
-      );
-    });
-    expect(File(scanOut).existsSync(), isTrue);
+      // 1. Render and save raw scanned page
+      final scanOut = '$visualEvidenceDir/laut_bercerita_p15_scan.png';
+      await tester.runAsync(() async {
+        await renderAndSaveScanPage(
+          pdfPath: lautBerceritaPath,
+          pageIndex: 14,
+          outputPath: scanOut,
+        );
+      });
+      expect(File(scanOut).existsSync(), isTrue);
 
-    // 2. OCR and reconstruct
-    late BookDocument doc;
-    await tester.runAsync(() async {
-      doc = await ocrAndReconstructPage(
-        pdfPath: lautBerceritaPath,
-        pageIndex: 14,
-        title: 'Laut Bercerita',
-        author: 'Leila S. Chudori',
-      );
-    });
+      // 2. OCR and reconstruct
+      late BookDocument doc;
+      await tester.runAsync(() async {
+        doc = await ocrAndReconstructPage(
+          pdfPath: lautBerceritaPath,
+          pageIndex: 14,
+          title: 'Laut Bercerita',
+          author: 'Leila S. Chudori',
+        );
+      });
 
-    // 3. Render ReflowableBookReader in warm paper theme
-    final repaintKey = GlobalKey();
-    await tester.pumpWidget(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: RepaintBoundary(
-            key: repaintKey,
-            child: ReflowableBookReader(
-              document: doc,
-              theme: ReadingThemeType.warmPaper,
-              typography: const TypographySettings(
-                fontSize: 18.0,
-                lineSpacing: 1.6,
-                paragraphSpacing: 14.0,
+      // 3. Render ReflowableBookReader in warm paper theme
+      final repaintKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: repaintKey,
+              child: ReflowableBookReader(
+                document: doc,
+                theme: ReadingThemeType.warmPaper,
+                typography: const TypographySettings(
+                  fontSize: 18.0,
+                  lineSpacing: 1.6,
+                  paragraphSpacing: 14.0,
+                ),
+                initialChapterIndex: 0,
+                initialPosition: 1,
+                onProgressChanged: (ch, p, pct) {},
+                onTapContent: () {},
               ),
-              initialChapterIndex: 0,
-              initialPosition: 1,
-              onProgressChanged: (ch, p, pct) {},
-              onTapContent: () {},
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    // 4. Capture native screenshot
-    await tester.runAsync(() async {
-      final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary != null) {
-        final img = await boundary.toImage(pixelRatio: 2.0);
-        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-        if (bytes != null) {
-          File('$visualEvidenceDir/laut_bercerita_p15_reflowable.png')
-              .writeAsBytesSync(bytes.buffer.asUint8List());
+      // 4. Capture native screenshot
+      await tester.runAsync(() async {
+        final boundary =
+            repaintKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+        if (boundary != null) {
+          final img = await boundary.toImage(pixelRatio: 2.0);
+          final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+          if (bytes != null) {
+            File(
+              '$visualEvidenceDir/laut_bercerita_p15_reflowable.png',
+            ).writeAsBytesSync(bytes.buffer.asUint8List());
+          }
         }
-      }
-    });
+      });
 
-    expect(File('$visualEvidenceDir/laut_bercerita_p15_reflowable.png').existsSync(), isTrue);
-  });
-
-  testWidgets('2. Capture Visual Comparison: Bicara Itu Ada Seninya Page 33 (Scan vs Reflowable)', (tester) async {
-    tester.view.physicalSize = const Size(1000, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.view.resetPhysicalSize());
-
-    // 1. Render and save raw scanned page
-    final scanOut = '$visualEvidenceDir/bicara_seninya_p33_scan.png';
-    await tester.runAsync(() async {
-      await renderAndSaveScanPage(
-        pdfPath: bicaraSeninyaPath,
-        pageIndex: 32,
-        outputPath: scanOut,
+      expect(
+        File(
+          '$visualEvidenceDir/laut_bercerita_p15_reflowable.png',
+        ).existsSync(),
+        isTrue,
       );
-    });
-    expect(File(scanOut).existsSync(), isTrue);
+    },
+  );
 
-    // 2. OCR and reconstruct
-    late BookDocument doc;
-    await tester.runAsync(() async {
-      doc = await ocrAndReconstructPage(
-        pdfPath: bicaraSeninyaPath,
-        pageIndex: 32,
-        title: 'Bicara Itu Ada Seninya',
-        author: 'Oh Su Hyang',
-      );
-    });
+  testWidgets(
+    '2. Capture Visual Comparison: Bicara Itu Ada Seninya Page 33 (Scan vs Reflowable)',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
 
-    // 3. Render ReflowableBookReader in default light theme
-    final repaintKey = GlobalKey();
-    await tester.pumpWidget(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: RepaintBoundary(
-            key: repaintKey,
-            child: ReflowableBookReader(
-              document: doc,
-              theme: ReadingThemeType.white,
-              typography: const TypographySettings(
-                fontSize: 18.0,
-                lineSpacing: 1.6,
-                paragraphSpacing: 14.0,
+      // 1. Render and save raw scanned page
+      final scanOut = '$visualEvidenceDir/bicara_seninya_p33_scan.png';
+      await tester.runAsync(() async {
+        await renderAndSaveScanPage(
+          pdfPath: bicaraSeninyaPath,
+          pageIndex: 32,
+          outputPath: scanOut,
+        );
+      });
+      expect(File(scanOut).existsSync(), isTrue);
+
+      // 2. OCR and reconstruct
+      late BookDocument doc;
+      await tester.runAsync(() async {
+        doc = await ocrAndReconstructPage(
+          pdfPath: bicaraSeninyaPath,
+          pageIndex: 32,
+          title: 'Bicara Itu Ada Seninya',
+          author: 'Oh Su Hyang',
+        );
+      });
+
+      // 3. Render ReflowableBookReader in default light theme
+      final repaintKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: repaintKey,
+              child: ReflowableBookReader(
+                document: doc,
+                theme: ReadingThemeType.white,
+                typography: const TypographySettings(
+                  fontSize: 18.0,
+                  lineSpacing: 1.6,
+                  paragraphSpacing: 14.0,
+                ),
+                initialChapterIndex: 0,
+                initialPosition: 1,
+                onProgressChanged: (ch, p, pct) {},
+                onTapContent: () {},
               ),
-              initialChapterIndex: 0,
-              initialPosition: 1,
-              onProgressChanged: (ch, p, pct) {},
-              onTapContent: () {},
             ),
           ),
         ),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // 4. Capture native screenshot
-    await tester.runAsync(() async {
-      final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary != null) {
-        final img = await boundary.toImage(pixelRatio: 2.0);
-        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-        if (bytes != null) {
-          File('$visualEvidenceDir/bicara_seninya_p33_reflowable.png')
-              .writeAsBytesSync(bytes.buffer.asUint8List());
-        }
-      }
-    });
-
-    expect(File('$visualEvidenceDir/bicara_seninya_p33_reflowable.png').existsSync(), isTrue);
-  });
-
-  testWidgets('3. Capture Visual: The Devotion of Suspect X Page 11 Narrative Reflowable', (tester) async {
-    tester.view.physicalSize = const Size(1000, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(() => tester.view.resetPhysicalSize());
-
-    late BookDocument doc;
-    await tester.runAsync(() async {
-      doc = await ocrAndReconstructPage(
-        pdfPath: mrXPath,
-        pageIndex: 10,
-        title: 'Kesetiaan Mr. X',
-        author: 'Keigo Higashino',
       );
-    });
 
-    final repaintKey = GlobalKey();
-    await tester.pumpWidget(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: RepaintBoundary(
-            key: repaintKey,
-            child: ReflowableBookReader(
-              document: doc,
-              theme: ReadingThemeType.warmPaper,
-              typography: const TypographySettings(
-                fontSize: 18.0,
-                lineSpacing: 1.6,
-                paragraphSpacing: 14.0,
+      await tester.pumpAndSettle();
+
+      // 4. Capture native screenshot
+      await tester.runAsync(() async {
+        final boundary =
+            repaintKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+        if (boundary != null) {
+          final img = await boundary.toImage(pixelRatio: 2.0);
+          final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+          if (bytes != null) {
+            File(
+              '$visualEvidenceDir/bicara_seninya_p33_reflowable.png',
+            ).writeAsBytesSync(bytes.buffer.asUint8List());
+          }
+        }
+      });
+
+      expect(
+        File(
+          '$visualEvidenceDir/bicara_seninya_p33_reflowable.png',
+        ).existsSync(),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    '3. Capture Visual: The Devotion of Suspect X Page 11 Narrative Reflowable',
+    (tester) async {
+      tester.view.physicalSize = const Size(1000, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      late BookDocument doc;
+      await tester.runAsync(() async {
+        doc = await ocrAndReconstructPage(
+          pdfPath: mrXPath,
+          pageIndex: 10,
+          title: 'Kesetiaan Mr. X',
+          author: 'Keigo Higashino',
+        );
+      });
+
+      final repaintKey = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            body: RepaintBoundary(
+              key: repaintKey,
+              child: ReflowableBookReader(
+                document: doc,
+                theme: ReadingThemeType.warmPaper,
+                typography: const TypographySettings(
+                  fontSize: 18.0,
+                  lineSpacing: 1.6,
+                  paragraphSpacing: 14.0,
+                ),
+                initialChapterIndex: 0,
+                initialPosition: 1,
+                onProgressChanged: (ch, p, pct) {},
+                onTapContent: () {},
               ),
-              initialChapterIndex: 0,
-              initialPosition: 1,
-              onProgressChanged: (ch, p, pct) {},
-              onTapContent: () {},
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    await tester.runAsync(() async {
-      final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary != null) {
-        final img = await boundary.toImage(pixelRatio: 2.0);
-        final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-        if (bytes != null) {
-          File('$visualEvidenceDir/suspect_x_p11_reflowable.png')
-              .writeAsBytesSync(bytes.buffer.asUint8List());
+      await tester.runAsync(() async {
+        final boundary =
+            repaintKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+        if (boundary != null) {
+          final img = await boundary.toImage(pixelRatio: 2.0);
+          final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+          if (bytes != null) {
+            File(
+              '$visualEvidenceDir/suspect_x_p11_reflowable.png',
+            ).writeAsBytesSync(bytes.buffer.asUint8List());
+          }
         }
-      }
-    });
+      });
 
-    expect(File('$visualEvidenceDir/suspect_x_p11_reflowable.png').existsSync(), isTrue);
-  });
+      expect(
+        File('$visualEvidenceDir/suspect_x_p11_reflowable.png').existsSync(),
+        isTrue,
+      );
+    },
+  );
 }

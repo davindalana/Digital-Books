@@ -121,7 +121,9 @@ class OcrPages extends Table {
   TextColumn get bookId =>
       text().references(Books, #id, onDelete: KeyAction.cascade)();
   IntColumn get pageIndex => integer()();
-  TextColumn get status => text().withDefault(const Constant('completed'))(); // pending, processing, completed, failed
+  TextColumn get status => text().withDefault(
+    const Constant('completed'),
+  )(); // pending, processing, completed, failed
   RealColumn get confidence => real().withDefault(const Constant(1.0))();
   IntColumn get charCount => integer().withDefault(const Constant(0))();
   RealColumn get durationMs => real().withDefault(const Constant(0.0))();
@@ -142,7 +144,8 @@ class BookSearchPages extends Table {
   IntColumn get pageIndex => integer()();
   TextColumn get plainText => text()();
   TextColumn get rawText => text()();
-  TextColumn get geometryJson => text()(); // Serialized List<SearchTokenGeometry> JSON
+  TextColumn get geometryJson =>
+      text()(); // Serialized List<SearchTokenGeometry> JSON
   BoolColumn get isOcr => boolean().withDefault(const Constant(false))();
   TextColumn get fileHash => text().nullable()();
   IntColumn get indexVersion => integer().withDefault(const Constant(1))();

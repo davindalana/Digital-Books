@@ -172,83 +172,119 @@ void main() {
         () {
           // 1. Passive prefix: di + verb -> ditutup, ditendang, didorong, dibaca, ditulis
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Pintu itu di tutup rapat.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Pintu itu di tutup rapat.',
+            ),
             equals('Pintu itu ditutup rapat.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Aku di tendang ke depan.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Aku di tendang ke depan.',
+            ),
             equals('Aku ditendang ke depan.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Buku ini di baca banyak orang.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Buku ini di baca banyak orang.',
+            ),
             equals('Buku ini dibaca banyak orang.'),
           );
 
           // 2. Preposition complements: MUST NEVER BE JOINED
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Kami tinggal di rumah itu.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Kami tinggal di rumah itu.',
+            ),
             equals('Kami tinggal di rumah itu.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Di manakah aku berada?'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Di manakah aku berada?',
+            ),
             equals('Di manakah aku berada?'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Kami berada di atas mobil.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Kami berada di atas mobil.',
+            ),
             equals('Kami berada di atas mobil.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Buku disimpan di dalam lemari.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Buku disimpan di dalam lemari.',
+            ),
             equals('Buku disimpan di dalam lemari.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Dia sedang bekerja di kantor.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Dia sedang bekerja di kantor.',
+            ),
             equals('Dia sedang bekerja di kantor.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Mereka pergi ke sekolah.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Mereka pergi ke sekolah.',
+            ),
             equals('Mereka pergi ke sekolah.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Ke manakah engkau akan pergi?'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Ke manakah engkau akan pergi?',
+            ),
             equals('Ke manakah engkau akan pergi?'),
           );
 
           // 3. Stray hyphens and spaces on prepositional complements
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Berada di- rumah kakek.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Berada di- rumah kakek.',
+            ),
             equals('Berada di rumah kakek.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Menuju ke- sekolah baru.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Menuju ke- sekolah baru.',
+            ),
             equals('Menuju ke sekolah baru.'),
           );
 
           // 4. Stray hyphens and spaces on genuine affixes
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Sebuah peng- alaman membaca.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Sebuah peng- alaman membaca.',
+            ),
             equals('Sebuah pengalaman membaca.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Membeli se- buah buku.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Membeli se- buah buku.',
+            ),
             equals('Membeli sebuah buku.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Hari ke- dua pekan ini.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Hari ke- dua pekan ini.',
+            ),
             equals('Hari kedua pekan ini.'),
           );
 
           // 5. Reduplication preservation
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Anak- anak bermain di taman.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Anak- anak bermain di taman.',
+            ),
             equals('Anak-anak bermain di taman.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Tiba- tiba terdengar suara.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Tiba- tiba terdengar suara.',
+            ),
             equals('Tiba-tiba terdengar suara.'),
           );
           expect(
-            ReconstructedParagraphBuilder.cleanOcrText('Untuk mengira- ngira lokasi.'),
+            ReconstructedParagraphBuilder.cleanOcrText(
+              'Untuk mengira- ngira lokasi.',
+            ),
             equals('Untuk mengira-ngira lokasi.'),
           );
 
@@ -271,7 +307,10 @@ void main() {
           final prepBuilder = ReconstructedParagraphBuilder(prepLine1);
           prepBuilder.appendLine(prepLine2);
           final prepParagraph = prepBuilder.build();
-          expect(prepParagraph.text, equals('Ia sedang berada di rumah paman.'));
+          expect(
+            prepParagraph.text,
+            equals('Ia sedang berada di rumah paman.'),
+          );
           expect(prepParagraph.text.contains('dirumah'), isFalse);
 
           // And cross-line verb joining:

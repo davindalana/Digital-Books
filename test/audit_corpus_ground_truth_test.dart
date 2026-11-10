@@ -32,7 +32,9 @@ void main() {
         pdfPath: pdfFile.path,
       );
       await db.close();
-      print('Audited document reconstructed in-memory from OCR pages (db read-only).');
+      print(
+        'Audited document reconstructed in-memory from OCR pages (db read-only).',
+      );
     }
 
     if (bookDoc == null) {
@@ -78,7 +80,9 @@ void main() {
       orElse: () => throw StateError('BAB III not found'),
     );
     expect(bab3.title.toLowerCase(), contains('memihak'));
-    print('Verified: BAB III title contains "Memihak" (original OCR had MEMHAK)');
+    print(
+      'Verified: BAB III title contains "Memihak" (original OCR had MEMHAK)',
+    );
 
     // - TOC chapter title for BAB III
     final tocChapter = readerDoc.chapters.firstWhere(
@@ -127,7 +131,11 @@ void main() {
         }
       }
     }
-    expect(absorbedDialogues, 0, reason: 'Dialogue lines must never be absorbed into preceding paragraphs');
+    expect(
+      absorbedDialogues,
+      0,
+      reason: 'Dialogue lines must never be absorbed into preceding paragraphs',
+    );
     print('Verified: 0 dialogue lines absorbed across page breaks.');
 
     // 3. Audit Short Blocks (< 30 characters) in Prose
@@ -169,14 +177,20 @@ void main() {
     final tocChapterLabels = tocChapter.nodes
         .where((n) => n.attributes['kind'] == 'tocChapterLabel')
         .toList();
-    print('TOC chapter labels: ${tocChapterLabels.map((l) => l.text).toList()}');
+    print(
+      'TOC chapter labels: ${tocChapterLabels.map((l) => l.text).toList()}',
+    );
     expect(tocChapterLabels.length, 5);
 
     // Verify dot leaders are stripped from titles
     for (final n in tocChapter.nodes) {
       if (n.attributes['kind'] == 'tocEntry') {
-        expect(n.text.endsWith('.'), isFalse,
-            reason: 'TOC entry "${n.text}" should not end with dot leader remnants');
+        expect(
+          n.text.endsWith('.'),
+          isFalse,
+          reason:
+              'TOC entry "${n.text}" should not end with dot leader remnants',
+        );
       }
     }
     print('Verified: All TOC entries have dot leaders cleanly stripped.');
@@ -192,19 +206,25 @@ void main() {
     expect(konflik.type, ContentNodeType.orderedList);
     expect(simpati.type, ContentNodeType.orderedList);
     expect(solusi.type, ContentNodeType.orderedList);
-    print('Verified: 1. Tema, 2. Konflik, 3. Simpati, 4. Solusi all classified as orderedList.');
+    print(
+      'Verified: 1. Tema, 2. Konflik, 3. Simpati, 4. Solusi all classified as orderedList.',
+    );
 
     // Year 2013 not classified as orderedList
     final ch8 = readerDoc.chapters.firstWhere((c) => c.title.contains('BAB V'));
     final yearNode = ch8.nodes.firstWhere((n) => n.text.contains('2013.'));
     expect(yearNode.type, ContentNodeType.paragraph);
-    print('Verified: 2013. year boundary classified as paragraph, not ordered list.');
+    print(
+      'Verified: 2013. year boundary classified as paragraph, not ordered list.',
+    );
 
     // Oprah Winfrey paragraph
     final oprahNode = readerDoc.chapters
         .expand((c) => c.nodes)
         .firstWhere((n) => n.text.contains('Oprah'));
     expect(oprahNode.type, ContentNodeType.paragraph);
-    print('Verified: Oprah Winfrey passage classified as paragraph: "${oprahNode.text.substring(0, 40)}..."');
+    print(
+      'Verified: Oprah Winfrey passage classified as paragraph: "${oprahNode.text.substring(0, 40)}..."',
+    );
   });
 }

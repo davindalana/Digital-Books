@@ -95,7 +95,8 @@ void main() {
       for (var i = 0; i < pages.length; i++) {
         final p = pages[i];
         final measured = metrics.measurePage(p);
-        final isTerminal = i == pages.length - 1 ||
+        final isTerminal =
+            i == pages.length - 1 ||
             (i < pages.length - 1 && pages[i + 1].pageIndexInChapter == 0);
         final isFrontMatter = p.chapterIndex == 0;
         final util = measured.height / metrics.availableHeight;
@@ -119,14 +120,22 @@ void main() {
       );
       print('overflow pages (${overflow.length}):');
       for (final o in overflow.take(20)) {
-        print('  page ${o.$1} h=${o.$2.toStringAsFixed(1)} :: '
-            '${_summary(pages[o.$1])}');
+        print(
+          '  page ${o.$1} h=${o.$2.toStringAsFixed(1)} :: '
+          '${_summary(pages[o.$1])}',
+        );
       }
-      expect(overflow, isEmpty, reason: 'Zero overflow pages required across viewports');
+      expect(
+        overflow,
+        isEmpty,
+        reason: 'Zero overflow pages required across viewports',
+      );
       print('sparse (<35%) (${sparse.length}):');
       for (final s in sparse.take(40)) {
-        print('  page ${s.$1} util=${(s.$2 * 100).toStringAsFixed(1)}% '
-            'lines=${s.$3} :: ${_summary(pages[s.$1])}');
+        print(
+          '  page ${s.$1} util=${(s.$2 * 100).toStringAsFixed(1)}% '
+          'lines=${s.$3} :: ${_summary(pages[s.$1])}',
+        );
       }
       print('heading as last slice (${headingLast.length}):');
       for (final i in headingLast.take(30)) {
@@ -178,16 +187,20 @@ class _Metrics {
   final TypographySettings typography;
 
   _Metrics(double viewportWidth, double viewportHeight, this.typography)
-      : contentWidth = _contentWidth(viewportWidth, typography),
-        availableHeight =
-            (viewportHeight - 16.0 - 28.0 - 24.0).clamp(120.0, 4000.0);
+    : contentWidth = _contentWidth(viewportWidth, typography),
+      availableHeight = (viewportHeight - 16.0 - 28.0 - 24.0).clamp(
+        120.0,
+        4000.0,
+      );
 
   static double _contentWidth(
     double viewportWidth,
     TypographySettings typography,
   ) {
     final spread = viewportWidth >= 850.0 && typography.twoPageSpread;
-    final rawPageWidth = spread ? ((viewportWidth - 24.0) / 2.0) : viewportWidth;
+    final rawPageWidth = spread
+        ? ((viewportWidth - 24.0) / 2.0)
+        : viewportWidth;
     final margin = rawPageWidth < 400.0
         ? 18.0
         : (rawPageWidth < 650.0
@@ -225,9 +238,11 @@ bool _isHeading(ContentNodeType t) =>
     t == ContentNodeType.documentTitle;
 
 String _summary(PaginatedPage p) {
-  return p.slices.map((s) {
-    final text = s.textSlice.replaceAll('\n', ' ').trim();
-    final short = text.length > 45 ? '${text.substring(0, 45)}…' : text;
-    return '${s.node.type.name}[${s.node.attributes['kind'] ?? ''}]"$short"';
-  }).join(' | ');
+  return p.slices
+      .map((s) {
+        final text = s.textSlice.replaceAll('\n', ' ').trim();
+        final short = text.length > 45 ? '${text.substring(0, 45)}…' : text;
+        return '${s.node.type.name}[${s.node.attributes['kind'] ?? ''}]"$short"';
+      })
+      .join(' | ');
 }

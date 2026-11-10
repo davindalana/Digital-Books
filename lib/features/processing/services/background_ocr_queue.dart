@@ -103,19 +103,22 @@ class BackgroundOcrQueue {
         return;
       }
       throw StateError(
-          'BackgroundOcrQueue is already actively processing book ${_state.bookId}');
+        'BackgroundOcrQueue is already actively processing book ${_state.bookId}',
+      );
     }
 
     final file = File(pdfPath);
     if (!file.existsSync()) {
-      _emit(OcrQueueProgress(
-        bookId: bookId,
-        status: OcrQueueStatus.error,
-        currentPageIndex: 0,
-        totalPages: 0,
-        completedPages: 0,
-        errorMessage: 'PDF file not found at $pdfPath',
-      ));
+      _emit(
+        OcrQueueProgress(
+          bookId: bookId,
+          status: OcrQueueStatus.error,
+          currentPageIndex: 0,
+          totalPages: 0,
+          completedPages: 0,
+          errorMessage: 'PDF file not found at $pdfPath',
+        ),
+      );
       return;
     }
 
@@ -131,11 +134,15 @@ class BackgroundOcrQueue {
       if (currentHash != book.fileHash) {
         // File was modified or replaced: invalidate stale OCR pages and old processed derivative
         await dbService.deleteOcrPagesForBook(bookId);
-        await dbService.insertBook(book.toCompanion(true).copyWith(
-              fileHash: Value(currentHash),
-              processedBookPath: const Value(null),
-              updatedAt: Value(DateTime.now()),
-            ));
+        await dbService.insertBook(
+          book
+              .toCompanion(true)
+              .copyWith(
+                fileHash: Value(currentHash),
+                processedBookPath: const Value(null),
+                updatedAt: Value(DateTime.now()),
+              ),
+        );
       }
     }
 
@@ -144,8 +151,10 @@ class BackgroundOcrQueue {
       doc = await PdfDocument.openFile(pdfPath);
       final totalBookPages = doc.pages.length;
       final effectiveStart = (startPage ?? 0).clamp(0, totalBookPages - 1);
-      final effectiveEnd =
-          (endPage ?? (totalBookPages - 1)).clamp(effectiveStart, totalBookPages - 1);
+      final effectiveEnd = (endPage ?? (totalBookPages - 1)).clamp(
+        effectiveStart,
+        totalBookPages - 1,
+      );
       final targetPageCount = effectiveEnd - effectiveStart + 1;
 
       // Check existing completed pages in database
@@ -165,13 +174,15 @@ class BackgroundOcrQueue {
       double totalDurationMs = 0.0;
       int newlyProcessed = 0;
 
-      _emit(OcrQueueProgress(
-        bookId: bookId,
-        status: OcrQueueStatus.running,
-        currentPageIndex: effectiveStart,
-        totalPages: targetPageCount,
-        completedPages: completedCount,
-      ));
+      _emit(
+        OcrQueueProgress(
+          bookId: bookId,
+          status: OcrQueueStatus.running,
+          currentPageIndex: effectiveStart,
+          totalPages: targetPageCount,
+          completedPages: completedCount,
+        ),
+      );
 
       for (int pageIdx = effectiveStart; pageIdx <= effectiveEnd; pageIdx++) {
         if (_isCancelled) {
@@ -192,13 +203,16 @@ class BackgroundOcrQueue {
           continue;
         }
 
-        _emit(_state.copyWith(
-          status: OcrQueueStatus.running,
-          currentPageIndex: pageIdx,
-          completedPages: completedCount,
-          averagePageDurationMs:
-              newlyProcessed > 0 ? totalDurationMs / newlyProcessed : 0.0,
-        ));
+        _emit(
+          _state.copyWith(
+            status: OcrQueueStatus.running,
+            currentPageIndex: pageIdx,
+            completedPages: completedCount,
+            averagePageDurationMs: newlyProcessed > 0
+                ? totalDurationMs / newlyProcessed
+                : 0.0,
+          ),
+        );
 
         final page = doc.pages[pageIdx];
         final ocrResult = await ocrService.processPdfPage(
@@ -228,16 +242,19 @@ class BackgroundOcrQueue {
           );
         } else {
           // Success
-          final linesJson =
-              jsonEncode(ocrResult.lines.map((l) => l.toJson()).toList());
+          final linesJson = jsonEncode(
+            ocrResult.lines.map((l) => l.toJson()).toList(),
+          );
           final charCount = ocrResult.lines.fold<int>(
             0,
             (acc, l) => acc + l.text.length,
           );
           final avgConfidence = ocrResult.lines.isEmpty
               ? 1.0
-              : ocrResult.lines.map((l) => l.confidence).reduce((a, b) => a + b) /
-                  ocrResult.lines.length;
+              : ocrResult.lines
+                        .map((l) => l.confidence)
+                        .reduce((a, b) => a + b) /
+                    ocrResult.lines.length;
 
           await dbService.insertOcrPage(
             OcrPagesCompanion(
@@ -258,13 +275,16 @@ class BackgroundOcrQueue {
           completedCount++;
         }
 
-        _emit(_state.copyWith(
-          status: OcrQueueStatus.running,
-          currentPageIndex: pageIdx,
-          completedPages: completedCount,
-          averagePageDurationMs:
-              newlyProcessed > 0 ? totalDurationMs / newlyProcessed : 0.0,
-        ));
+        _emit(
+          _state.copyWith(
+            status: OcrQueueStatus.running,
+            currentPageIndex: pageIdx,
+            completedPages: completedCount,
+            averagePageDurationMs: newlyProcessed > 0
+                ? totalDurationMs / newlyProcessed
+                : 0.0,
+          ),
+        );
 
         // Yield execution to the event loop so UI / other tasks stay butter-smooth
         await Future.delayed(const Duration(milliseconds: 10));
@@ -279,24 +299,30 @@ class BackgroundOcrQueue {
             );
           } catch (e, st) {
             // Keep error visible in state or log
-            _emit(_state.copyWith(
-              status: OcrQueueStatus.error,
-              errorMessage: 'Reconstruction error: $e\n$st',
-            ));
+            _emit(
+              _state.copyWith(
+                status: OcrQueueStatus.error,
+                errorMessage: 'Reconstruction error: $e\n$st',
+              ),
+            );
             return;
           }
         }
 
-        _emit(_state.copyWith(
-          status: OcrQueueStatus.completed,
-          completedPages: completedCount,
-        ));
+        _emit(
+          _state.copyWith(
+            status: OcrQueueStatus.completed,
+            completedPages: completedCount,
+          ),
+        );
       }
     } catch (e, stack) {
-      _emit(_state.copyWith(
-        status: OcrQueueStatus.error,
-        errorMessage: 'OCR Queue failed: $e\n$stack',
-      ));
+      _emit(
+        _state.copyWith(
+          status: OcrQueueStatus.error,
+          errorMessage: 'OCR Queue failed: $e\n$stack',
+        ),
+      );
     } finally {
       _isRunning = false;
       await doc?.dispose();
@@ -311,8 +337,10 @@ class BackgroundOcrQueue {
     bool accurate = true,
   }) async {
     final existingPages = await dbService.getOcrPagesForBook(bookId);
-    final failedPages =
-        existingPages.where((p) => p.status == 'failed').map((p) => p.pageIndex).toList();
+    final failedPages = existingPages
+        .where((p) => p.status == 'failed')
+        .map((p) => p.pageIndex)
+        .toList();
 
     if (failedPages.isEmpty) return;
 

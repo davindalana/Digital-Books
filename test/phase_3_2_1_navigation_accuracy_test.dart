@@ -10,46 +10,49 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Phase 3.2.1 — Search Navigation & Traversal Audit', () {
-    testWidgets('1. Search Traversal Bar Renders Correct Count & Triggers Next / Prev / Close', (tester) async {
-      int nextCount = 0;
-      int prevCount = 0;
-      bool closed = false;
+    testWidgets(
+      '1. Search Traversal Bar Renders Correct Count & Triggers Next / Prev / Close',
+      (tester) async {
+        int nextCount = 0;
+        int prevCount = 0;
+        bool closed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SearchTraversalBar(
-              query: 'destiny',
-              currentIndex: 0,
-              totalCount: 3,
-              theme: ReadingThemeType.white,
-              onPrevious: () => prevCount++,
-              onNext: () => nextCount++,
-              onClose: () => closed = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SearchTraversalBar(
+                query: 'destiny',
+                currentIndex: 0,
+                totalCount: 3,
+                theme: ReadingThemeType.white,
+                onPrevious: () => prevCount++,
+                onNext: () => nextCount++,
+                onClose: () => closed = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify Query Badge and Match Count Text
-      expect(find.text('destiny'), findsOneWidget);
-      expect(find.text('1 dari 3'), findsOneWidget);
+        // Verify Query Badge and Match Count Text
+        expect(find.text('destiny'), findsOneWidget);
+        expect(find.text('1 dari 3'), findsOneWidget);
 
-      // Tap Next Match
-      await tester.tap(find.byTooltip('Hasil Berikutnya (Enter)'));
-      await tester.pump();
-      expect(nextCount, equals(1));
+        // Tap Next Match
+        await tester.tap(find.byTooltip('Hasil Berikutnya (Enter)'));
+        await tester.pump();
+        expect(nextCount, equals(1));
 
-      // Tap Previous Match
-      await tester.tap(find.byTooltip('Hasil Sebelumnya (Shift+Enter)'));
-      await tester.pump();
-      expect(prevCount, equals(1));
+        // Tap Previous Match
+        await tester.tap(find.byTooltip('Hasil Sebelumnya (Shift+Enter)'));
+        await tester.pump();
+        expect(prevCount, equals(1));
 
-      // Tap Close
-      await tester.tap(find.byTooltip('Selesai Pencarian (Esc)'));
-      await tester.pump();
-      expect(closed, isTrue);
-    });
+        // Tap Close
+        await tester.tap(find.byTooltip('Selesai Pencarian (Esc)'));
+        await tester.pump();
+        expect(closed, isTrue);
+      },
+    );
 
     test('2. Cyclic Traversal Next/Previous Index Wrapping Logic', () {
       final matches = [
@@ -150,9 +153,7 @@ void main() {
         snippet: '…menaiki sebuah speedboat. Bau asin…',
         prefixContext: 'menaiki sebuah ',
         suffixContext: '. Bau asin',
-        boundingBoxes: [
-          Rect.fromLTWH(0.55, 0.38, 0.14, 0.035),
-        ],
+        boundingBoxes: [Rect.fromLTWH(0.55, 0.38, 0.14, 0.035)],
         isCrossPage: false,
         isOcr: true,
       );
@@ -166,7 +167,10 @@ void main() {
 
       expect(targetPdfPage, equals(15));
       expect(pdfHighlights[15], isNotNull);
-      expect(pdfHighlights[15]!.first, equals(const Rect.fromLTWH(0.55, 0.38, 0.14, 0.035)));
+      expect(
+        pdfHighlights[15]!.first,
+        equals(const Rect.fromLTWH(0.55, 0.38, 0.14, 0.035)),
+      );
 
       // Switching from Original PDF to Reflowable:
       // Must map back to nodeId, chapterIndex, and startOffset
@@ -179,57 +183,61 @@ void main() {
       expect(targetCharOffset, equals(124));
     });
 
-    testWidgets('4. Original PDF Highlight Painter Renders Normalized Box Without Drift', (tester) async {
-      const highlightBox = Rect.fromLTWH(0.2, 0.3, 0.4, 0.05);
+    testWidgets(
+      '4. Original PDF Highlight Painter Renders Normalized Box Without Drift',
+      (tester) async {
+        const highlightBox = Rect.fromLTWH(0.2, 0.3, 0.4, 0.05);
 
-      // Render at standard window size (800 x 1000)
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 800,
-                height: 1000,
-                child: CustomPaint(
-                  painter: PdfSearchHighlightPainter(
-                    normalizedBoxes: const [highlightBox],
-                    isDark: false,
+        // Render at standard window size (800 x 1000)
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 800,
+                  height: 1000,
+                  child: CustomPaint(
+                    painter: PdfSearchHighlightPainter(
+                      normalizedBoxes: const [highlightBox],
+                      isDark: false,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(CustomPaint), findsWidgets);
+        expect(find.byType(CustomPaint), findsWidgets);
 
-      // Now simulate window resize to wider format (1200 x 900)
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 1200,
-                height: 900,
-                child: CustomPaint(
-                  painter: PdfSearchHighlightPainter(
-                    normalizedBoxes: const [highlightBox],
-                    isDark: true,
+        // Now simulate window resize to wider format (1200 x 900)
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 1200,
+                  height: 900,
+                  child: CustomPaint(
+                    painter: PdfSearchHighlightPainter(
+                      normalizedBoxes: const [highlightBox],
+                      isDark: true,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // CustomPaint successfully resizes with normalized scale factors
-      expect(find.byType(CustomPaint), findsWidgets);
-    });
+        // CustomPaint successfully resizes with normalized scale factors
+        expect(find.byType(CustomPaint), findsWidgets);
+      },
+    );
 
     test('5. Reflowable Rich Text Span Highlights Active Match Correctly', () {
-      const text = 'Kini salah satu dari mereka berteriak agar aku menaiki sebuah speedboat.';
+      const text =
+          'Kini salah satu dari mereka berteriak agar aku menaiki sebuah speedboat.';
       final matchStart = text.indexOf('speedboat');
       final matchEnd = matchStart + 'speedboat'.length;
 
@@ -259,9 +267,9 @@ void main() {
       expect(children!.isNotEmpty, isTrue);
 
       // One of the children must contain 'speedboat' with active highlight background
-      final matchSpan = children.firstWhere(
-        (s) => (s as TextSpan).text == 'speedboat',
-      ) as TextSpan;
+      final matchSpan =
+          children.firstWhere((s) => (s as TextSpan).text == 'speedboat')
+              as TextSpan;
 
       expect(matchSpan.text, equals('speedboat'));
       expect(matchSpan.style?.backgroundColor, isNotNull);

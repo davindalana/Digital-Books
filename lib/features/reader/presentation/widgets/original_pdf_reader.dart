@@ -413,9 +413,11 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     }
 
     final activePages = _getActivePages();
-    while (_bitmapCache.length >= _maxCacheEntries && _cacheLruOrder.isNotEmpty) {
-      final evictCandidateIdx =
-          _cacheLruOrder.indexWhere((p) => !activePages.contains(p));
+    while (_bitmapCache.length >= _maxCacheEntries &&
+        _cacheLruOrder.isNotEmpty) {
+      final evictCandidateIdx = _cacheLruOrder.indexWhere(
+        (p) => !activePages.contains(p),
+      );
       if (evictCandidateIdx != -1) {
         final evictPage = _cacheLruOrder.removeAt(evictCandidateIdx);
         _bitmapCache.remove(evictPage)?.image.dispose();
@@ -442,7 +444,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
   }) async {
     final doc = _document;
     if (doc == null || pageNumber < 1 || pageNumber > doc.pages.length) return;
-    if (targetWidth <= 0 || targetHeight <= 0 || targetWidth.isNaN || targetHeight.isNaN) {
+    if (targetWidth <= 0 ||
+        targetHeight <= 0 ||
+        targetWidth.isNaN ||
+        targetHeight.isNaN) {
       targetWidth = 600.0;
       targetHeight = 850.0;
     }
@@ -469,7 +474,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final w = swapWH ? page.height : page.width;
     final h = swapWH ? page.width : page.height;
 
-    final scale = math.min(180 / 72.0, math.min(targetWidth / w, targetHeight / h));
+    final scale = math.min(
+      180 / 72.0,
+      math.min(targetWidth / w, targetHeight / h),
+    );
     final renderW = (w * scale).roundToDouble();
     final renderH = (h * scale).roundToDouble();
 
@@ -567,7 +575,9 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
 
     for (final p in pagesToWarm) {
       final cached = _bitmapCache[p];
-      if (forceRefresh || cached == null || cached.configKey != expectedConfigKey) {
+      if (forceRefresh ||
+          cached == null ||
+          cached.configKey != expectedConfigKey) {
         _renderPageToCache(
           p,
           _lastKnownPageW,
@@ -702,8 +712,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       if (_direction == FlipDirection.forward) {
         // Fast-forward commit current transition immediately
         if (_targetSpreadIndex != null) {
-          final committedIndex =
-              _targetSpreadIndex!.clamp(0, spreads.length - 1);
+          final committedIndex = _targetSpreadIndex!.clamp(
+            0,
+            spreads.length - 1,
+          );
           final committedSpread = spreads[committedIndex];
           final committedPage = committedSpread.primaryPage;
           _currentSpreadIndex = committedIndex;
@@ -765,8 +777,10 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       if (_direction == FlipDirection.backward) {
         // Fast-forward commit current backward transition immediately
         if (_targetSpreadIndex != null) {
-          final committedIndex =
-              _targetSpreadIndex!.clamp(0, spreads.length - 1);
+          final committedIndex = _targetSpreadIndex!.clamp(
+            0,
+            spreads.length - 1,
+          );
           final committedSpread = spreads[committedIndex];
           final committedPage = committedSpread.primaryPage;
           _currentSpreadIndex = committedIndex;
@@ -1308,8 +1322,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final paperColor = widget.theme.isDark
         ? const Color(0xFF232325)
         : (widget.theme == ReadingThemeType.sepia
-            ? const Color(0xFFF4ECD8)
-            : const Color(0xFFFAF9F6));
+              ? const Color(0xFFF4ECD8)
+              : const Color(0xFFFAF9F6));
 
     if (!isTwoPage || spread.isCover) {
       // Single Page / Cover card
@@ -1438,8 +1452,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final paperColor = widget.theme.isDark
         ? const Color(0xFF232325)
         : (widget.theme == ReadingThemeType.sepia
-            ? const Color(0xFFF4ECD8)
-            : const Color(0xFFFAF9F6));
+              ? const Color(0xFFF4ECD8)
+              : const Color(0xFFFAF9F6));
 
     if (pageNumber == null) {
       return Container(color: paperColor);
@@ -1494,26 +1508,40 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                         Builder(
                           builder: (context) {
                             final pageAnns = widget.userAnnotations!
-                                .where((a) =>
-                                    a.pageIndex == pageNumber &&
-                                    a.boundingBoxes.isNotEmpty)
+                                .where(
+                                  (a) =>
+                                      a.pageIndex == pageNumber &&
+                                      a.boundingBoxes.isNotEmpty,
+                                )
                                 .toList();
-                            if (pageAnns.isEmpty) return const SizedBox.shrink();
+                            if (pageAnns.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
                             return Positioned.fill(
                               child: GestureDetector(
                                 behavior: HitTestBehavior.translucent,
                                 onTapUp: (details) {
                                   if (widget.onAnnotationTap == null) return;
-                                  final box = context.findRenderObject() as RenderBox?;
+                                  final box =
+                                      context.findRenderObject() as RenderBox?;
                                   if (box == null) return;
                                   final localSize = box.size;
-                                  if (localSize.width <= 0 || localSize.height <= 0) return;
-                                  final normX = details.localPosition.dx / localSize.width;
-                                  final normY = details.localPosition.dy / localSize.height;
+                                  if (localSize.width <= 0 ||
+                                      localSize.height <= 0) {
+                                    return;
+                                  }
+                                  final normX =
+                                      details.localPosition.dx /
+                                      localSize.width;
+                                  final normY =
+                                      details.localPosition.dy /
+                                      localSize.height;
 
                                   for (final ann in pageAnns) {
                                     for (final b in ann.boundingBoxes) {
-                                      if (b.inflate(0.015).contains(Offset(normX, normY))) {
+                                      if (b
+                                          .inflate(0.015)
+                                          .contains(Offset(normX, normY))) {
                                         widget.onAnnotationTap!(ann);
                                         return;
                                       }
@@ -1648,8 +1676,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           color: widget.theme.isDark
               ? const Color(0xFF232325)
               : (widget.theme == ReadingThemeType.sepia
-                  ? const Color(0xFFF4ECD8)
-                  : const Color(0xFFFAF9F6)),
+                    ? const Color(0xFFF4ECD8)
+                    : const Color(0xFFFAF9F6)),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
@@ -1943,8 +1971,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
           color: widget.theme.isDark
               ? const Color(0xFF232325)
               : (widget.theme == ReadingThemeType.sepia
-                  ? const Color(0xFFF4ECD8)
-                  : const Color(0xFFFAF9F6)),
+                    ? const Color(0xFFF4ECD8)
+                    : const Color(0xFFFAF9F6)),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
@@ -2088,8 +2116,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                 color: widget.theme.isDark
                     ? const Color(0xFF232325)
                     : (widget.theme == ReadingThemeType.sepia
-                        ? const Color(0xFFF4ECD8)
-                        : const Color(0xFFFAF9F6)),
+                          ? const Color(0xFFF4ECD8)
+                          : const Color(0xFFFAF9F6)),
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
@@ -2425,8 +2453,10 @@ class PdfSearchHighlightPainter extends CustomPainter {
       );
 
       final paddedRect = rect.inflate(1.5);
-      final rrect =
-          RRect.fromRectAndRadius(paddedRect, const Radius.circular(3.0));
+      final rrect = RRect.fromRectAndRadius(
+        paddedRect,
+        const Radius.circular(3.0),
+      );
 
       canvas.drawRRect(rrect, fillPaint);
       canvas.drawRRect(rrect, borderPaint);
@@ -2478,8 +2508,10 @@ class PdfUserAnnotationPainter extends CustomPainter {
         );
 
         final paddedRect = rect.inflate(1.2);
-        final rrect =
-            RRect.fromRectAndRadius(paddedRect, const Radius.circular(2.5));
+        final rrect = RRect.fromRectAndRadius(
+          paddedRect,
+          const Radius.circular(2.5),
+        );
         canvas.drawRRect(rrect, fillPaint);
         canvas.drawRRect(rrect, borderPaint);
 
@@ -2500,7 +2532,6 @@ class PdfUserAnnotationPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant PdfUserAnnotationPainter oldDelegate) {
-    return oldDelegate.annotations != annotations ||
-        oldDelegate.theme != theme;
+    return oldDelegate.annotations != annotations || oldDelegate.theme != theme;
   }
 }
