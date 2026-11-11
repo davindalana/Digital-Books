@@ -40,7 +40,7 @@ void main() {
     if (bookDoc == null) {
       final file = File(_jsonPath);
       if (!file.existsSync()) {
-        print('SKIP: corpus not found');
+        markTestSkipped('Real book JSON corpus not found at ${file.path}');
         return;
       }
       bookDoc = BookDocument.fromJsonString(await file.readAsString());

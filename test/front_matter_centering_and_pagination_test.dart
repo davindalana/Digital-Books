@@ -185,7 +185,10 @@ void main() {
     );
 
     test('Real book Chapter 0 paginates cleanly without fragmentation', () {
-      if (!jsonFile.existsSync()) return;
+      if (!jsonFile.existsSync()) {
+        markTestSkipped('Processed book JSON is missing at ${jsonFile.path}');
+        return;
+      }
 
       final bookDoc = BookDocument.fromJson(
         jsonDecode(jsonFile.readAsStringSync()) as Map<String, dynamic>,

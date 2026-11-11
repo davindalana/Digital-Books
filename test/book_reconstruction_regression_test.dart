@@ -19,7 +19,10 @@ void main() {
           '/Users/davindalana/Documents/DigitalBooks/images/$bookId';
       final imagesDir = Directory(imagesDirPath);
       if (!imagesDir.existsSync()) {
-        return; // Skip if local test images are not present
+        markTestSkipped(
+          'Local OCR test images are missing at ${imagesDir.path}',
+        );
+        return;
       }
 
       final ocrService = const AppleVisionOcrService();

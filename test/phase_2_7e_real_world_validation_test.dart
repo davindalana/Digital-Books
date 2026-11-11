@@ -99,7 +99,9 @@ void main() {
         );
 
         if (!realBookFile.existsSync()) {
-          print('Skipping real 265-page book test: file not found on disk.');
+          markTestSkipped(
+            'Real 265-page book PDF is missing at ${realBookFile.path}',
+          );
           return;
         }
 

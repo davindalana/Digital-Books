@@ -278,7 +278,7 @@ void main() {
         );
 
         if (!jsonFile.existsSync()) {
-          print('Skipping real book test: processed file not found on disk.');
+          markTestSkipped('Processed book JSON is missing at ${jsonFile.path}');
           return;
         }
 

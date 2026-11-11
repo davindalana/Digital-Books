@@ -41,7 +41,7 @@ void main() {
     if (book == null) {
       final file = File(_jsonPath);
       if (!file.existsSync()) {
-        print('SKIP: real book JSON not found at $_jsonPath');
+        markTestSkipped('Real book JSON not found at $_jsonPath');
         return;
       }
       book = BookDocument.fromJsonString(await file.readAsString());

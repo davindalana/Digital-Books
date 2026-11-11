@@ -418,7 +418,9 @@ void main() {
           '/Users/davindalana/Documents/DigitalBooks/originals/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
         );
         if (!realBook.existsSync()) {
-          print('Skipping: The Let Them Theory not on disk');
+          markTestSkipped(
+            'The Let Them Theory PDF is missing at ${realBook.path}',
+          );
           return;
         }
 
@@ -456,7 +458,9 @@ void main() {
           '/Users/davindalana/Documents/DigitalBooks/originals/67141617-5a74-4f9b-a9fa-45b28366e27d.pdf',
         );
         if (!realBook.existsSync()) {
-          print('Skipping: Suspect X not on disk');
+          markTestSkipped(
+            'The Devotion of Suspect X PDF is missing at ${realBook.path}',
+          );
           return;
         }
 
@@ -477,7 +481,7 @@ void main() {
         '/Users/davindalana/Documents/DigitalBooks/originals/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf',
       );
       if (!realBook.existsSync()) {
-        print('Skipping: Laut Bercerita not on disk');
+        markTestSkipped('Laut Bercerita PDF is missing at ${realBook.path}');
         return;
       }
 
