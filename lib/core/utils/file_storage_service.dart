@@ -102,8 +102,25 @@ class FileStorageService {
   ) async {
     final booksDir = await getBooksDirectory();
     final targetPath = p.join(booksDir.path, '$bookId.json');
-    final file = File(targetPath);
-    return file.writeAsString(jsonContent);
+    return writeFileAtomic(File(targetPath), jsonContent);
+  }
+
+  /// Writes [content] to [target] through a sibling temporary file and a
+  /// rename. A crash can leave a `.tmp` file, but never a half-written JSON
+  /// document at the real path.
+  static Future<File> writeFileAtomic(File target, String content) async {
+    final temp = File('${target.path}.tmp');
+    await temp.writeAsString(content, flush: true);
+    try {
+      return await temp.rename(target.path);
+    } catch (_) {
+      // Some platforms refuse to rename over an existing file. Deleting is
+      // only a fallback for those platforms; macOS uses the atomic branch.
+      if (await target.exists()) {
+        await target.delete();
+      }
+      return temp.rename(target.path);
+    }
   }
 
   static Future<String?> readProcessedBook(String path) async {

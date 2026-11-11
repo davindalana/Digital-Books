@@ -7,6 +7,9 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import '../../../processing/providers/background_ocr_provider.dart';
+import '../../../processing/services/book_document_rebuilder.dart';
+import '../../../processing/services/book_reprocessor.dart';
+import '../../../processing/services/processed_artifact_inspector.dart';
 import 'manage_collections_dialog.dart';
 
 class BookLaunchRequest {
@@ -31,6 +34,8 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
   late TextEditingController _authorController;
   late TextEditingController _descController;
   late Book _currentBook;
+  ProcessedArtifactStatus? _artifactStatus;
+  bool _isReprocessing = false;
 
   @override
   void initState() {
@@ -41,6 +46,45 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
     _descController = TextEditingController(
       text: _currentBook.description ?? '',
     );
+    _loadArtifactStatus();
+  }
+
+  Future<void> _loadArtifactStatus() async {
+    final status = await ProcessedArtifactInspector.inspectPath(
+      _currentBook.processedBookPath,
+      currentSourcePath: _currentBook.originalPdfPath,
+    );
+    if (mounted) setState(() => _artifactStatus = status);
+  }
+
+  Future<void> _reprocessBook() async {
+    if (_isReprocessing) return;
+    setState(() => _isReprocessing = true);
+    final dbService = ref.read(databaseServiceProvider);
+    final outcome = await BookReprocessor(dbService).reprocess(
+      book: _currentBook,
+      buildDocument: () => BookDocumentRebuilder.rebuild(
+        book: _currentBook,
+        dbService: dbService,
+      ),
+    );
+    if (!mounted) return;
+
+    final refreshed = await dbService.getBookById(_currentBook.id);
+    setState(() {
+      _isReprocessing = false;
+      if (refreshed != null) _currentBook = refreshed;
+    });
+    await _loadArtifactStatus();
+    if (!mounted) return;
+
+    final message = outcome.succeeded
+        ? 'Mode Buku diperbarui. ${outcome.relocatedHighlights} sorotan dan '
+              '${outcome.relocatedBookmarks} penanda dipulihkan.'
+        : (outcome.message ?? 'Mode Buku tidak dapat diperbarui.');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -305,7 +349,11 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                     label: 'Reflowable',
                                     value:
                                         _currentBook.processedBookPath != null
-                                        ? 'Tersedia (OCR Selesai)'
+                                        ? (_artifactStatus?.state ==
+                                                  ProcessedArtifactState.current
+                                              ? 'Tersedia (v${_artifactStatus!.manifest?.pipelineVersion ?? '?'})'
+                                              : (_artifactStatus?.label ??
+                                                    'Tersedia'))
                                         : (_currentBook.isScanned
                                               ? 'Belum diproses'
                                               : 'Bawaan'),
@@ -326,6 +374,50 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                     loading: () => const SizedBox(),
                                     error: (e, stack) => const SizedBox(),
                                   ),
+                                  if (_currentBook.processedBookPath != null &&
+                                      _artifactStatus?.needsReprocessing ==
+                                          true) ...[
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: _isReprocessing
+                                            ? null
+                                            : _reprocessBook,
+                                        icon: _isReprocessing
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.refresh_rounded,
+                                                size: 16,
+                                              ),
+                                        label: Text(
+                                          _isReprocessing
+                                              ? 'Memperbarui Mode Buku...'
+                                              : 'Perbarui Mode Buku',
+                                        ),
+                                      ),
+                                    ),
+                                    if (_artifactStatus?.message != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          _artifactStatus!.message!,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: isDark
+                                                ? Colors.grey.shade500
+                                                : Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ],
                               ),
                       ),

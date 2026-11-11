@@ -253,6 +253,43 @@ class DatabaseService {
     });
   }
 
+  /// Commits all state changes produced by a safe reprocess in one transaction.
+  ///
+  /// Bookmarks, highlights, and reading progress are never deleted: callers
+  /// pass updated companions for records that could be relocated and leave the
+  /// rest untouched.
+  Future<void> applyReprocessingUpdates({
+    required String bookId,
+    required List<ChaptersCompanion> chapters,
+    List<BookmarksCompanion> bookmarks = const [],
+    List<HighlightsCompanion> highlights = const [],
+    ReadingProgressesCompanion? progress,
+  }) async {
+    await db.transaction(() async {
+      await (db.delete(
+        db.chapters,
+      )..where((t) => t.bookId.equals(bookId))).go();
+      for (final chapter in chapters) {
+        await db.into(db.chapters).insert(chapter);
+      }
+      for (final bookmark in bookmarks) {
+        final id = bookmark.id.value;
+        await (db.update(
+          db.bookmarks,
+        )..where((t) => t.id.equals(id))).write(bookmark);
+      }
+      for (final highlight in highlights) {
+        final id = highlight.id.value;
+        await (db.update(
+          db.highlights,
+        )..where((t) => t.id.equals(id))).write(highlight);
+      }
+      if (progress != null) {
+        await upsertProgress(progress);
+      }
+    });
+  }
+
   // --- Reading Progress ---
   Stream<ReadingProgress?> watchProgress(String bookId) {
     return (db.select(

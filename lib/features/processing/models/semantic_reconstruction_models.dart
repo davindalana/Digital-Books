@@ -2,6 +2,7 @@ import 'dart:ui' show Rect;
 import 'package:uuid/uuid.dart';
 import '../../reader/models/book_document.dart';
 import 'extracted_page_geometry.dart';
+import 'processing_manifest.dart';
 
 /// Semantic role of a reconstructed content block.
 enum SemanticBlockType {
@@ -242,6 +243,18 @@ class ReconstructedDocument {
         'processingStatus': processingStatus,
         'processingReasons': quality.reasons,
         'isScannedSource': isScannedSource,
+        ...ProcessingManifest(
+          pipelineVersion: ProcessingManifest.currentPipelineVersion,
+          artifactSchemaVersion:
+              ProcessingManifest.currentArtifactSchemaVersion,
+          processedAt: DateTime.now().toIso8601String(),
+          // `isScannedSource` only says the original PDF was a scan; it does
+          // not prove that OCR text was used. Callers that actually consumed
+          // OCR pages declare it explicitly via `processingSource`.
+          source:
+              (extraMetadata?['processingSource'] as String?) ?? 'nativeText',
+          sourceTotalPages: totalPages,
+        ).toMetadata(),
         if (extraMetadata != null) ...extraMetadata,
       },
     );

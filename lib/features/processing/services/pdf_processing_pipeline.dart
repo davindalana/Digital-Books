@@ -169,6 +169,9 @@ class PdfProcessingPipeline {
           'publisher': publisher ?? '',
           'description': description ?? '',
           'importedAt': DateTime.now().toIso8601String(),
+          'sourceFileHash': fileHash,
+          'sourceFileSize': fileLength,
+          'sourceTotalPages': totalPages,
         },
       );
 
