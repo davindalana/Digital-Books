@@ -149,7 +149,7 @@ void main() {
           const typo = TypographySettings(twoPageSpread: true, fontSize: 16);
 
           // 1. Engine calculation
-          const double spineWidth = 24.0;
+          const double spineWidth = PaginationEngine.spreadGutterWidth;
           final double rawPageWidth = (w - spineWidth) / 2;
           final double effectiveMargin = (rawPageWidth < 400.0)
               ? 18.0
@@ -188,13 +188,15 @@ void main() {
           final spineFinder = find.byWidgetPredicate(
             (widget) =>
                 widget is Container &&
-                widget.constraints?.maxWidth == 24.0 &&
+                widget.constraints?.maxWidth ==
+                    PaginationEngine.spreadGutterWidth &&
                 widget.decoration != null,
           );
           expect(
             spineFinder,
             findsOneWidget,
-            reason: '$name: Spine container must be exactly 24 pt',
+            reason:
+                '$name: Spine container must be exactly ${PaginationEngine.spreadGutterWidth} pt',
           );
 
           // Check left page renderer actual rendered box width

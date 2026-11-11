@@ -523,7 +523,7 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
     final leftPage = _pages[leftIndex];
     final rightPage = rightIndex < _pages.length ? _pages[rightIndex] : null;
 
-    const double spineWidth = 24.0;
+    const double spineWidth = PaginationEngine.spreadGutterWidth;
     final double halfWidth = (width - spineWidth) / 2.0;
     final effectiveMargin = (halfWidth < 400.0)
         ? 18.0
@@ -573,10 +573,13 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 25),
-                    Colors.transparent,
-                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 25),
+                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 24),
+                    Colors.black.withAlpha(widget.theme.isDark ? 15 : 8),
+                    Colors.black.withAlpha(widget.theme.isDark ? 60 : 32),
+                    Colors.black.withAlpha(widget.theme.isDark ? 15 : 8),
+                    Colors.black.withAlpha(widget.theme.isDark ? 45 : 24),
                   ],
+                  stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
                 ),
               ),
             ),

@@ -345,10 +345,42 @@ double _measuredPageHeight(
       continue;
     }
     final style = PaginationEngine.textStyleFor(node, typography);
-    final tp = TextPainter(
-      text: TextSpan(text: slice.textSlice, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: contentWidth);
+    final isNormalPara =
+        node.type == ContentNodeType.paragraph &&
+        node.attributes['isTocEntry'] != true &&
+        node.attributes['kind'] != 'publisherSlogan' &&
+        node.attributes['frontMatter'] == null;
+    final applyIndent = isNormalPara && !slice.isContinuation;
+    final TextPainter tp;
+    if (applyIndent) {
+      final fontSize = style.fontSize ?? typography.fontSize;
+      tp = TextPainter(
+        text: TextSpan(
+          children: [
+            WidgetSpan(
+              child: SizedBox(
+                width: typography.firstLineIndent,
+                height: fontSize,
+              ),
+            ),
+            TextSpan(text: slice.textSlice, style: style),
+          ],
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.setPlaceholderDimensions([
+        PlaceholderDimensions(
+          size: Size(typography.firstLineIndent, fontSize),
+          alignment: PlaceholderAlignment.bottom,
+        ),
+      ]);
+    } else {
+      tp = TextPainter(
+        text: TextSpan(text: slice.textSlice, style: style),
+        textDirection: TextDirection.ltr,
+      );
+    }
+    tp.layout(maxWidth: contentWidth);
     if (node.type == ContentNodeType.heading ||
         node.type == ContentNodeType.sectionHeading ||
         node.type == ContentNodeType.documentTitle) {

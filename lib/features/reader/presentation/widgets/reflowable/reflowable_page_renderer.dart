@@ -915,6 +915,13 @@ class ReflowablePageRenderer extends StatelessWidget {
     }
 
     // Default Paragraph Node
+    final isNormal =
+        node.type == ContentNodeType.paragraph &&
+        node.attributes['isTocEntry'] != true &&
+        node.attributes['kind'] != 'publisherSlogan' &&
+        node.attributes['frontMatter'] == null;
+    final applyFirstLineIndent = isNormal && !slice.isContinuation;
+
     final style = typography.bodyStyle(color: theme.textColor);
     final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
       text: slice.textSlice,
@@ -924,6 +931,7 @@ class ReflowablePageRenderer extends StatelessWidget {
       searchMatchesForNode: searchMatchesForNode,
       baseStyle: style,
       theme: theme,
+      firstLineIndent: applyFirstLineIndent ? typography.firstLineIndent : 0.0,
       onHighlightTap: onHighlightTap,
     );
 
@@ -1015,7 +1023,10 @@ class ReflowablePageRenderer extends StatelessWidget {
     PaginatedNodeSlice slice,
   ) {
     final selection = editableTextState.textEditingValue.selection;
-    final text = selection.textInside(editableTextState.textEditingValue.text);
+    final rawText = selection.textInside(
+      editableTextState.textEditingValue.text,
+    );
+    final text = rawText.replaceAll('\uFFFC', '');
 
     if (text.trim().isEmpty) {
       return AdaptiveTextSelectionToolbar.buttonItems(
@@ -1024,8 +1035,16 @@ class ReflowablePageRenderer extends StatelessWidget {
       );
     }
 
-    final localStart = selection.start;
-    final localEnd = selection.end;
+    final isNormal =
+        slice.node.type == ContentNodeType.paragraph &&
+        slice.node.attributes['isTocEntry'] != true &&
+        slice.node.attributes['kind'] != 'publisherSlogan' &&
+        slice.node.attributes['frontMatter'] == null;
+    final hasIndent = isNormal && !slice.isContinuation;
+    final indentShift = hasIndent ? 1 : 0;
+
+    final localStart = math.max(0, selection.start - indentShift);
+    final localEnd = math.max(0, selection.end - indentShift);
     final absStart = (slice.startCharOffset + localStart).clamp(
       0,
       slice.node.text.length,

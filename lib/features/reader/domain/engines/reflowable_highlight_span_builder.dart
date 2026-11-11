@@ -30,13 +30,30 @@ class ReflowableHighlightSpanBuilder {
     List<ActiveSearchMatch> searchMatchesForNode = const [],
     required TextStyle baseStyle,
     required ReadingThemeType theme,
+    double firstLineIndent = 0.0,
     void Function(Highlight highlight)? onHighlightTap,
   }) {
     if (text.isEmpty) {
+      if (firstLineIndent > 0.0) {
+        return TextSpan(
+          children: [
+            WidgetSpan(child: SizedBox(width: firstLineIndent)),
+            TextSpan(text: '', style: baseStyle),
+          ],
+        );
+      }
       return TextSpan(text: '', style: baseStyle);
     }
 
     if (highlightsForNode.isEmpty && searchMatchesForNode.isEmpty) {
+      if (firstLineIndent > 0.0) {
+        return TextSpan(
+          children: [
+            WidgetSpan(child: SizedBox(width: firstLineIndent)),
+            TextSpan(text: text, style: baseStyle),
+          ],
+        );
+      }
       return TextSpan(text: text, style: baseStyle);
     }
 
@@ -86,6 +103,9 @@ class ReflowableHighlightSpanBuilder {
 
     final sortedPoints = cutPoints.toList()..sort();
     final children = <InlineSpan>[];
+    if (firstLineIndent > 0.0) {
+      children.add(WidgetSpan(child: SizedBox(width: firstLineIndent)));
+    }
 
     // 2. Iterate each segment between consecutive cut points
     for (int i = 0; i < sortedPoints.length - 1; i++) {

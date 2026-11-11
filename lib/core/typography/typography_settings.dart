@@ -158,6 +158,7 @@ class TypographySettings {
   final TextAlign textAlign;
   final double horizontalMargin;
   final bool twoPageSpread;
+  final double firstLineIndentMultiplier;
 
   const TypographySettings({
     this.fontFamily = ReadingFontFamily.palatino,
@@ -166,10 +167,14 @@ class TypographySettings {
     this.lineSpacing = 1.65,
     this.paragraphSpacing = 14.0,
     this.letterSpacing = 0.2,
-    this.textAlign = TextAlign.left,
+    this.textAlign = TextAlign.justify,
     this.horizontalMargin = 32.0,
     this.twoPageSpread = true,
+    this.firstLineIndentMultiplier = 1.25,
   });
+
+  /// First-line indentation for normal body paragraphs (standard book typography: ~1.25em).
+  double get firstLineIndent => fontSize * firstLineIndentMultiplier;
 
   TypographySettings copyWith({
     ReadingFontFamily? fontFamily,
@@ -181,6 +186,7 @@ class TypographySettings {
     TextAlign? textAlign,
     double? horizontalMargin,
     bool? twoPageSpread,
+    double? firstLineIndentMultiplier,
   }) {
     return TypographySettings(
       fontFamily: fontFamily ?? this.fontFamily,
@@ -192,6 +198,8 @@ class TypographySettings {
       textAlign: textAlign ?? this.textAlign,
       horizontalMargin: horizontalMargin ?? this.horizontalMargin,
       twoPageSpread: twoPageSpread ?? this.twoPageSpread,
+      firstLineIndentMultiplier:
+          firstLineIndentMultiplier ?? this.firstLineIndentMultiplier,
     );
   }
 
@@ -228,5 +236,5 @@ class TypographySettings {
   }
 
   String get cacheKey =>
-      '${fontFamily.key}_${fontSize.toStringAsFixed(1)}_${lineSpacing.toStringAsFixed(2)}_${paragraphSpacing.toStringAsFixed(1)}_${letterSpacing.toStringAsFixed(2)}_${textAlign.name}_${horizontalMargin.toStringAsFixed(0)}_${twoPageSpread ? 1 : 0}';
+      '${fontFamily.key}_${fontSize.toStringAsFixed(1)}_${lineSpacing.toStringAsFixed(2)}_${paragraphSpacing.toStringAsFixed(1)}_${letterSpacing.toStringAsFixed(2)}_${textAlign.name}_${horizontalMargin.toStringAsFixed(0)}_${twoPageSpread ? 1 : 0}_${firstLineIndentMultiplier.toStringAsFixed(2)}';
 }

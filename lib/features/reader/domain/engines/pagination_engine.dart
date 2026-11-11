@@ -115,6 +115,11 @@ class PaginationEngine {
     return allPages;
   }
 
+  /// Spread gutter width between left and right pages in two-page spread mode.
+  /// Previously 24.0 dp; increased to 48.0 dp to make the spread feel less crowded
+  /// around the center while maintaining balanced proportions and natural book spine depth.
+  static const double spreadGutterWidth = 48.0;
+
   /// Content width used for pagination in the given viewport. Exposed so
   /// verification tests measure the same geometry as the pagination engine.
   static double contentWidthFor({
@@ -123,7 +128,7 @@ class PaginationEngine {
   }) {
     final isTwoPageSpread = viewportWidth >= 850.0 && typography.twoPageSpread;
     final double rawPageWidth = isTwoPageSpread
-        ? ((viewportWidth - 24.0) / 2.0)
+        ? ((viewportWidth - spreadGutterWidth) / 2.0)
         : viewportWidth;
     final double effectiveMargin = (rawPageWidth < 400.0)
         ? 18.0
@@ -278,11 +283,15 @@ class PaginationEngine {
 
       // Paragraph / Quote / Footnote text
       final isAtomicNode = _isAtomicNode(node, text);
+      final isNormalPara = _isNormalParagraph(node);
 
       int charStart = 0;
       while (charStart < text.length) {
         final remainingText = text.substring(charStart);
         final remainingHeightBudget = availableHeight - currentUsedHeight;
+        final double currentFirstLineIndent = (charStart == 0 && isNormalPara)
+            ? typography.firstLineIndent
+            : 0.0;
 
         // If less than one line of text fits, start a fresh page
         final singleLineHeight = typography.fontSize * typography.lineSpacing;
@@ -296,6 +305,7 @@ class PaginationEngine {
           remainingText,
           textStyle,
           contentWidth,
+          firstLineIndent: currentFirstLineIndent,
         );
 
         final double nodePadding = paddingFor(node, typography);
@@ -349,6 +359,7 @@ class PaginationEngine {
             maxHeight: availableTextBudget,
             isFreshPage: currentPageSlices.isEmpty,
             isAtomic: isAtomicNode,
+            firstLineIndent: currentFirstLineIndent,
           );
 
           if (splitIndex <= 0 || splitIndex >= remainingText.length) {
@@ -397,6 +408,7 @@ class PaginationEngine {
               sliceText,
               textStyle,
               contentWidth,
+              firstLineIndent: currentFirstLineIndent,
             );
 
             currentPageSlices.add(
@@ -464,6 +476,18 @@ class PaginationEngine {
       (node.type == ContentNodeType.quote && text.length < 250) ||
       (node.type == ContentNodeType.orderedList &&
           node.attributes['legalClause'] == true);
+
+  static bool _isNormalParagraph(ContentNode node) {
+    if (node.type != ContentNodeType.paragraph) return false;
+    if (node.attributes['isTocEntry'] == true) return false;
+    if (node.attributes['kind'] == 'publisherSlogan') return false;
+    if (node.attributes['frontMatter'] == 'cover' ||
+        node.attributes['frontMatter'] == 'titlePage' ||
+        node.attributes['frontMatter'] == 'copyright') {
+      return false;
+    }
+    return true;
+  }
 
   static TextStyle textStyleFor(
     ContentNode node,
@@ -645,10 +669,12 @@ class PaginationEngine {
       return _headingAdvanceHeight(node, typography, contentWidth);
     }
 
+    final isNormalPara = _isNormalParagraph(node);
     final fullHeight = _measureTextHeight(
       text,
       textStyleFor(node, typography),
       contentWidth,
+      firstLineIndent: isNormalPara ? typography.firstLineIndent : 0.0,
     );
     final padding = paddingFor(node, typography);
     if (_isAtomicNode(node, text)) return fullHeight + padding;
@@ -694,13 +720,37 @@ class PaginationEngine {
   static double _measureTextHeight(
     String text,
     TextStyle style,
-    double maxWidth,
-  ) {
+    double maxWidth, {
+    double firstLineIndent = 0.0,
+  }) {
     if (text.isEmpty) return 0.0;
-    final textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
+    final TextPainter textPainter;
+    if (firstLineIndent > 0.0) {
+      final fontSize = style.fontSize ?? 18.0;
+      textPainter = TextPainter(
+        text: TextSpan(
+          children: [
+            WidgetSpan(
+              child: SizedBox(width: firstLineIndent, height: fontSize),
+            ),
+            TextSpan(text: text, style: style),
+          ],
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.setPlaceholderDimensions([
+        PlaceholderDimensions(
+          size: Size(firstLineIndent, fontSize),
+          alignment: PlaceholderAlignment.bottom,
+        ),
+      ]);
+    } else {
+      textPainter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      );
+    }
+    textPainter.layout(maxWidth: maxWidth);
     final height = textPainter.height;
     textPainter.dispose();
     return height;
@@ -723,13 +773,37 @@ class PaginationEngine {
     bool isAtomic = false,
     int minLinesAtBottom = 2,
     int minLinesAtTop = 2,
+    double firstLineIndent = 0.0,
   }) {
     if (text.isEmpty || maxHeight <= 0) return 0;
 
-    final textPainter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: maxWidth);
+    final TextPainter textPainter;
+    if (firstLineIndent > 0.0) {
+      final fontSize = style.fontSize ?? 18.0;
+      textPainter = TextPainter(
+        text: TextSpan(
+          children: [
+            WidgetSpan(
+              child: SizedBox(width: firstLineIndent, height: fontSize),
+            ),
+            TextSpan(text: text, style: style),
+          ],
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.setPlaceholderDimensions([
+        PlaceholderDimensions(
+          size: Size(firstLineIndent, fontSize),
+          alignment: PlaceholderAlignment.bottom,
+        ),
+      ]);
+    } else {
+      textPainter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      );
+    }
+    textPainter.layout(maxWidth: maxWidth);
 
     try {
       final lineMetrics = textPainter.computeLineMetrics();
@@ -792,7 +866,9 @@ class PaginationEngine {
       final textPos = textPainter.getPositionForOffset(
         Offset(maxWidth, targetLineMid),
       );
-      int candidateOffset = textPos.offset.clamp(0, text.length);
+      int candidateOffset = (firstLineIndent > 0.0)
+          ? math.max(0, textPos.offset - 1).clamp(0, text.length)
+          : textPos.offset.clamp(0, text.length);
 
       // Snap backward to whitespace boundary
       while (candidateOffset > 0 &&
@@ -803,13 +879,39 @@ class PaginationEngine {
 
       // Verify with sub-TextPainter that candidate slice does not exceed targetLines or maxHeight
       while (candidateOffset > 0) {
-        final subTp = TextPainter(
-          text: TextSpan(
-            text: text.substring(0, candidateOffset).trimRight(),
-            style: style,
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: maxWidth);
+        final TextPainter subTp;
+        if (firstLineIndent > 0.0) {
+          final fontSize = style.fontSize ?? 18.0;
+          subTp = TextPainter(
+            text: TextSpan(
+              children: [
+                WidgetSpan(
+                  child: SizedBox(width: firstLineIndent, height: fontSize),
+                ),
+                TextSpan(
+                  text: text.substring(0, candidateOffset).trimRight(),
+                  style: style,
+                ),
+              ],
+            ),
+            textDirection: TextDirection.ltr,
+          );
+          subTp.setPlaceholderDimensions([
+            PlaceholderDimensions(
+              size: Size(firstLineIndent, fontSize),
+              alignment: PlaceholderAlignment.bottom,
+            ),
+          ]);
+        } else {
+          subTp = TextPainter(
+            text: TextSpan(
+              text: text.substring(0, candidateOffset).trimRight(),
+              style: style,
+            ),
+            textDirection: TextDirection.ltr,
+          );
+        }
+        subTp.layout(maxWidth: maxWidth);
         final subLines = subTp.computeLineMetrics().length;
         final subHeight = subTp.height;
         subTp.dispose();

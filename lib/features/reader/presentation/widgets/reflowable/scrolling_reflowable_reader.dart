@@ -509,7 +509,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
             Expanded(
               child: SelectableText.rich(
                 richSpan,
-                textAlign: widget.typography.textAlign,
+                textAlign: TextAlign.left,
                 contextMenuBuilder: (ctx, state) =>
                     _buildContextMenu(ctx, state, node),
               ),
@@ -542,7 +542,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
         ),
         child: SelectableText.rich(
           richSpan,
-          textAlign: widget.typography.textAlign,
+          textAlign: TextAlign.left,
           contextMenuBuilder: (ctx, state) =>
               _buildContextMenu(ctx, state, node),
         ),
@@ -623,6 +623,11 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
 
     // Default Paragraph
     final style = widget.typography.bodyStyle(color: widget.theme.textColor);
+    final isNormal =
+        node.type == ContentNodeType.paragraph &&
+        node.attributes['isTocEntry'] != true &&
+        node.attributes['kind'] != 'publisherSlogan' &&
+        node.attributes['frontMatter'] == null;
     final richSpan = ReflowableHighlightSpanBuilder.buildRichSpan(
       text: node.text,
       sliceStartOffset: 0,
@@ -631,6 +636,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       searchMatchesForNode: searchMatchesForNode,
       baseStyle: style,
       theme: widget.theme,
+      firstLineIndent: isNormal ? widget.typography.firstLineIndent : 0.0,
       onHighlightTap: widget.onHighlightTap,
     );
 
@@ -726,7 +732,8 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
     ContentNode node,
   ) {
     final selection = state.textEditingValue.selection;
-    final text = selection.textInside(state.textEditingValue.text);
+    final rawText = selection.textInside(state.textEditingValue.text);
+    final text = rawText.replaceAll('\uFFFC', '');
 
     if (text.trim().isEmpty) {
       return AdaptiveTextSelectionToolbar.buttonItems(
@@ -735,8 +742,19 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
       );
     }
 
-    final absStart = selection.start.clamp(0, node.text.length);
-    final absEnd = selection.end.clamp(absStart, node.text.length);
+    final isNormal =
+        node.type == ContentNodeType.paragraph &&
+        node.attributes['isTocEntry'] != true &&
+        node.attributes['kind'] != 'publisherSlogan' &&
+        node.attributes['frontMatter'] == null;
+    final indentShift = isNormal ? 1 : 0;
+
+    final absStart = math
+        .max(0, selection.start - indentShift)
+        .clamp(0, node.text.length);
+    final absEnd = math
+        .max(0, selection.end - indentShift)
+        .clamp(absStart, node.text.length);
 
     final pStart = math.max(0, absStart - 32);
     final prefixContext = node.text.substring(pStart, absStart);

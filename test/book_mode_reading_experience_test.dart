@@ -40,8 +40,8 @@ PageReadingOrderResult _page(int index, List<ExtractedTextLine> lines) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('Book Mode defaults to left-aligned body text, not forced justify', () {
-    expect(const TypographySettings().textAlign.name, 'left');
+  test('Book Mode defaults to justified body text', () {
+    expect(const TypographySettings().textAlign.name, 'justify');
   });
 
   test('App reader path preserves semantic block metadata', () {
