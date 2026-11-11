@@ -9,6 +9,8 @@ import '../../../core/utils/file_storage_service.dart';
 import '../../reader/models/book_document.dart';
 import '../models/extracted_page_geometry.dart';
 import '../models/ocr_page_result.dart';
+import '../models/processing_manifest.dart';
+import 'ocr_quality_gate.dart';
 import 'semantic_document_reconstructor.dart';
 
 /// Bridges stored OCR page results with the Semantic Document Reconstructor
@@ -50,6 +52,13 @@ class OcrSemanticPipeline {
 
     // Sort by pageIndex ascending
     completedOcrPages.sort((a, b) => a.pageIndex.compareTo(b.pageIndex));
+
+    final ocrQuality = OcrQualityGate.assess(
+      totalPages: book?.totalPages ?? ocrPages.length,
+      pages: ocrPages,
+      hasSelectableTextLayer: false,
+      isScannedSource: true,
+    );
 
     // 2. Open PDF to map page geometry dimensions
     PdfDocument? doc;
@@ -123,17 +132,41 @@ class OcrSemanticPipeline {
     );
 
     // 5. Generate domain BookDocument
-    return reconstructed
+    final bookDoc = reconstructed
         .toBookDocument(
           extraMetadata: {
             'ocrSource': 'apple_vision_offline',
+            'processingSource': 'ocr',
             'ocrCompletedPages': completedOcrPages.length,
             'reconstructedAt': DateTime.now().toIso8601String(),
+            'ocrQuality': ocrQuality.toJson(),
+            'ocrReadiness': ocrQuality.readiness.name,
+            'sourceFileSize': await pdfFile.length(),
           },
         )
         // This derivative is always produced from scanned pages: the quality
         // status is not a reliable indicator that the source PDF had text.
         .copyWith(isScanned: true);
+
+    // OCR output that did not pass the gate must not be advertised as a
+    // verified reflowable book. Keep the artifact (it may still help search)
+    // but force the reader back to Original PDF guidance.
+    final metadata = Map<String, dynamic>.of(bookDoc.metadata);
+    metadata.putIfAbsent(
+      'pipelineVersion',
+      () => ProcessingManifest.currentPipelineVersion,
+    );
+    metadata['ocrQuality'] = ocrQuality.toJson();
+    metadata['ocrReadiness'] = ocrQuality.readiness.name;
+    if (!ocrQuality.isReliableForBookMode) {
+      metadata['processingStatus'] = 'requiresOcr';
+      metadata['processingReasons'] = [
+        ...(metadata['processingReasons'] as List<dynamic>? ?? const []),
+        ...ocrQuality.reasons,
+      ];
+    }
+
+    return bookDoc.copyWith(metadata: metadata);
   }
 
   /// Reconstructs a full reflowable [BookDocument] from the completed OCR pages of [bookId].
