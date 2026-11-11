@@ -79,17 +79,47 @@ class SemanticClassifier {
     final tocPageIndices = <int>{};
     for (final pageIdx in paragraphsByPage.keys) {
       final paras = paragraphsByPage[pageIdx]!;
-      final hasTocHeader = paras.any(
-        (p) => RegExp(
-          r'^(daftar isi|table of contents|contents)\b',
-          caseSensitive: false,
-        ).hasMatch(p.text.trim()),
-      );
+      // Spacing extraction sometimes splits header words ("T able of
+      // Contents"), so header matching ignores intra-word spaces entirely.
+      final hasTocHeader = paras.any((p) => _looksLikeTocHeader(p.text));
       final dottedCount = paras
           .where((p) => p.text.contains('..') || p.text.contains('--'))
           .length;
-      if (hasTocHeader || dottedCount >= 3) {
+      // A contents page can be split over several pages, and OCR sometimes
+      // drops the "Daftar Isi" header on continuation pages. Three or more
+      // named chapter labels on one early page is a contents list, not three
+      // separate chapter divider pages.
+      final namedChapterLabels = paras
+          .where(
+            (p) =>
+                normalizeChapterHeader(p.text.trim()) != null ||
+                _isNamedFrontMatterTitle(p.text.trim()),
+          )
+          .length;
+      final isEarlyContentsPage = pageIdx <= 20 && namedChapterLabels >= 3;
+      if (hasTocHeader || dottedCount >= 3 || isEarlyContentsPage) {
         tocPageIndices.add(pageIdx);
+      }
+    }
+
+    // Contents lists frequently continue onto the next page without repeating
+    // the header. Propagate forward while the next page still looks like a
+    // list of entries (dotted leaders, numbered entries, or named sections).
+    var expanded = true;
+    while (expanded) {
+      expanded = false;
+      for (final idx in tocPageIndices.toList()) {
+        final next = idx + 1;
+        if (tocPageIndices.contains(next)) continue;
+        final nextParas = paragraphsByPage[next];
+        if (nextParas == null) continue;
+        final entryCount = nextParas
+            .where((p) => _looksLikeTocEntry(p.text))
+            .length;
+        if (entryCount >= 2) {
+          tocPageIndices.add(next);
+          expanded = true;
+        }
       }
     }
 
@@ -1025,6 +1055,31 @@ class SemanticClassifier {
   ) {
     final height = _pageHeightFor(pageIndex, pageHeights, fallback);
     return math.max(height - 75.0, height * 0.88);
+  }
+
+  /// Matches a contents header while tolerating split words such as
+  /// "T able of Contents" produced by spacing-based extraction.
+  static bool _looksLikeTocHeader(String text) {
+    final folded = text.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+    if (folded.isEmpty) return false;
+    return folded.startsWith('daftarisi') ||
+        folded.startsWith('tableofcontents') ||
+        folded == 'contents' ||
+        folded.startsWith('contents');
+  }
+
+  /// A line that reads like a table-of-contents entry rather than prose.
+  static bool _looksLikeTocEntry(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return false;
+    if (trimmed.contains('..') || trimmed.contains('--')) return true;
+    if (RegExp(r'^\d{1,2}[.)]?\s+\S').hasMatch(trimmed)) return true;
+    if (trimmed.length <= 80 &&
+        (normalizeChapterHeader(trimmed) != null ||
+            _isNamedFrontMatterTitle(trimmed))) {
+      return true;
+    }
+    return false;
   }
 
   /// Named front/back matter that always starts a real content section.

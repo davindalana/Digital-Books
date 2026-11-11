@@ -2,6 +2,7 @@ import 'package:uuid/uuid.dart';
 import '../../reader/models/book_document.dart';
 import '../models/extracted_page_geometry.dart';
 import '../models/semantic_reconstruction_models.dart';
+import 'chapter_quality_normalizer.dart';
 import 'front_matter_reconstructor.dart';
 import 'image_placement_resolver.dart';
 import 'ocr_correction_pass.dart';
@@ -390,6 +391,6 @@ class SemanticDocumentReconstructor {
       );
     }
 
-    return chapters;
+    return ChapterQualityNormalizer.normalize(chapters);
   }
 }
