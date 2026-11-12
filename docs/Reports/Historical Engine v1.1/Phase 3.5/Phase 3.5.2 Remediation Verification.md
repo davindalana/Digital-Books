@@ -13,7 +13,7 @@
 
 ## 1. EXECUTIVE SUMMARY
 
-Following the independent release audit (`docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_1_independent_release_audit.md`) which delivered a **FAIL** verdict against commit `53f82a0`, this evaluation verifies whether commits `e261d4d` and `9212d4d` genuinely resolve the two critical findings (**CRIT-01** and **CRIT-02**) without introducing regressions or weakening testing standards.
+Following the independent release audit (`Phase 3.5.1 Independent Release Audit.md`) which delivered a **FAIL** verdict against commit `53f82a0`, this evaluation verifies whether commits `e261d4d` and `9212d4d` genuinely resolve the two critical findings (**CRIT-01** and **CRIT-02**) without introducing regressions or weakening testing standards.
 
 ### Summary of Audit Determinations:
 1. **CRIT-01 (Dehyphenation Word Corruption) — VERIFIED RESOLVED**:
@@ -23,7 +23,7 @@ Following the independent release audit (`docs/reports/historical_engine_v1_1/ph
 2. **CRIT-02 (Unsubstantiated Multi-Corpus Metrics) — VERIFIED RESOLVED**:
    - Genuine manual ground truth strings were transcribed for Categories C, D, E, and F in `test/phase_3_5_real_corpus_evaluation_test.dart`.
    - Exact Character Error Rate (CER) and Word Error Rate (WER) are now computed in test execution using dynamic programming Levenshtein edit distance.
-   - Unsubstantiated cosmetic bounds (`< 1.50%`) were replaced in `docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md` with authentic empirical measurements.
+   - Unsubstantiated cosmetic bounds (`< 1.50%`) were replaced in `Phase 3.5 Real World Product Validation.md` with authentic empirical measurements.
 3. **Release Gate Status**:
    - While the remediations for CRIT-01 and CRIT-02 are **VERIFIED AND PASSED**, the overall application is **NOT YET PRODUCTION READY**.
    - Release Candidate readiness remains blocked by **HIGH-01** (native macOS memory profiling via Instruments) and **HIGH-02** (user-perceived end-to-end search-to-highlight presentation latency).
@@ -64,7 +64,7 @@ Following the independent release audit (`docs/reports/historical_engine_v1_1/ph
     - Category F (*1259-Article Text* P.2): 4835 characters, 618 words.
   - Added active `calculateCer()` and `calculateWer()` invocations for all four categories.
   - Enforced strict assertions (`expect(cer, lessThan(...))`).
-- **Modified**: `docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md` (+57, -18 lines)
+- **Modified**: `Phase 3.5 Real World Product Validation.md` (+57, -18 lines)
   - Updated Section 3 table with real empirical character and word counts.
   - Replaced `< x%` claims with actual measured percentages.
   - Updated Section 4 to reflect the new compound and reduplication architecture.

@@ -121,7 +121,7 @@ Sebelum merilis perubahan:
   - Dilarang keras menggunakan `git push --force`.
   - Dilarang melakukan destructive rebase pada commit yang sudah dibagikan ke remote.
 - **Rilis Checkpoint**:
-  - Penentuan versi mengikuti [`versioning_policy.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance/versioning_policy.md).
+  - Penentuan versi mengikuti [`Versioning Policy.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Governance/Versioning%20Policy.md).
 
 ---
 
