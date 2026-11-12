@@ -1,154 +1,151 @@
-/// Centralized Indonesian UX strings for Digital Books.
+/// Centralized English UX strings for Digital Books.
 /// Ensures consistent nomenclature, eliminate duplicate terms,
 /// and provide friendly action-oriented messaging.
 abstract final class AppStrings {
   // --- App Name ---
   static const String appName = 'Digital Books';
-  static const String appNameShort = 'Buku';
+  static const String appNameShort = 'Books';
 
   // --- Sidebar Category Headers ---
-  static const String categoryPustaka = 'PUSTAKA';
-  static const String categoryKoleksi = 'KOLEKSI';
-  static const String categoryCatatan = 'CATATAN';
+  static const String categoryPustaka = 'LIBRARY';
+  static const String categoryKoleksi = 'COLLECTIONS';
+  static const String categoryCatatan = 'NOTES';
 
   // --- Navigation Section Labels ---
-  static const String navSedangDibaca = 'Sedang Dibaca';
-  static const String navSemuaBuku = 'Semua Buku';
-  static const String navSelesai = 'Selesai';
-  static const String navKoleksi = 'Koleksi';
-  static const String navPenanda = 'Penanda';
-  static const String navSorotanCatatan = 'Sorotan & Catatan';
-  static const String navPengaturan = 'Pengaturan';
+  static const String navSedangDibaca = 'Currently Reading';
+  static const String navSemuaBuku = 'All Books';
+  static const String navSelesai = 'Finished';
+  static const String navKoleksi = 'Collections';
+  static const String navPenanda = 'Bookmarks';
+  static const String navSorotanCatatan = 'Highlights & Notes';
+  static const String navPengaturan = 'Settings';
 
   // --- Primary Action Buttons & CTAs ---
-  static const String actionTambahBuku = 'Tambah Buku';
-  static const String actionTambahBukuTooltip = 'Tambah buku PDF ke pustaka';
-  static const String actionImporPdf = 'Impor PDF…';
-  static const String actionLanjutkan = 'Lanjutkan';
-  static const String actionMulai = 'Mulai';
-  static const String actionLihatSemua = 'Lihat semua';
-  static const String actionHapus = 'Hapus';
-  static const String actionBatal = 'Batal';
-  static const String actionSimpan = 'Simpan';
-  static const String actionUbahNama = 'Ubah Nama';
-  static const String actionTutup = 'Tutup';
-  static const String actionKoleksiBaru = 'Koleksi Baru';
+  static const String actionTambahBuku = 'Add Book';
+  static const String actionTambahBukuTooltip = 'Add a PDF to your library';
+  static const String actionImporPdf = 'Import PDF…';
+  static const String actionLanjutkan = 'Continue Reading';
+  static const String actionMulai = 'Start Reading';
+  static const String actionLihatSemua = 'View All';
+  static const String actionHapus = 'Delete';
+  static const String actionBatal = 'Cancel';
+  static const String actionSimpan = 'Save';
+  static const String actionUbahNama = 'Rename';
+  static const String actionTutup = 'Close';
+  static const String actionKoleksiBaru = 'New Collection';
 
   // --- Book Metadata Fallbacks & Labels ---
-  static const String unknownAuthor = 'Penulis tidak diketahui';
-  static const String unknownTitle = 'Tanpa Judul';
-  static const String formatHalaman = 'Halaman';
-  static const String formatBuku = 'buku';
+  static const String unknownAuthor = 'Unknown Author';
+  static const String unknownTitle = 'Untitled';
+  static const String formatHalaman = 'Pages';
+  static const String formatBuku = 'books';
 
   // --- Reading Shelves & Sections ---
-  static const String shelfBukuLainSedangDibaca =
-      'Buku lain yang sedang kamu baca';
-  static const String shelfBelumDimulai = 'Belum dimulai';
-  static const String shelfBaruDitambahkan = 'Baru ditambahkan';
+  static const String shelfBukuLainSedangDibaca = 'More Books You’re Reading';
+  static const String shelfBelumDimulai = 'Not Started';
+  static const String shelfBaruDitambahkan = 'Recently Added';
 
   // --- Reading Progress Statuses ---
-  static const String statusBelumDibaca = 'Belum dibaca';
-  static const String statusSelesai = 'Selesai';
-  static const String statusBaruDimulai = 'Baru dimulai';
+  static const String statusBelumDibaca = 'Unread';
+  static const String statusSelesai = 'Finished';
+  static const String statusBaruDimulai = 'Just Started';
 
   // --- Badges ---
-  static const String badgePindai = 'Pindai';
-  static const String badgeHasilPindai = 'Hasil pindai';
+  static const String badgePindai = 'Scanned';
+  static const String badgeHasilPindai = 'Scanned';
   static const String badgeHasilPindaiTooltip =
-      'Buku ini berasal dari pindaian gambar dan membutuhkan OCR untuk pencarian kata dan teks fleksibel.';
+      'This book contains scanned pages. Run OCR to enable text search and reflowable reading.';
   static const String badgePindaiOcrTooltip =
-      'Dokumen hasil pindai • Teks sudah diproses (OCR)';
+      'Scanned document • Text recognized (OCR)';
   static const String badgePindaiNeedsOcrTooltip =
-      'Dokumen hasil pindai • Memerlukan pemrosesan OCR';
-  static const String badgeTeksDigital = 'Teks Digital';
+      'Scanned document • OCR required';
+  static const String badgeTeksDigital = 'Digital Text';
 
   // --- Search ---
-  static const String searchHint = 'Cari judul, penulis, atau koleksi…';
-  static const String searchTooltip = 'Cari (⌘K)';
-  static const String searchClear = 'Hapus pencarian';
-  static String searchResultsFor(String query) =>
-      'Hasil pencarian untuk "$query"';
+  static const String searchHint = 'Search titles, authors, or collections…';
+  static const String searchTooltip = 'Search (⌘K)';
+  static const String searchClear = 'Clear search';
+  static String searchResultsFor(String query) => 'Search results for "$query"';
   static String searchNoResults(String query) =>
-      'Tidak ada buku yang cocok dengan "$query". Coba kata kunci lain.';
+      'No books match "$query". Try another search.';
 
   // --- Sort Options ---
-  static const String sortLabel = 'Urutkan';
-  static const String sortTooltip = 'Urutkan buku';
-  static const String sortRecentlyAdded = 'Baru Ditambahkan';
-  static const String sortOldestAdded = 'Paling Awal Ditambahkan';
-  static const String sortTitleAsc = 'Judul (A ke Z)';
-  static const String sortTitleDesc = 'Judul (Z ke A)';
-  static const String sortAuthorAsc = 'Penulis (A ke Z)';
-  static const String sortProgressDesc = 'Progres (Tertinggi)';
-  static const String sortProgressAsc = 'Progres (Terendah)';
+  static const String sortLabel = 'Sort';
+  static const String sortTooltip = 'Sort books';
+  static const String sortRecentlyAdded = 'Recently Added';
+  static const String sortOldestAdded = 'Oldest First';
+  static const String sortTitleAsc = 'Title (A–Z)';
+  static const String sortTitleDesc = 'Title (Z–A)';
+  static const String sortAuthorAsc = 'Author (A–Z)';
+  static const String sortProgressDesc = 'Progress (Highest)';
+  static const String sortProgressAsc = 'Progress (Lowest)';
 
   // --- View Mode ---
-  static const String viewModeGrid = 'Tampilan Kisi';
-  static const String viewModeList = 'Tampilan Daftar';
+  static const String viewModeGrid = 'Grid view';
+  static const String viewModeList = 'List view';
 
   // --- Collections ---
-  static const String collectionsHeader = 'Koleksi';
-  static const String createCollectionTitle = 'Koleksi Baru';
+  static const String collectionsHeader = 'Collections';
+  static const String createCollectionTitle = 'New Collection';
   static const String createCollectionHint =
-      'Nama koleksi (mis. Filsafat, Sains, Novel)';
-  static const String renameCollectionTitle = 'Ubah Nama Koleksi';
-  static const String deleteCollectionTitle = 'Hapus Koleksi?';
+      'Collection name (e.g. Philosophy, Science, Fiction)';
+  static const String renameCollectionTitle = 'Rename Collection';
+  static const String deleteCollectionTitle = 'Delete Collection?';
   static String deleteCollectionMessage(String name) =>
-      'Apakah Anda yakin ingin menghapus koleksi "$name"? Buku dalam koleksi ini tetap tersimpan aman di pustaka Anda.';
-  static const String deleteCollectionConfirm = 'Hapus Koleksi';
+      'Are you sure you want to delete "$name"? Books in this collection will remain safely in your library.';
+  static const String deleteCollectionConfirm = 'Delete Collection';
 
   // --- Empty States ---
-  static const String emptyLibraryTitle = 'Pustaka Anda Masih Kosong';
+  static const String emptyLibraryTitle = 'Your Library Is Empty';
   static const String emptyLibrarySubtitle =
-      'Tambahkan buku PDF dari perangkat Anda untuk mulai membaca dengan pengalaman native macOS.';
+      'Add a PDF from your device to start reading in the native macOS app.';
 
-  static const String emptySedangDibacaTitle =
-      'Belum Ada Buku yang Sedang Dibaca';
+  static const String emptySedangDibacaTitle = 'Nothing in Progress';
   static const String emptySedangDibacaSubtitle =
-      'Pilih buku dari Semua Buku untuk mulai membaca dan melihat progres bacaan Anda di sini.';
+      'Choose a book from All Books to start reading and track your progress here.';
 
-  static const String emptySemuaBukuTitle = 'Belum Ada Buku di Pustaka';
+  static const String emptySemuaBukuTitle = 'No Books in Your Library';
   static const String emptySemuaBukuSubtitle =
-      'Klik tombol "Tambah Buku" untuk memasukkan file PDF ke dalam Digital Books.';
+      'Select “Add Book” to import a PDF into Digital Books.';
 
-  static const String emptySelesaiTitle = 'Belum Ada Buku yang Selesai';
+  static const String emptySelesaiTitle = 'No Finished Books Yet';
   static const String emptySelesaiSubtitle =
-      'Buku yang telah Anda baca hingga tuntas akan tersimpan rapi di sini.';
+      'Books you finish reading will appear here.';
 
-  static const String emptyKoleksiTitle = 'Belum Ada Koleksi';
+  static const String emptyKoleksiTitle = 'No Collections Yet';
   static const String emptyKoleksiSubtitle =
-      'Kelompokkan buku favorit, riset, atau topik tertentu untuk akses yang lebih rapi.';
+      'Group your favorite books, research, or topics for quick access.';
 
-  static const String emptyKoleksiItemTitle = 'Koleksi Ini Masih Kosong';
+  static const String emptyKoleksiItemTitle = 'This Collection Is Empty';
   static const String emptyKoleksiItemSubtitle =
-      'Buka opsi buku (•••) dan pilih "Kelola Koleksi" untuk menambahkan buku ke koleksi ini.';
+      'Open a book’s options (•••) and choose “Manage Collections” to add it here.';
 
-  static const String emptyPenandaTitle = 'Belum Ada Penanda';
+  static const String emptyPenandaTitle = 'No Bookmarks Yet';
   static const String emptyPenandaSubtitle =
-      'Gunakan tombol penanda saat membaca untuk menyimpan halaman favorit di sini.';
+      'Use the bookmark button while reading to save favorite pages here.';
 
-  static const String emptySorotanTitle = 'Belum Ada Sorotan atau Catatan';
+  static const String emptySorotanTitle = 'No Highlights or Notes Yet';
   static const String emptySorotanSubtitle =
-      'Sorot kalimat penting dan simpan catatan saat membaca buku teks fleksibel.';
+      'Highlight key passages and add notes while reading digital text.';
 
   // --- Reader Mode & Chrome (for Phase 4 prep & integration) ---
-  static const String readerModeTeks = 'Teks';
+  static const String readerModeTeks = 'Book';
   static const String readerModeTeksTooltip =
-      'Mode teks fleksibel (reflowable): ukuran huruf dan tata letak dapat disesuaikan.';
-  static const String readerModePdfAsli = 'PDF Asli';
+      'Reflowable text mode: adjust the font size and page layout.';
+  static const String readerModePdfAsli = 'PDF';
   static const String readerModePdfAsliTooltip =
-      'Mode dokumen asli: mempertahankan tata letak halaman asli PDF.';
-  static const String readerDaftarIsi = 'Daftar Isi';
-  static const String readerKembali = 'Kembali';
-  static const String readerCari = 'Cari dalam buku';
-  static const String readerAnotasi = 'Sorotan & Catatan';
-  static const String readerTampilan = 'Tampilan';
-  static const String readerPenanda = 'Penanda';
-  static const String readerPilihanLainnya = 'Pilihan Lainnya';
+      'Original document mode: preserves the PDF page layout.';
+  static const String readerDaftarIsi = 'Table of Contents';
+  static const String readerKembali = 'Back';
+  static const String readerCari = 'Find in Book';
+  static const String readerAnotasi = 'Highlights & Notes';
+  static const String readerTampilan = 'Appearance';
+  static const String readerPenanda = 'Bookmark';
+  static const String readerPilihanLainnya = 'More Options';
 
   // --- Dialog & Delete Confirmation ---
-  static const String deleteBookTitle = 'Hapus Buku?';
+  static const String deleteBookTitle = 'Delete Book?';
   static String deleteBookMessage(String title) =>
-      'Apakah Anda yakin ingin menghapus "$title"? File PDF, cover, dan progres membaca akan dihapus secara permanen.';
-  static const String deleteBookConfirm = 'Hapus Buku';
+      'Are you sure you want to delete "$title"? The PDF, cover, and reading progress will be permanently removed.';
+  static const String deleteBookConfirm = 'Delete Book';
 }

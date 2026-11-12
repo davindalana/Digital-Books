@@ -109,8 +109,8 @@ void main() {
     }
 
     print('Looking for spread toggle button...');
-    final spreadBtnFinder = find.byTooltip('Tampilan 2 Halaman');
-    final singleBtnFinder = find.byTooltip('Tampilan 1 Halaman');
+    final spreadBtnFinder = find.byTooltip('Two-page view');
+    final singleBtnFinder = find.byTooltip('Single-page view');
 
     print('Spread button found: ${spreadBtnFinder.evaluate().length}');
     print('Single button found: ${singleBtnFinder.evaluate().length}');
@@ -153,9 +153,9 @@ void main() {
     );
 
     // Find button to tap back
-    final btnToTap2 = find.byTooltip('Tampilan 2 Halaman').evaluate().isNotEmpty
-        ? find.byTooltip('Tampilan 2 Halaman')
-        : find.byTooltip('Tampilan 1 Halaman');
+    final btnToTap2 = find.byTooltip('Two-page view').evaluate().isNotEmpty
+        ? find.byTooltip('Two-page view')
+        : find.byTooltip('Single-page view');
     expect(btnToTap2, findsOneWidget);
 
     print('Tapping toggle button second time (balik lagi)...');

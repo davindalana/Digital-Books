@@ -269,7 +269,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
             BookBlock(
               id: 'default',
               type: BlockType.paragraph,
-              text: 'Tidak ada konten untuk ditampilkan.',
+              text: 'No content to display.',
             ),
           ],
           pageIndexInBook: 0,
@@ -384,7 +384,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               ),
               const SizedBox(height: 18),
               Text(
-                'Buku Dokumen Hasil Pindai',
+                'Scanned Document',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -393,7 +393,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Buku ini berisi visual asli, denah, atau gambar. Beralih ke Mode PDF Asli untuk tata letak lengkap dan ketajaman visual terbaik seperti di Apple Books.',
+                'This book contains original visuals, diagrams, or images. Switch to Original PDF mode to preserve the full layout and image quality.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
@@ -417,7 +417,7 @@ class ReflowableBookReaderState extends State<ReflowableBookReader> {
                   ),
                   icon: const Icon(Icons.picture_as_pdf, size: 18),
                   label: const Text(
-                    'Buka dalam Mode PDF Asli',
+                    'Open in Original PDF Mode',
                     style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   onPressed: widget.onSwitchToPdfMode,

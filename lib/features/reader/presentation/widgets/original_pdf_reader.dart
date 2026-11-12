@@ -261,7 +261,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     if (!file.existsSync()) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'File PDF Asli tidak ditemukan di: ${widget.pdfPath}';
+          _errorMessage = 'Original PDF not found at: ${widget.pdfPath}';
           _isLoading = false;
         });
       }
@@ -294,7 +294,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Gagal membuka PDF: $e';
+          _errorMessage = 'Could not open PDF: $e';
           _isLoading = false;
         });
       }
@@ -1021,7 +1021,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
               ),
               const SizedBox(height: 18),
               Text(
-                'Memuat Dokumen PDF...',
+                'Loading PDF…',
                 style: TextStyle(
                   color: widget.theme.textColor,
                   fontSize: 15,
@@ -1030,7 +1030,7 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
               ),
               const SizedBox(height: 6),
               Text(
-                'Menyiapkan tampilan buku untuk dibaca',
+                'Preparing your book…',
                 style: TextStyle(
                   color: widget.theme.secondaryTextColor,
                   fontSize: 12,
@@ -1047,10 +1047,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
       return Container(
         color: widget.theme.backgroundColor,
         child: _PdfErrorView(
-          title: fileExists
-              ? 'Gagal Membuka Berkas PDF'
-              : 'Berkas PDF Tidak Ditemukan',
-          message: _errorMessage ?? 'Dokumen PDF tidak dapat dimuat.',
+          title: fileExists ? 'Could Not Open PDF' : 'PDF File Not Found',
+          message: _errorMessage ?? 'Could not load PDF document.',
           theme: widget.theme,
           onRetry: _retryLoad,
           onSwitchToReflowable: widget.onSwitchToReflowable,
@@ -2304,7 +2302,7 @@ class _PdfErrorView extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text(
-                      'Coba Lagi',
+                      'Try Again',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -2332,7 +2330,7 @@ class _PdfErrorView extends StatelessWidget {
                         size: 18,
                       ),
                       label: const Text(
-                        'Buka Versi Teks',
+                        'Open Text Version',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -2355,7 +2353,7 @@ class _PdfErrorView extends StatelessWidget {
                       ),
                       icon: const Icon(Icons.link_rounded, size: 18),
                       label: const Text(
-                        'Tautkan Ulang PDF',
+                        'Relink PDF',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -2380,7 +2378,7 @@ class _PdfErrorView extends StatelessWidget {
                       ),
                       icon: const Icon(Icons.delete_outline_rounded, size: 18),
                       label: const Text(
-                        'Hapus Buku',
+                        'Delete Book',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -2398,7 +2396,7 @@ class _PdfErrorView extends StatelessWidget {
                         ),
                       ),
                       icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                      label: const Text('Kembali ke Library'),
+                      label: const Text('Back to Library'),
                       onPressed: onBack,
                     ),
                 ],

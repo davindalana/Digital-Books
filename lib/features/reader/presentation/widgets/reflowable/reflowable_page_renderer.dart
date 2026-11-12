@@ -83,8 +83,10 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     return Container(
       width: contentWidth,
-      padding: const EdgeInsets.symmetric(
-        vertical: PaginationEngine.pageVerticalInset,
+      padding: const EdgeInsets.only(
+        // Keep the running title flush with the page top, like a printed
+        // running head. The larger inset remains around the reading text.
+        bottom: PaginationEngine.pageVerticalInset,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,9 +96,7 @@ class ReflowablePageRenderer extends StatelessWidget {
             SizedBox(
               height: 28,
               child: Align(
-                alignment: isLeftPage
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
+                alignment: Alignment.topCenter,
                 child: Text(
                   page.chapterTitle.toUpperCase(),
                   maxLines: 1,
@@ -1010,7 +1010,7 @@ class ReflowablePageRenderer extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Ilustrasi Buku',
+              'Book Illustration',
               style: TextStyle(fontSize: 12, color: theme.secondaryTextColor),
             ),
           ],
@@ -1147,7 +1147,7 @@ class ReflowablePageRenderer extends StatelessWidget {
           },
         ),
         ContextMenuButtonItem(
-          label: '📝 Catatan',
+          label: '📝 Note',
           onPressed: () {
             editableTextState.hideToolbar();
             HighlightInteractionSheet.show(

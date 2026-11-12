@@ -112,7 +112,7 @@ class SearchTraversalBar extends StatelessWidget {
                       ? theme.textColor
                       : theme.secondaryTextColor.withAlpha(100),
                 ),
-                tooltip: 'Hasil Sebelumnya (Shift+Enter)',
+                tooltip: 'Previous result (Shift+Enter)',
                 onPressed: totalCount > 1 ? onPrevious : null,
               ),
 
@@ -150,7 +150,7 @@ class SearchTraversalBar extends StatelessWidget {
                   Icons.close_rounded,
                   color: theme.secondaryTextColor,
                 ),
-                tooltip: 'Selesai Pencarian (Esc)',
+                tooltip: 'Finish search (Esc)',
                 onPressed: onClose,
               ),
             ],

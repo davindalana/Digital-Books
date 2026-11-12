@@ -203,8 +203,8 @@ void main() {
       await tester.enterText(searchTextFieldFinder, 'Sherlock');
       await tester.pumpAndSettle();
 
-      // Title switches to 'Pencarian'
-      expect(find.text('Pencarian'), findsOneWidget);
+      // Title switches to the English search label.
+      expect(find.text('Search'), findsOneWidget);
 
       // Clean up widget tree before tearDown
       await tester.pumpWidget(const SizedBox());

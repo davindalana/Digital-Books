@@ -173,9 +173,7 @@ class ReflowableReaderContainerState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            note != null
-                ? 'Sorotan & catatan disimpan'
-                : 'Teks berhasil disorot',
+            note != null ? 'Highlight and note saved' : 'Text highlighted',
           ),
           duration: const Duration(seconds: 1),
         ),

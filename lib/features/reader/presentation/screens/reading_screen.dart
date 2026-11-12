@@ -202,7 +202,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Pengenalan teks (OCR) selesai. Mode Buku (Reflowable) kini tersedia!',
+                'Text recognition (OCR) is complete. Book mode is now available.',
               ),
               duration: Duration(seconds: 4),
             ),
@@ -493,7 +493,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           ),
           duration: const Duration(seconds: 6),
           action: SnackBarAction(
-            label: 'Coba Lagi',
+            label: 'Try Again',
             onPressed: _loadProcessedDoc,
           ),
         ),
@@ -531,7 +531,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               ),
               const SizedBox(width: 10),
               const Expanded(
-                child: Text('Teks berhasil disorot & disimpan ke Catatan'),
+                child: Text('Passage highlighted and saved to Notes'),
               ),
             ],
           ),
@@ -684,7 +684,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         anchorNodeId: _activeAnchorNodeId,
         characterOffset: _activeCharOffset,
         pageNumber: _currentPage,
-        label: 'Sebelum pencarian',
+        label: 'Before search',
       ),
     );
 
@@ -960,7 +960,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Berkas PDF berhasil ditautkan kembali.'),
+            content: Text('PDF file relinked successfully.'),
             backgroundColor: Color(0xFF2C2C2E),
             behavior: SnackBarBehavior.floating,
           ),
@@ -970,7 +970,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menautkan PDF: $e'),
+            content: Text('Could not relink PDF: $e'),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
           ),
@@ -988,15 +988,18 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: Colors.white.withAlpha(25)),
         ),
-        title: const Text('Hapus Buku', style: TextStyle(color: Colors.white)),
+        title: const Text('Delete Book', style: TextStyle(color: Colors.white)),
         content: Text(
-          'Apakah Anda yakin ingin menghapus "${widget.book.title}" dari perpustakaan?',
+          'Are you sure you want to remove “${widget.book.title}” from your library?',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal', style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1004,7 +1007,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Hapus'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -1085,7 +1088,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               anchorNodeId: _activeAnchorNodeId,
               characterOffset: _activeCharOffset,
               pageNumber: _currentPage,
-              label: 'Sebelum navigasi daftar isi',
+              label: 'Before table of contents navigation',
             ),
           );
           if (_readingMode == ReadingMode.originalPdf) {
@@ -1112,7 +1115,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               anchorNodeId: _activeAnchorNodeId,
               characterOffset: _activeCharOffset,
               pageNumber: _currentPage,
-              label: 'Sebelum navigasi bab',
+              label: 'Before chapter navigation',
             ),
           );
           if (_readingMode == ReadingMode.originalPdf) {
@@ -1135,7 +1138,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               anchorNodeId: _activeAnchorNodeId,
               characterOffset: _activeCharOffset,
               pageNumber: _currentPage,
-              label: 'Sebelum navigasi posisi',
+              label: 'Before position navigation',
             ),
           );
           _jumpToPosition(pos, _readingMode);
@@ -1149,7 +1152,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               anchorNodeId: _activeAnchorNodeId,
               characterOffset: _activeCharOffset,
               pageNumber: _currentPage,
-              label: 'Sebelum navigasi jangkar',
+              label: 'Before anchor navigation',
             ),
           );
           _reflowableKey.currentState?.jumpToAnchor(anchorNodeId, charOffset);
@@ -1185,15 +1188,15 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Penanda buku dihapus'),
+            content: Text('Bookmark removed'),
             duration: Duration(seconds: 1),
           ),
         );
       }
     } else {
       final label = isReflowable && _currentChapterTitle.isNotEmpty
-          ? '$_currentChapterTitle • Hal. $_currentPage'
-          : 'Halaman $_currentPage';
+          ? '$_currentChapterTitle • Page $_currentPage'
+          : 'Page $_currentPage';
 
       await dbService.addBookmark(
         BookmarksCompanion(
@@ -1352,7 +1355,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Menyiapkan buku...',
+                                'Preparing book…',
                                 style: TextStyle(
                                   color: activeTheme.textColor,
                                   fontSize: 14,
@@ -1605,12 +1608,12 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                     Expanded(
                                       child: Text(
                                         requiresOcr
-                                            ? 'Dokumen ini hasil pindaian (scan) tanpa lapisan teks lengkap. Mode PDF Asli direkomendasikan untuk kenyamanan membaca.'
+                                            ? 'This scanned document has no complete text layer. Original PDF mode is recommended for the best reading experience.'
                                             : reconstructionFailed
-                                            ? 'Mode Buku tidak dapat merekonstruksi dokumen ini dengan baik. Mode PDF Asli direkomendasikan.'
+                                            ? 'Book mode could not reconstruct this document reliably. Original PDF mode is recommended.'
                                             : isPoor
-                                            ? 'Kualitas rekonstruksi dokumen ini rendah. Mode PDF Asli direkomendasikan untuk kenyamanan membaca.'
-                                            : 'Tata letak dokumen ini memiliki kompleksitas visual. Mode PDF Asli tersedia untuk tata letak lengkap.',
+                                            ? 'This document could not be reconstructed reliably. Original PDF mode is recommended for the best reading experience.'
+                                            : 'This document has a visually complex layout. Switch to Original PDF mode to preserve it.',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
@@ -1645,7 +1648,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                           );
                                         },
                                         child: Text(
-                                          'Buka PDF Asli',
+                                          'Open Original PDF',
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.bold,
@@ -1670,7 +1673,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                                         size: 16,
                                         color: activeTheme.secondaryTextColor,
                                       ),
-                                      tooltip: 'Tutup',
+                                      tooltip: 'Close',
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                       onPressed: () {
@@ -1848,7 +1851,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     if (needsOcr && !isCompact) {
       return Tooltip(
         message:
-            'Mulai Pengenalan Teks Latar Belakang (OCR) agar dapat membaca dalam mode Teks / Reflowable',
+            'Run background text recognition (OCR) to enable Book / Reflowable mode',
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () {
@@ -1862,7 +1865,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Pengenalan teks (OCR) dimulai di latar belakang. Mode Buku akan aktif setelah selesai.',
+                  'Text recognition (OCR) started in the background. Book mode will be available when it finishes.',
                 ),
                 duration: Duration(seconds: 3),
               ),
@@ -1892,7 +1895,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                 if (isWideDesktop) ...[
                   const SizedBox(width: 5),
                   Text(
-                    'Mulai OCR',
+                    'Start OCR',
                     style: TextStyle(
                       color: activeTheme.textColor,
                       fontSize: 11.5,
@@ -1951,7 +1954,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       leftControls.add(
         _buildToolbarButton(
           key: const ValueKey('reader_history_back_button'),
-          tooltip: 'Kembali ke lokasi membaca sebelumnya (⌘←)',
+          tooltip: 'Return to previous reading position (⌘←)',
           icon: const Icon(
             Icons.history_rounded,
             color: Color(0xFF007AFF),
@@ -2017,8 +2020,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             final typo = ref.watch(typographySettingsStateProvider);
             return _buildToolbarButton(
               tooltip: typo.twoPageSpread
-                  ? 'Tampilan 2 Halaman'
-                  : 'Tampilan 1 Halaman',
+                  ? 'Two-page view'
+                  : 'Single-page view',
               icon: Icon(
                 typo.twoPageSpread
                     ? Icons.auto_stories_rounded
@@ -2042,8 +2045,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           addRightButton(
             _buildToolbarButton(
               tooltip: _pdfKey.currentState?.isTwoPageSpreadActive == true
-                  ? 'Tampilan 1 Halaman'
-                  : 'Tampilan 2 Halaman (Buku Terbuka)',
+                  ? 'Single-page view'
+                  : 'Two-page view (open book)',
               icon: Icon(
                 _pdfKey.currentState?.isTwoPageSpreadActive == true
                     ? Icons.auto_stories_rounded
@@ -2062,8 +2065,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         } else {
           addRightButton(
             _buildToolbarButton(
-              tooltip:
-                  'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
+              tooltip: 'Two-page view is available only in paginated mode',
               icon: Icon(
                 Icons.article_rounded,
                 color: activeTheme.textColor.withAlpha(80),
@@ -2073,7 +2075,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
-                      'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
+                      'Two-page view is available only in paginated mode. Switch from vertical scrolling to continue.',
                     ),
                     duration: Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
@@ -2112,8 +2114,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
         addRightButton(
           _buildToolbarButton(
             tooltip: pdfViewMode == PdfViewMode.continuous
-                ? 'Mode Halaman'
-                : 'Mode Gulir Vertikal',
+                ? 'Paginated mode'
+                : 'Continuous scrolling',
             icon: Icon(
               pdfViewMode == PdfViewMode.continuous
                   ? Icons.view_headline_rounded
@@ -2174,7 +2176,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       addRightButton(
         _buildToolbarButton(
           key: const ValueKey('reader_search_button'),
-          tooltip: 'Cari dalam buku',
+          tooltip: 'Find in book',
           icon: Icon(
             Icons.search_rounded,
             color: _showSearchTraversal
@@ -2193,7 +2195,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       addRightButton(
         _buildToolbarButton(
           key: const ValueKey('reader_toc_button'),
-          tooltip: 'Daftar Isi',
+          tooltip: 'Table of Contents',
           icon: Icon(
             Icons.list_alt_rounded,
             color: activeTheme.textColor,
@@ -2209,7 +2211,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     addRightButton(
       _buildToolbarButton(
         key: const ValueKey('reader_appearance_button'),
-        tooltip: 'Tampilan & Tema',
+        tooltip: 'Appearance & Theme',
         icon: Text(
           'aA',
           style: TextStyle(
@@ -2228,7 +2230,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     addRightButton(
       _buildToolbarButton(
         key: const ValueKey('reader_annotations_button'),
-        tooltip: 'Daftar Anotasi & Catatan',
+        tooltip: 'Highlights & Notes',
         icon: Icon(
           Icons.collections_bookmark_rounded,
           color: activeTheme.textColor,
@@ -2243,7 +2245,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     addRightButton(
       _buildToolbarButton(
         key: const ValueKey('reader_bookmark_button'),
-        tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
+        tooltip: isBookmarked ? 'Remove Bookmark' : 'Add Bookmark',
         icon: Icon(
           isBookmarked ? Icons.bookmark : Icons.bookmark_border,
           color: isBookmarked ? const Color(0xFF007AFF) : activeTheme.textColor,
@@ -2397,11 +2399,11 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          height: 32,
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : 20),
+          height: isCompact ? 42 : 46,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 24),
           decoration: BoxDecoration(
             color: activeTheme.isDark
-                ? activeTheme.backgroundColor.withAlpha(200)
+                ? activeTheme.backgroundColor.withAlpha(178)
                 : (activeTheme == ReadingThemeType.sepia
                       ? const Color(0xFFF6F0E2).withAlpha(225)
                       : Colors.white.withAlpha(225)),
@@ -2418,7 +2420,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             children: [
               // Previous Page Stepper
               IconButton(
-                tooltip: 'Previous Page',
+                tooltip: 'Previous page',
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
@@ -2436,55 +2438,59 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               ),
 
               // Page Label
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Builder(
-                  builder: (context) {
-                    String pageLabel;
-                    String? tooltipText;
+              SizedBox(
+                width: isCompact ? 104 : 280,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Builder(
+                    builder: (context) {
+                      String pageLabel;
+                      String? tooltipText;
 
-                    if (_readingMode == ReadingMode.originalPdf) {
-                      final secPage =
-                          _pdfKey.currentState?.currentSecondaryPage;
-                      if (secPage != null && secPage != displayPage) {
-                        final start = math.min(displayPage, secPage);
-                        final end = math.max(displayPage, secPage);
-                        pageLabel = 'Hal. $start–$end dari $_totalPages';
+                      if (_readingMode == ReadingMode.originalPdf) {
+                        final secPage =
+                            _pdfKey.currentState?.currentSecondaryPage;
+                        if (secPage != null && secPage != displayPage) {
+                          final start = math.min(displayPage, secPage);
+                          final end = math.max(displayPage, secPage);
+                          pageLabel = 'Pages $start–$end of $_totalPages';
+                        } else {
+                          pageLabel = 'Page $displayPage of $_totalPages';
+                        }
                       } else {
-                        pageLabel = 'Hal. $displayPage dari $_totalPages';
+                        // Reflowable mode: percentage and chapter without page count
+                        pageLabel =
+                            ReadingProgressCalculator.formatProgressText(
+                              progressPercentage: currentProgress,
+                              lastReadingMode: 'reflowable_paginated',
+                              currentChapter: _currentChapter,
+                              chapterTitle: _currentChapterTitle,
+                            );
+
+                        if (_estimatedMinutesLeftInChapter > 0 && !isCompact) {
+                          pageLabel +=
+                              ' • $_estimatedMinutesLeftInChapter min left';
+                          tooltipText =
+                              ReadingProgressCalculator.timeEstimateTooltip;
+                        }
                       }
-                    } else {
-                      // Reflowable mode: percentage and chapter without page count
-                      pageLabel = ReadingProgressCalculator.formatProgressText(
-                        progressPercentage: currentProgress,
-                        lastReadingMode: 'reflowable_paginated',
-                        currentChapter: _currentChapter,
-                        chapterTitle: _currentChapterTitle,
+
+                      final labelWidget = Text(
+                        pageLabel,
+                        style: TextStyle(
+                          color: activeTheme.secondaryTextColor,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       );
 
-                      if (_estimatedMinutesLeftInChapter > 0 && !isCompact) {
-                        pageLabel +=
-                            ' • ±$_estimatedMinutesLeftInChapter mnt tersisa';
-                        tooltipText =
-                            ReadingProgressCalculator.timeEstimateTooltip;
-                      }
-                    }
-
-                    final labelWidget = Text(
-                      pageLabel,
-                      style: TextStyle(
-                        color: activeTheme.secondaryTextColor,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    );
-
-                    return tooltipText != null
-                        ? Tooltip(message: tooltipText, child: labelWidget)
-                        : labelWidget;
-                  },
+                      return tooltipText != null
+                          ? Tooltip(message: tooltipText, child: labelWidget)
+                          : labelWidget;
+                    },
+                  ),
                 ),
               ),
 
@@ -2548,7 +2554,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
 
               // Next Page Stepper
               IconButton(
-                tooltip: 'Next Page',
+                tooltip: 'Next page',
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),

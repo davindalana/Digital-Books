@@ -33,23 +33,23 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify error card is displayed instead of a black screen
-      expect(find.text('Berkas PDF Tidak Ditemukan'), findsOneWidget);
-      expect(find.text('Coba Lagi'), findsOneWidget);
-      expect(find.text('Buka Versi Teks'), findsOneWidget);
-      expect(find.text('Kembali ke Library'), findsOneWidget);
+      expect(find.text('PDF File Not Found'), findsOneWidget);
+      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Open Text Version'), findsOneWidget);
+      expect(find.text('Back to Library'), findsOneWidget);
 
       // Test switch button
-      await tester.tap(find.text('Buka Versi Teks'));
+      await tester.tap(find.text('Open Text Version'));
       expect(switchCalled, isTrue);
 
       // Test back button
-      await tester.tap(find.text('Kembali ke Library'));
+      await tester.tap(find.text('Back to Library'));
       expect(backCalled, isTrue);
 
       // Test retry button
-      await tester.tap(find.text('Coba Lagi'));
+      await tester.tap(find.text('Try Again'));
       await tester.pump();
-      expect(find.text('Berkas PDF Tidak Ditemukan'), findsOneWidget);
+      expect(find.text('PDF File Not Found'), findsOneWidget);
     },
   );
 }

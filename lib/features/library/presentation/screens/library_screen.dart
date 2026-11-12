@@ -35,7 +35,7 @@ enum LibraryNavigationSection {
   collections(AppStrings.navKoleksi, Icons.folder_rounded),
   bookmarks(AppStrings.navPenanda, Icons.bookmark_border_rounded),
   highlights(AppStrings.navSorotanCatatan, Icons.border_color_outlined),
-  search('Pencarian', Icons.search_rounded),
+  search('Search', Icons.search_rounded),
   settings(AppStrings.navPengaturan, Icons.settings_outlined);
 
   final String label;
@@ -350,7 +350,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // macOS App Title bar zone (offset right from traffic lights at X in [20, 78])
             Container(
               height: AppThemeTokens.titlebarHeight,
-              padding: const EdgeInsets.only(left: 88, top: 14),
+              padding: const EdgeInsets.only(left: 88, right: 12),
               child: Row(
                 children: [
                   Container(
@@ -733,7 +733,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           // Breadcrumb or Section Title
           Expanded(
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: Alignment.center,
               child:
                   _selectedSection == LibraryNavigationSection.collections &&
                       _selectedCollectionId != null
@@ -1265,7 +1265,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               });
             },
             child: const Text(
-              'Pilih Buku',
+              'Choose a Book',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ),
@@ -1433,7 +1433,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             ),
                             SizedBox(width: 4),
                             Text(
-                              'Kembali ke Sedang Dibaca',
+                              'Back to Currently Reading',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

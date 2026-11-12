@@ -114,19 +114,19 @@ class _TocDialogState extends ConsumerState<TocDialog> {
                           child: Row(
                             children: [
                               _TabItem(
-                                title: 'Daftar Isi',
+                                title: 'Table of Contents',
                                 isSelected: _selectedTab == 0,
                                 activeTheme: activeTheme,
                                 onTap: () => setState(() => _selectedTab = 0),
                               ),
                               _TabItem(
-                                title: 'Penanda',
+                                title: 'Bookmarks',
                                 isSelected: _selectedTab == 1,
                                 activeTheme: activeTheme,
                                 onTap: () => setState(() => _selectedTab = 1),
                               ),
                               _TabItem(
-                                title: 'Catatan',
+                                title: 'Notes',
                                 isSelected: _selectedTab == 2,
                                 activeTheme: activeTheme,
                                 onTap: () => setState(() => _selectedTab = 2),
@@ -197,7 +197,7 @@ class _TocDialogState extends ConsumerState<TocDialog> {
     if (tocItems.isEmpty) {
       return Center(
         child: Text(
-          'Tidak ada daftar isi terdeteksi',
+          'No table of contents found',
           style: TextStyle(color: activeTheme.secondaryTextColor),
         ),
       );
@@ -427,7 +427,7 @@ class _TocDialogState extends ConsumerState<TocDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Belum ada penanda halaman',
+                  'No bookmarks yet',
                   style: TextStyle(color: activeTheme.secondaryTextColor),
                 ),
               ],
@@ -492,7 +492,7 @@ class _TocDialogState extends ConsumerState<TocDialog> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
         child: Text(
-          'Gagal memuat penanda',
+          'Could not load bookmarks',
           style: TextStyle(color: activeTheme.secondaryTextColor),
         ),
       ),
@@ -517,7 +517,7 @@ class _TocDialogState extends ConsumerState<TocDialog> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Belum ada sorotan atau catatan',
+                  'No highlights or notes yet',
                   style: TextStyle(color: activeTheme.secondaryTextColor),
                 ),
               ],
@@ -590,7 +590,7 @@ class _TocDialogState extends ConsumerState<TocDialog> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(
         child: Text(
-          'Gagal memuat catatan',
+          'Could not load notes',
           style: TextStyle(color: activeTheme.secondaryTextColor),
         ),
       ),

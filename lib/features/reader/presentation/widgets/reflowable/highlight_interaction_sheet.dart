@@ -120,8 +120,8 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                       const SizedBox(width: 8),
                       Text(
                         widget.existingHighlight != null
-                            ? 'Edit Sorotan & Catatan'
-                            : 'Buat Sorotan Baru',
+                            ? 'Edit Highlight & Note'
+                            : 'Create Highlight',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -263,7 +263,7 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                         Icons.delete_outline,
                         color: Colors.redAccent,
                       ),
-                      tooltip: 'Hapus Sorotan',
+                      tooltip: 'Delete Highlight',
                       onPressed: () {
                         Navigator.of(context).pop();
                         widget.onDelete!();
@@ -273,7 +273,7 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: Text(
-                      'Batal',
+                      'Cancel',
                       style: TextStyle(color: secondaryColor),
                     ),
                   ),
@@ -281,7 +281,7 @@ class _HighlightInteractionSheetState extends State<HighlightInteractionSheet> {
                   FilledButton.icon(
                     icon: const Icon(Icons.check, size: 16),
                     label: Text(
-                      widget.existingHighlight != null ? 'Perbarui' : 'Simpan',
+                      widget.existingHighlight != null ? 'Update' : 'Save',
                     ),
                     onPressed: () {
                       final noteText = _noteController.text.trim();

@@ -714,7 +714,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ilustrasi Buku',
+              'Book Illustration',
               style: TextStyle(
                 fontSize: 12,
                 color: widget.theme.secondaryTextColor,
@@ -847,7 +847,7 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
           },
         ),
         ContextMenuButtonItem(
-          label: '📝 Catatan',
+          label: '📝 Note',
           onPressed: () {
             state.hideToolbar();
             HighlightInteractionSheet.show(

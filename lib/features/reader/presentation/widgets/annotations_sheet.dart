@@ -122,7 +122,7 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Anotasi & Penanda Buku',
+                            'Highlights & Bookmarks',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -158,7 +158,7 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                 child: TextField(
                   key: const ValueKey('annotations_search_field'),
                   decoration: InputDecoration(
-                    hintText: 'Cari dalam catatan atau teks sorotan...',
+                    hintText: 'Search notes or highlighted text…',
                     hintStyle: TextStyle(fontSize: 13, color: secondaryColor),
                     prefixIcon: Icon(
                       Icons.search,
@@ -203,19 +203,19 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
-                        'Sorotan (${widget.annotations.where((a) => !a.isBookmark && !a.hasNote).length})',
+                        'Highlights (${widget.annotations.where((a) => !a.isBookmark && !a.hasNote).length})',
                         AnnotationType.highlight,
                         isDark,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
-                        'Catatan (${widget.annotations.where((a) => a.hasNote).length})',
+                        'Notes (${widget.annotations.where((a) => a.hasNote).length})',
                         AnnotationType.note,
                         isDark,
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
-                        'Penanda (${widget.annotations.where((a) => a.isBookmark).length})',
+                        'Bookmarks (${widget.annotations.where((a) => a.isBookmark).length})',
                         AnnotationType.bookmark,
                         isDark,
                       ),
@@ -240,7 +240,7 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Belum ada anotasi atau penanda',
+                              'No highlights or bookmarks yet',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: secondaryColor,
@@ -359,8 +359,8 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                   const SizedBox(width: 8),
                   Text(
                     a.isBookmark
-                        ? 'Penanda Buku'
-                        : (a.hasNote ? 'Catatan' : 'Sorotan'),
+                        ? 'Bookmark'
+                        : (a.hasNote ? 'Note' : 'Highlight'),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -381,7 +381,7 @@ class _AnnotationsSheetState extends State<AnnotationsSheet> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'Hal. ${a.pageIndex}',
+                        'Page ${a.pageIndex}',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,

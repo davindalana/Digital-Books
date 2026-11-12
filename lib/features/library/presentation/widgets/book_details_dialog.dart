@@ -80,9 +80,9 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
     if (!mounted) return;
 
     final message = outcome.succeeded
-        ? 'Mode Buku diperbarui. ${outcome.relocatedHighlights} sorotan dan '
-              '${outcome.relocatedBookmarks} penanda dipulihkan.'
-        : (outcome.message ?? 'Mode Buku tidak dapat diperbarui.');
+        ? 'Book mode updated. ${outcome.relocatedHighlights} highlights and '
+              '${outcome.relocatedBookmarks} bookmarks restored.'
+        : (outcome.message ?? 'Book mode could not be updated.');
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
@@ -356,7 +356,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                               : (_artifactStatus?.label ??
                                                     'Tersedia'))
                                         : (_currentBook.isScanned
-                                              ? 'Belum diproses'
+                                              ? 'Not processed'
                                               : 'Bawaan'),
                                   ),
                                   _DetailRow(
@@ -410,8 +410,8 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                               ),
                                         label: Text(
                                           _isReprocessing
-                                              ? 'Memperbarui Mode Buku...'
-                                              : 'Perbarui Mode Buku',
+                                              ? 'Updating Book Mode…'
+                                              : 'Update Book Mode',
                                         ),
                                       ),
                                     ),
@@ -534,7 +534,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Halaman ${ocrProgress.completedPages} dari ${ocrProgress.totalPages}',
+                                      'Page ${ocrProgress.completedPages} of ${ocrProgress.totalPages}',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: isDark
@@ -561,7 +561,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                             }
                                           },
                                           child: Text(
-                                            isPaused ? 'Lanjutkan' : 'Jeda',
+                                            isPaused ? 'Resume' : 'Pause',
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -576,7 +576,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                                 .cancel();
                                           },
                                           child: const Text(
-                                            'Batal',
+                                            'Cancel',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Colors.red,
@@ -619,7 +619,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        'Mode Buku belum tersedia',
+                                        'Book mode is not available yet',
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
@@ -647,7 +647,7 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                           autoReconstruct: true,
                                         );
                                   },
-                                  child: const Text('Mulai OCR'),
+                                  child: const Text('Start OCR'),
                                 ),
                               ],
                             ),

@@ -286,7 +286,7 @@ class _BookCardState extends ConsumerState<BookCard> {
       width: 24,
       height: 24,
       child: PopupMenuButton<String>(
-        tooltip: 'Pilihan buku',
+        tooltip: 'Book options',
         padding: EdgeInsets.zero,
         icon: Icon(Icons.more_horiz, size: 18, color: Colors.grey.shade400),
         color: const Color(0xFF222226),
@@ -313,7 +313,7 @@ class _BookCardState extends ConsumerState<BookCard> {
                 Icon(Icons.info_outline, size: 17, color: Colors.white70),
                 SizedBox(width: 10),
                 Text(
-                  'Info Buku',
+                  'Book Details',
                   style: TextStyle(fontSize: 13, color: Colors.white),
                 ),
               ],
@@ -331,7 +331,7 @@ class _BookCardState extends ConsumerState<BookCard> {
                 ),
                 SizedBox(width: 10),
                 Text(
-                  'Kelola Koleksi',
+                  'Manage Collections',
                   style: TextStyle(fontSize: 13, color: Colors.white),
                 ),
               ],
@@ -346,7 +346,7 @@ class _BookCardState extends ConsumerState<BookCard> {
                 Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
                 SizedBox(width: 10),
                 Text(
-                  'Hapus Buku',
+                  'Delete Book',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.redAccent,
@@ -389,7 +389,7 @@ class _BookCardState extends ConsumerState<BookCard> {
               Icon(Icons.info_outline, size: 17, color: Colors.white70),
               SizedBox(width: 10),
               Text(
-                'Info Buku',
+                'Book Details',
                 style: TextStyle(fontSize: 13, color: Colors.white),
               ),
             ],
@@ -407,7 +407,7 @@ class _BookCardState extends ConsumerState<BookCard> {
               ),
               SizedBox(width: 10),
               Text(
-                'Kelola Koleksi',
+                'Manage Collections',
                 style: TextStyle(fontSize: 13, color: Colors.white),
               ),
             ],
@@ -422,7 +422,7 @@ class _BookCardState extends ConsumerState<BookCard> {
               Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
               SizedBox(width: 10),
               Text(
-                'Hapus Buku',
+                'Delete Book',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.redAccent,
@@ -531,7 +531,7 @@ class _BookCardState extends ConsumerState<BookCard> {
               await ref.read(databaseServiceProvider).safeDeleteBook(book.id);
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text('Buku "${book.title}" berhasil dihapus.'),
+                  content: Text('“${book.title}” was deleted.'),
                   backgroundColor: const Color(0xFF2C2C2E),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(

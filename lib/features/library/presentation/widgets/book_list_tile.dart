@@ -451,7 +451,7 @@ class BookListTile extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             const Text(
-              'Hapus Buku?',
+              'Delete Book?',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -461,7 +461,7 @@ class BookListTile extends ConsumerWidget {
           ],
         ),
         content: Text(
-          'Apakah Anda yakin ingin menghapus "${book.title}"?\n\nBuku, file PDF, cover, dan progres membaca akan dihapus secara permanen.',
+          'Are you sure you want to delete “${book.title}”?\n\nThe book, PDF, cover, and reading progress will be permanently removed.',
           style: const TextStyle(
             fontSize: 13,
             height: 1.5,
@@ -471,7 +471,10 @@ class BookListTile extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -487,7 +490,7 @@ class BookListTile extends ConsumerWidget {
               await ref.read(databaseServiceProvider).safeDeleteBook(book.id);
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text('Buku "${book.title}" berhasil dihapus.'),
+                  content: Text('“${book.title}” was deleted.'),
                   backgroundColor: const Color(0xFF2C2C2E),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -497,7 +500,7 @@ class BookListTile extends ConsumerWidget {
               );
             },
             child: const Text(
-              'Hapus Buku',
+              'Delete Book',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),

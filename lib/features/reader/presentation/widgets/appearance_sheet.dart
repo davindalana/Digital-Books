@@ -52,7 +52,7 @@ class AppearanceSheet extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Pengaturan Tampilan',
+                          'Appearance Settings',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -281,7 +281,7 @@ class AppearanceSheet extends ConsumerWidget {
                                       const SizedBox(width: 6),
                                       Flexible(
                                         child: Text(
-                                          'Halaman',
+                                          'Pages',
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             fontSize: 12,
@@ -402,7 +402,7 @@ class AppearanceSheet extends ConsumerWidget {
                                   vertical: 2,
                                 ),
                                 title: Text(
-                                  'Tingkatkan Kualitas Pindaian',
+                                  'Enhance Scanned Pages',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
@@ -527,7 +527,7 @@ class AppearanceSheet extends ConsumerWidget {
                                     ),
                                   ),
                                   subtitle: Text(
-                                    'Meringankan bayangan gelap di area punggung buku.',
+                                    'Reduce dark shadows near the book spine.',
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       color: activeTheme.secondaryTextColor,
@@ -597,7 +597,7 @@ class AppearanceSheet extends ConsumerWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Pengaturan ukuran font dan tipografi teks berlaku dalam mode Buku (Reflowable).',
+                              'Font size and typography settings apply in Book (Reflowable) mode.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: activeTheme.secondaryTextColor,

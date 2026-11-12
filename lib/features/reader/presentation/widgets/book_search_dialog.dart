@@ -77,7 +77,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
       if (count == 0 && mounted) {
         setState(() {
           _isIndexing = true;
-          _indexingProgressText = 'Menyiapkan indeks...';
+          _indexingProgressText = 'Preparing index…';
         });
 
         final indexer = BookSearchIndexer(dbService: widget.dbService!);
@@ -232,7 +232,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                               fontWeight: FontWeight.w400,
                             ),
                             decoration: InputDecoration(
-                              hintText: 'Cari kata atau frasa dalam buku...',
+                              hintText: 'Find a word or phrase in this book…',
                               hintStyle: TextStyle(
                                 color: widget.theme.secondaryTextColor
                                     .withAlpha(140),
@@ -294,7 +294,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                           Expanded(
                             child: Text(
                               _isIndexing
-                                  ? 'Menyiapkan indeks pencarian ($_indexingProgressText)...'
+                                  ? 'Preparing search index ($_indexingProgressText)…'
                                   : 'OCR sedang berjalan di latar belakang. Hasil pencarian terus diperbarui.',
                               style: const TextStyle(
                                 fontSize: 11.5,
@@ -365,7 +365,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Cari di seluruh bab & halaman dokumen',
+              'Search across all chapters and pages',
               style: TextStyle(
                 color: widget.theme.secondaryTextColor,
                 fontSize: 14,
@@ -388,7 +388,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Tidak ada hasil yang cocok',
+              'No matching results',
               style: TextStyle(
                 color: widget.theme.textColor,
                 fontSize: 15,
@@ -490,7 +490,7 @@ class _BookSearchDialogState extends State<BookSearchDialog> {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: const Text(
-                          'Lanjut Halaman',
+                          'Next Page',
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
