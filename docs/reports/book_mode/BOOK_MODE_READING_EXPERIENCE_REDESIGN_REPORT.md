@@ -147,25 +147,25 @@ Totals: **1,228 blocks**, 839 paragraphs, 140 headings (8 H1, 22 H2, 110 H3), 68
 
 ### Front matter (cover + copyright)
 
-Before (user screenshot, 7 Nov 2026): [before_front_matter.png](visual_evidence/book_mode_redesign/before_front_matter.png)
+Before (user screenshot, 7 Nov 2026): [before_front_matter.png](../../visual_evidence/book_mode_redesign/before_front_matter.png)
 
-After: [after_front_matter.png](visual_evidence/book_mode_redesign/after_front_matter.png)
+After: [after_front_matter.png](../../visual_evidence/book_mode_redesign/after_front_matter.png)
 
 The after spread shows a centered cover with publisher logo, English title, Indonesian title, subtitle, author and credential on the left; `INFORMASI PENERBITAN` and `PENERBIT` sections on the right. No `BAGIAN AWAL` header or page number on the cover.
 
 ### Body chapter I (same spread)
 
-Before (HEAD, light theme): [before_body_bab1.png](visual_evidence/book_mode_redesign/before_body_bab1.png)
+Before (HEAD, light theme): [before_body_bab1.png](../../visual_evidence/book_mode_redesign/before_body_bab1.png)
 
-After (light theme): [after_body_bab1_light.png](visual_evidence/book_mode_redesign/after_body_bab1_light.png)
+After (light theme): [after_body_bab1_light.png](../../visual_evidence/book_mode_redesign/after_body_bab1_light.png)
 
 The after page has a `BAB I` kicker, left-aligned body text, normal word spacing, and a clear H2/H3 hierarchy.
 
 ### Other pages
 
-- [after_toc.png](visual_evidence/book_mode_redesign/after_toc.png) — TOC with dot leaders and page labels.
-- [after_legal.png](visual_evidence/book_mode_redesign/after_legal.png) — legal page with hanging numbers and atomic clauses.
-- [after_reading_screen.png](visual_evidence/book_mode_redesign/after_reading_screen.png) — actual `ReadingScreen` in Book Mode.
+- [after_toc.png](../../visual_evidence/book_mode_redesign/after_toc.png) — TOC with dot leaders and page labels.
+- [after_legal.png](../../visual_evidence/book_mode_redesign/after_legal.png) — legal page with hanging numbers and atomic clauses.
+- [after_reading_screen.png](../../visual_evidence/book_mode_redesign/after_reading_screen.png) — actual `ReadingScreen` in Book Mode.
 
 ---
 

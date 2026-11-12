@@ -57,7 +57,7 @@ Commits after the previous baseline `22df013`:
 
 `git show --stat b9bad5b` confirms it adds only:
 
-- `docs/release/phase_3_6_release_candidate_report.md`
+- `docs/reports/release/phase_3_6_release_candidate_report.md`
 - `test/phase_3_6_release_candidate_test.dart`
 
 `153ffe3` changes only PNG files under `docs/visual_evidence/`. No unrelated source changes or accidental data files were found. User data under `~/Documents/DigitalBooks/` is outside the repository and was not modified.

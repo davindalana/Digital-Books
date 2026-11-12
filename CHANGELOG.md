@@ -27,10 +27,10 @@ All notable changes to the **Digital Books** application are documented in this 
   - Integrated one-tap toggle on `ReadingScreen` top navigation bar (`Icons.auto_fix_high`) and fine-grained controls in `AppearanceSheet`.
   - Added `test/phase_3_0_1_image_enhancement_test.dart` (4 passing test scenarios).
 - **Deliverables**:
-  - `docs/PHASE_3_0_1_READER_QUALITY.md`
-  - `docs/PHASE_3_0_1_SEMANTIC_RECONSTRUCTION.md`
-  - `docs/PHASE_3_0_1_PDF_TRANSITION_VALIDATION.md`
-  - `docs/PHASE_3_0_1_PERFORMANCE.md`
+  - `docs/reports/phase_3_0/PHASE_3_0_1_READER_QUALITY.md`
+  - `docs/reports/phase_3_0/PHASE_3_0_1_SEMANTIC_RECONSTRUCTION.md`
+  - `docs/reports/phase_3_0/PHASE_3_0_1_PDF_TRANSITION_VALIDATION.md`
+  - `docs/reports/phase_3_0/PHASE_3_0_1_PERFORMANCE.md`
 
 ### Performance
 - High-resolution 8.1 MB scanned page enhancement executes in 18 ms (well under the 35 ms budget).
@@ -47,8 +47,8 @@ All notable changes to the **Digital Books** application are documented in this 
 - **Permanent Development Governance & Git Workflow (`AGENTS.md`)**:
   - Established permanent engineering principles, quality policies, atomic commit standards, and macOS-native testing mandates.
 - **Standardized Workflow & Versioning Guides**:
-  - Created [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) detailing the 13-step development cycle, commit taxonomy, changelog maintenance, and rollback protocols.
-  - Created [`docs/VERSIONING.md`](docs/VERSIONING.md) defining Semantic Versioning for Flutter (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`) and release lifecycle gates.
+  - Created [`docs/governance/DEVELOPMENT_WORKFLOW.md`](docs/governance/DEVELOPMENT_WORKFLOW.md) detailing the 13-step development cycle, commit taxonomy, changelog maintenance, and rollback protocols.
+  - Created [`docs/governance/VERSIONING.md`](docs/governance/VERSIONING.md) defining Semantic Versioning for Flutter (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`) and release lifecycle gates.
 - **Phase 2.9.2 Rendering Stability Regression Test Suite (`test/phase_2_9_2_rendering_stability_test.dart`)**:
   - 6 unit test scenarios verifying zero white flash, retained bitmap surface survival across page turns, and rapid non-blocking navigation.
 

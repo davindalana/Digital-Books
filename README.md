@@ -114,6 +114,7 @@ flutter test integration_test/macos_native_flow_test.dart -d macos
 
 ## Documentation Suite
 
+- [Documentation Hub & Catalog](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/README.md)
 - [Installation & Release Notes](file:///Users/davindalana/Documents/Project/Digital%20Books/INSTALLATION.md)
 - [Backup & Disaster Recovery Guide](file:///Users/davindalana/Documents/Project/Digital%20Books/BACKUP_AND_RESTORE.md)
 - [Release Changelog](file:///Users/davindalana/Documents/Project/Digital%20Books/CHANGELOG.md)
