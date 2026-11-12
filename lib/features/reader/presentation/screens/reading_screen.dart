@@ -1483,7 +1483,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                 // 2.5 Floating In-Book Search Traversal Bar
                 if (_showSearchTraversal)
                   Positioned(
-                    top: _showControls ? 50 : 12,
+                    top: _showControls ? 88.0 : 16.0,
                     left: 0,
                     right: 0,
                     child: Center(
@@ -1699,6 +1699,185 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     );
   }
 
+  Widget _buildToolbarButton({
+    Key? key,
+    required String tooltip,
+    required Widget icon,
+    required VoidCallback? onPressed,
+    required ReadingThemeType activeTheme,
+    double size = 36.0,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        key: key,
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: size, minHeight: size),
+        splashRadius: 18,
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          hoverColor: activeTheme.isDark
+              ? Colors.white.withAlpha(22)
+              : Colors.black.withAlpha(14),
+        ),
+        icon: icon,
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildModeSwitcher(
+    ReadingThemeType activeTheme,
+    ReadingMode readingMode,
+  ) {
+    return Container(
+      height: 30,
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        color: activeTheme.isDark
+            ? Colors.white.withAlpha(18)
+            : Colors.black.withAlpha(10),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ModePillButton(
+            label: 'Book',
+            isSelected: readingMode == ReadingMode.reflowable,
+            activeTheme: activeTheme,
+            onTap: () => _setReadingMode(ReadingMode.reflowable),
+          ),
+          _ModePillButton(
+            label: 'PDF',
+            isSelected: readingMode == ReadingMode.originalPdf,
+            activeTheme: activeTheme,
+            onTap: () => _setReadingMode(ReadingMode.originalPdf),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildOcrStatusBadge(
+    ReadingThemeType activeTheme,
+    bool isWideDesktop,
+    bool isCompact,
+  ) {
+    final ocrProgressAsync = ref.watch(ocrQueueProgressStreamProvider);
+    final ocrProgress = ocrProgressAsync.valueOrNull;
+    final isThisBookOcrRunning =
+        ocrProgress != null &&
+        ocrProgress.bookId == widget.book.id &&
+        ocrProgress.isRunning;
+
+    if (isThisBookOcrRunning) {
+      return Container(
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFF007AFF).withAlpha(25),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFF007AFF).withAlpha(60),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                valueColor: AlwaysStoppedAnimation(Color(0xFF007AFF)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'OCR ${ocrProgress.completedPages}/${ocrProgress.totalPages} (${(ocrProgress.progressPercentage * 100).toInt()}%)',
+              style: const TextStyle(
+                color: Color(0xFF007AFF),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final needsOcr =
+        _document == null ||
+        (widget.book.isScanned &&
+            _document!.chapters.isNotEmpty &&
+            _document!.chapters.every(
+              (c) => c.blocks.every((b) => b.type == BlockType.image),
+            ));
+    if (needsOcr && !isCompact) {
+      return Tooltip(
+        message:
+            'Mulai Pengenalan Teks Latar Belakang (OCR) agar dapat membaca dalam mode Teks / Reflowable',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            ref.read(backgroundOcrQueueProvider).start(
+              bookId: widget.book.id,
+              pdfPath: widget.book.originalPdfPath,
+              autoReconstruct: true,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Pengenalan teks (OCR) dimulai di latar belakang. Mode Buku akan aktif setelah selesai.',
+                ),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          },
+          child: Container(
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: activeTheme.isDark
+                  ? Colors.white.withAlpha(15)
+                  : Colors.black.withAlpha(8),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: activeTheme.isDark ? Colors.white24 : Colors.black12,
+                width: 0.8,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.document_scanner_outlined,
+                  size: 15,
+                  color: activeTheme.textColor,
+                ),
+                if (isWideDesktop) ...[
+                  const SizedBox(width: 5),
+                  Text(
+                    'Mulai OCR',
+                    style: TextStyle(
+                      color: activeTheme.textColor,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return null;
+  }
+
   Widget _buildFloatingTopBar(
     ReadingThemeType activeTheme,
     ReadingMode readingMode,
@@ -1709,24 +1888,789 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     final isWideDesktop = screenWidth >= 960;
     final isDesktopOrTablet = screenWidth >= 680;
     final isCompact = screenWidth < 520;
-    final isUltraCompact = screenWidth < 380;
+    final isUltraCompact = screenWidth < 400;
     final pdfViewMode = ref.watch(pdfViewModeProvider);
 
-    final leftPadding = isMacOS ? 80.0 : (isCompact ? 4.0 : 8.0);
-    final rightPadding = isCompact ? 4.0 : 8.0;
+    const toolbarHeight = 80.0;
+    const buttonSpacing = 14.0;
+    final leftPadding = isMacOS ? 80.0 : (isCompact ? 12.0 : 24.0);
+    final rightPadding = isCompact ? 12.0 : 24.0;
+
+    // 1. Build Left Controls
+    final List<Widget> leftControls = [];
+
+    // Back button
+    leftControls.add(
+      _buildToolbarButton(
+        key: const ValueKey('reader_top_back_button'),
+        tooltip: 'Back',
+        icon: Icon(
+          Icons.chevron_left_rounded,
+          color: activeTheme.textColor,
+          size: 24,
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // History Back button (undo jump)
+    if (_navigationHistory.canGoBack) {
+      leftControls.add(const SizedBox(width: buttonSpacing));
+      leftControls.add(
+        _buildToolbarButton(
+          key: const ValueKey('reader_history_back_button'),
+          tooltip: 'Kembali ke lokasi membaca sebelumnya (⌘←)',
+          icon: const Icon(
+            Icons.history_rounded,
+            color: Color(0xFF007AFF),
+            size: 20,
+          ),
+          onPressed: _handleHistoryBack,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // Mode Switcher: Book vs PDF
+    final showModeSwitcher = _document != null && !isUltraCompact;
+    if (showModeSwitcher) {
+      leftControls.add(const SizedBox(width: 16));
+      leftControls.add(_buildModeSwitcher(activeTheme, readingMode));
+    }
+
+    // OCR Progress / Trigger badge
+    final ocrBadge = _buildOcrStatusBadge(
+      activeTheme,
+      isWideDesktop,
+      isCompact,
+    );
+    if (ocrBadge != null) {
+      leftControls.add(const SizedBox(width: 12));
+      leftControls.add(ocrBadge);
+    }
+
+    // Calculate left occupied width
+    double leftGroupWidth = 36.0;
+    if (_navigationHistory.canGoBack) {
+      leftGroupWidth += buttonSpacing + 36.0;
+    }
+    if (showModeSwitcher) {
+      leftGroupWidth += 16.0 + 104.0;
+    }
+    if (ocrBadge != null) {
+      leftGroupWidth += 12.0 + (isWideDesktop ? 120.0 : 36.0);
+    }
+
+    // 2. Build Right Controls
+    final List<Widget> rightControls = [];
+
+    void addRightButton(Widget button) {
+      if (rightControls.isNotEmpty) {
+        rightControls.add(const SizedBox(width: buttonSpacing));
+      }
+      rightControls.add(button);
+    }
+
+    // A. Mode-specific controls
+    if (readingMode == ReadingMode.reflowable && isDesktopOrTablet) {
+      addRightButton(
+        Consumer(
+          builder: (context, ref, _) {
+            final layoutMode = ref.watch(
+              reflowableLayoutModeProvider(widget.book.id),
+            );
+            if (layoutMode != ReflowableLayoutMode.paginated) {
+              return const SizedBox.shrink();
+            }
+            final typo = ref.watch(typographySettingsStateProvider);
+            return _buildToolbarButton(
+              tooltip: typo.twoPageSpread
+                  ? 'Tampilan 2 Halaman'
+                  : 'Tampilan 1 Halaman',
+              icon: Icon(
+                typo.twoPageSpread
+                    ? Icons.auto_stories_rounded
+                    : Icons.article_rounded,
+                color: activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                final current = ref.read(typographySettingsStateProvider);
+                ref.read(typographySettingsStateProvider.notifier).state =
+                    current.copyWith(twoPageSpread: !current.twoPageSpread);
+              },
+              activeTheme: activeTheme,
+            );
+          },
+        ),
+      );
+    } else if (readingMode == ReadingMode.originalPdf) {
+      if (isDesktopOrTablet) {
+        if (pdfViewMode == PdfViewMode.paginated) {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: _pdfKey.currentState?.isTwoPageSpreadActive == true
+                  ? 'Tampilan 1 Halaman'
+                  : 'Tampilan 2 Halaman (Buku Terbuka)',
+              icon: Icon(
+                _pdfKey.currentState?.isTwoPageSpreadActive == true
+                    ? Icons.auto_stories_rounded
+                    : Icons.article_rounded,
+                color: activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _pdfKey.currentState?.toggleTwoPageSpread();
+                });
+              },
+              activeTheme: activeTheme,
+            ),
+          );
+        } else {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip:
+                  'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
+              icon: Icon(
+                Icons.article_rounded,
+                color: activeTheme.textColor.withAlpha(80),
+                size: 20,
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
+                    ),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              activeTheme: activeTheme,
+            ),
+          );
+        }
+        if (isWideDesktop) {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: 'Zoom Out (Cmd -)',
+              icon: Icon(
+                Icons.zoom_out,
+                color: activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () => _pdfKey.currentState?.zoomOut(),
+              activeTheme: activeTheme,
+            ),
+          );
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: 'Zoom In (Cmd +)',
+              icon: Icon(Icons.zoom_in, color: activeTheme.textColor, size: 20),
+              onPressed: () => _pdfKey.currentState?.zoomIn(),
+              activeTheme: activeTheme,
+            ),
+          );
+        }
+      }
+
+      if (!isCompact) {
+        addRightButton(
+          _buildToolbarButton(
+            tooltip: pdfViewMode == PdfViewMode.continuous
+                ? 'Mode Halaman'
+                : 'Mode Gulir Vertikal',
+            icon: Icon(
+              pdfViewMode == PdfViewMode.continuous
+                  ? Icons.view_headline_rounded
+                  : Icons.view_carousel_outlined,
+              color: activeTheme.textColor,
+              size: 20,
+            ),
+            onPressed: () {
+              final next = pdfViewMode == PdfViewMode.paginated
+                  ? PdfViewMode.continuous
+                  : PdfViewMode.paginated;
+              ref.read(pdfViewModeProvider.notifier).state = next;
+            },
+            activeTheme: activeTheme,
+          ),
+        );
+      }
+
+      // Quick Scan Enhancement Toggle
+      addRightButton(
+        Consumer(
+          builder: (context, ref, _) {
+            final config = ref.watch(
+              scanEnhancementConfigProvider(widget.book.id),
+            );
+            return _buildToolbarButton(
+              key: const ValueKey('reader_enhancement_toggle'),
+              tooltip: config.isEnabled
+                  ? 'Enhance Aktif (Klik untuk Mode Asli)'
+                  : 'Tingkatkan Kualitas Scan (Enhance)',
+              icon: Icon(
+                config.isEnabled
+                    ? Icons.auto_fix_high
+                    : Icons.auto_fix_normal_outlined,
+                color: config.isEnabled
+                    ? const Color(0xFFD4AF37)
+                    : activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                ref
+                    .read(
+                      scanEnhancementConfigProvider(widget.book.id).notifier,
+                    )
+                    .state = config.copyWith(
+                  isEnabled: !config.isEnabled,
+                );
+              },
+              activeTheme: activeTheme,
+            );
+          },
+        ),
+      );
+    }
+
+    // B. In-Book Search button
+    if ((_document != null || _readerDocument != null) && isDesktopOrTablet) {
+      addRightButton(
+        _buildToolbarButton(
+          key: const ValueKey('reader_search_button'),
+          tooltip: 'Cari dalam buku',
+          icon: Icon(
+            Icons.search_rounded,
+            color: _showSearchTraversal
+                ? const Color(0xFFFF9500)
+                : activeTheme.textColor,
+            size: 20,
+          ),
+          onPressed: _openBookSearchDialog,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // C. Table of Contents
+    if (!isUltraCompact) {
+      addRightButton(
+        _buildToolbarButton(
+          key: const ValueKey('reader_toc_button'),
+          tooltip: 'Daftar Isi',
+          icon: Icon(
+            Icons.list_alt_rounded,
+            color: activeTheme.textColor,
+            size: 20,
+          ),
+          onPressed: _openTocDialog,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // D. Appearance Settings (aA)
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_appearance_button'),
+        tooltip: 'Tampilan & Tema',
+        icon: Text(
+          'aA',
+          style: TextStyle(
+            color: activeTheme.textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
+          ),
+        ),
+        onPressed: _openAppearanceSheet,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // E. Annotations Library (Highlights, Notes, Bookmarks)
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_annotations_button'),
+        tooltip: 'Daftar Anotasi & Catatan',
+        icon: Icon(
+          Icons.collections_bookmark_rounded,
+          color: activeTheme.textColor,
+          size: 20,
+        ),
+        onPressed: _openAnnotationsSheet,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // F. Bookmark button
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_bookmark_button'),
+        tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
+        icon: Icon(
+          isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+          color: isBookmarked ? const Color(0xFF007AFF) : activeTheme.textColor,
+          size: 20,
+        ),
+        onPressed: _toggleBookmark,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // Calculate right occupied width
+    final rightButtonCount = (rightControls.length + 1) ~/ 2;
+    final rightGroupWidth = rightButtonCount > 0
+        ? (rightButtonCount * 36.0) + ((rightButtonCount - 1) * buttonSpacing)
+        : 0.0;
+
+    // 3. Symmetrical Center Clearance Calculation
+    final leftOccupied = leftPadding + leftGroupWidth;
+    final rightOccupied = rightPadding + rightGroupWidth;
+    const safetyMargin = 16.0;
+
+    final leftClearance = (screenWidth / 2.0) - leftOccupied - safetyMargin;
+    final rightClearance = (screenWidth / 2.0) - rightOccupied - safetyMargin;
+    final halfWidth = math.min(leftClearance, rightClearance);
+    final maxTitleWidth = math.max(60.0, halfWidth * 2.0);
+
+    final subtitleText = _currentChapterTitle.isNotEmpty
+        ? _currentChapterTitle
+        : widget.book.author;
+
+    final titleBlock = Positioned.fill(
+      child: IgnorePointer(
+        ignoring: true,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxTitleWidth),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  widget.book.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: activeTheme.textColor,
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 4.0),
+                Text(
+                  subtitleText,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: activeTheme.secondaryTextColor,
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 1. Build Left Controls
+    final List<Widget> leftControls = [];
+
+    // Back button
+    leftControls.add(
+      _buildToolbarButton(
+        key: const ValueKey('reader_top_back_button'),
+        tooltip: 'Back',
+        icon: Icon(
+          Icons.chevron_left_rounded,
+          color: activeTheme.textColor,
+          size: 24,
+        ),
+        onPressed: () => Navigator.of(context).pop(),
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // History Back button (undo jump)
+    if (_navigationHistory.canGoBack) {
+      leftControls.add(const SizedBox(width: buttonSpacing));
+      leftControls.add(
+        _buildToolbarButton(
+          key: const ValueKey('reader_history_back_button'),
+          tooltip: 'Kembali ke lokasi membaca sebelumnya (⌘←)',
+          icon: const Icon(
+            Icons.history_rounded,
+            color: Color(0xFF007AFF),
+            size: 20,
+          ),
+          onPressed: _handleHistoryBack,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // Mode Switcher: Book vs PDF
+    final showModeSwitcher = _document != null && !isUltraCompact;
+    if (showModeSwitcher) {
+      leftControls.add(const SizedBox(width: 16));
+      leftControls.add(
+        _buildModeSwitcher(activeTheme, readingMode),
+      );
+    }
+
+    // OCR Progress / Trigger badge
+    final ocrBadge = _buildOcrStatusBadge(activeTheme, isWideDesktop, isCompact);
+    if (ocrBadge != null) {
+      leftControls.add(const SizedBox(width: 12));
+      leftControls.add(ocrBadge);
+    }
+
+    // Calculate left occupied width
+    double leftGroupWidth = 36.0;
+    if (_navigationHistory.canGoBack) {
+      leftGroupWidth += buttonSpacing + 36.0;
+    }
+    if (showModeSwitcher) {
+      leftGroupWidth += 16.0 + 104.0;
+    }
+    if (ocrBadge != null) {
+      leftGroupWidth += 12.0 + (isWideDesktop ? 120.0 : 36.0);
+    }
+
+    // 2. Build Right Controls
+    final List<Widget> rightControls = [];
+
+    void addRightButton(Widget button) {
+      if (rightControls.isNotEmpty) {
+        rightControls.add(const SizedBox(width: buttonSpacing));
+      }
+      rightControls.add(button);
+    }
+
+    // A. Mode-specific controls
+    if (readingMode == ReadingMode.reflowable && isDesktopOrTablet) {
+      addRightButton(
+        Consumer(
+          builder: (context, ref, _) {
+            final layoutMode = ref.watch(
+              reflowableLayoutModeProvider(widget.book.id),
+            );
+            if (layoutMode != ReflowableLayoutMode.paginated) {
+              return const SizedBox.shrink();
+            }
+            final typo = ref.watch(typographySettingsStateProvider);
+            return _buildToolbarButton(
+              tooltip: typo.twoPageSpread
+                  ? 'Tampilan 2 Halaman'
+                  : 'Tampilan 1 Halaman',
+              icon: Icon(
+                typo.twoPageSpread
+                    ? Icons.auto_stories_rounded
+                    : Icons.article_rounded,
+                color: activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                final current = ref.read(typographySettingsStateProvider);
+                ref.read(typographySettingsStateProvider.notifier).state =
+                    current.copyWith(twoPageSpread: !current.twoPageSpread);
+              },
+              activeTheme: activeTheme,
+            );
+          },
+        ),
+      );
+    } else if (readingMode == ReadingMode.originalPdf) {
+      if (isDesktopOrTablet) {
+        if (pdfViewMode == PdfViewMode.paginated) {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: _pdfKey.currentState?.isTwoPageSpreadActive == true
+                  ? 'Tampilan 1 Halaman'
+                  : 'Tampilan 2 Halaman (Buku Terbuka)',
+              icon: Icon(
+                _pdfKey.currentState?.isTwoPageSpreadActive == true
+                    ? Icons.auto_stories_rounded
+                    : Icons.article_rounded,
+                color: activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _pdfKey.currentState?.toggleTwoPageSpread();
+                });
+              },
+              activeTheme: activeTheme,
+            ),
+          );
+        } else {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip:
+                  'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
+              icon: Icon(
+                Icons.article_rounded,
+                color: activeTheme.textColor.withAlpha(80),
+                size: 20,
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
+                    ),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              activeTheme: activeTheme,
+            ),
+          );
+        }
+        if (isWideDesktop) {
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: 'Zoom Out (Cmd -)',
+              icon: Icon(Icons.zoom_out, color: activeTheme.textColor, size: 20),
+              onPressed: () => _pdfKey.currentState?.zoomOut(),
+              activeTheme: activeTheme,
+            ),
+          );
+          addRightButton(
+            _buildToolbarButton(
+              tooltip: 'Zoom In (Cmd +)',
+              icon: Icon(Icons.zoom_in, color: activeTheme.textColor, size: 20),
+              onPressed: () => _pdfKey.currentState?.zoomIn(),
+              activeTheme: activeTheme,
+            ),
+          );
+        }
+      }
+
+      if (!isCompact) {
+        addRightButton(
+          _buildToolbarButton(
+            tooltip: pdfViewMode == PdfViewMode.continuous
+                ? 'Mode Halaman'
+                : 'Mode Gulir Vertikal',
+            icon: Icon(
+              pdfViewMode == PdfViewMode.continuous
+                  ? Icons.view_headline_rounded
+                  : Icons.view_carousel_outlined,
+              color: activeTheme.textColor,
+              size: 20,
+            ),
+            onPressed: () {
+              final next = pdfViewMode == PdfViewMode.paginated
+                  ? PdfViewMode.continuous
+                  : PdfViewMode.paginated;
+              ref.read(pdfViewModeProvider.notifier).state = next;
+            },
+            activeTheme: activeTheme,
+          ),
+        );
+      }
+
+      // Quick Scan Enhancement Toggle
+      addRightButton(
+        Consumer(
+          builder: (context, ref, _) {
+            final config = ref.watch(
+              scanEnhancementConfigProvider(widget.book.id),
+            );
+            return _buildToolbarButton(
+              key: const ValueKey('reader_enhancement_toggle'),
+              tooltip: config.isEnabled
+                  ? 'Enhance Aktif (Klik untuk Mode Asli)'
+                  : 'Tingkatkan Kualitas Scan (Enhance)',
+              icon: Icon(
+                config.isEnabled
+                    ? Icons.auto_fix_high
+                    : Icons.auto_fix_normal_outlined,
+                color: config.isEnabled
+                    ? const Color(0xFFD4AF37)
+                    : activeTheme.textColor,
+                size: 20,
+              ),
+              onPressed: () {
+                ref
+                    .read(scanEnhancementConfigProvider(widget.book.id).notifier)
+                    .state = config.copyWith(isEnabled: !config.isEnabled);
+              },
+              activeTheme: activeTheme,
+            );
+          },
+        ),
+      );
+    }
+
+    // B. In-Book Search button
+    if ((_document != null || _readerDocument != null) && isDesktopOrTablet) {
+      addRightButton(
+        _buildToolbarButton(
+          key: const ValueKey('reader_search_button'),
+          tooltip: 'Cari dalam buku',
+          icon: Icon(
+            Icons.search_rounded,
+            color: _showSearchTraversal
+                ? const Color(0xFFFF9500)
+                : activeTheme.textColor,
+            size: 20,
+          ),
+          onPressed: _openBookSearchDialog,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // C. Table of Contents
+    if (!isUltraCompact) {
+      addRightButton(
+        _buildToolbarButton(
+          key: const ValueKey('reader_toc_button'),
+          tooltip: 'Daftar Isi',
+          icon: Icon(Icons.list_alt_rounded, color: activeTheme.textColor, size: 20),
+          onPressed: _openTocDialog,
+          activeTheme: activeTheme,
+        ),
+      );
+    }
+
+    // D. Appearance Settings (aA)
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_appearance_button'),
+        tooltip: 'Tampilan & Tema',
+        icon: Text(
+          'aA',
+          style: TextStyle(
+            color: activeTheme.textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.5,
+          ),
+        ),
+        onPressed: _openAppearanceSheet,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // E. Annotations Library (Highlights, Notes, Bookmarks)
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_annotations_button'),
+        tooltip: 'Daftar Anotasi & Catatan',
+        icon: Icon(
+          Icons.collections_bookmark_rounded,
+          color: activeTheme.textColor,
+          size: 20,
+        ),
+        onPressed: _openAnnotationsSheet,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // F. Bookmark button
+    addRightButton(
+      _buildToolbarButton(
+        key: const ValueKey('reader_bookmark_button'),
+        tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
+        icon: Icon(
+          isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+          color: isBookmarked ? const Color(0xFF007AFF) : activeTheme.textColor,
+          size: 20,
+        ),
+        onPressed: _toggleBookmark,
+        activeTheme: activeTheme,
+      ),
+    );
+
+    // Calculate right occupied width
+    final rightButtonCount = (rightControls.length + 1) ~/ 2;
+    final rightGroupWidth = rightButtonCount > 0
+        ? (rightButtonCount * 36.0) + ((rightButtonCount - 1) * buttonSpacing)
+        : 0.0;
+
+    // 3. Symmetrical Center Clearance Calculation
+    final leftOccupied = leftPadding + leftGroupWidth;
+    final rightOccupied = rightPadding + rightGroupWidth;
+    const safetyMargin = 16.0;
+
+    final leftClearance = (screenWidth / 2.0) - leftOccupied - safetyMargin;
+    final rightClearance = (screenWidth / 2.0) - rightOccupied - safetyMargin;
+    final halfWidth = math.min(leftClearance, rightClearance);
+    final maxTitleWidth = math.max(60.0, halfWidth * 2.0);
+
+    final subtitleText = _currentChapterTitle.isNotEmpty
+        ? _currentChapterTitle
+        : widget.book.author;
+
+    final titleBlock = Positioned.fill(
+      child: IgnorePointer(
+        ignoring: true,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxTitleWidth),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  widget.book.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: activeTheme.textColor,
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 4.0),
+                Text(
+                  subtitleText,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: activeTheme.secondaryTextColor,
+                    fontSize: 13.0,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
 
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-          height: 44,
-          padding: EdgeInsets.only(left: leftPadding, right: rightPadding),
+          height: toolbarHeight,
           decoration: BoxDecoration(
             color: activeTheme.isDark
                 ? activeTheme.backgroundColor.withAlpha(210)
                 : (activeTheme == ReadingThemeType.sepia
                       ? const Color(0xFFF6F0E2).withAlpha(230)
-                      : Colors.white.withAlpha(230)),
+                      : Colors.white.withAlpha(235)),
             border: Border(
               bottom: BorderSide(
                 color: activeTheme.isDark
@@ -1736,555 +2680,38 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               ),
             ),
           ),
-          child: Row(
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              // 1. Left controls
-              // Back button
-              IconButton(
-                key: const ValueKey('reader_top_back_button'),
-                tooltip: 'Back',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                splashRadius: 16,
-                icon: Icon(
-                  Icons.chevron_left_rounded,
-                  color: activeTheme.textColor,
-                  size: 24,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              // 1. Center Title Block (Strictly window-center aligned)
+              titleBlock,
 
-              // History Back button (undo jump)
-              if (_navigationHistory.canGoBack)
-                IconButton(
-                  key: const ValueKey('reader_history_back_button'),
-                  tooltip: 'Kembali ke lokasi membaca sebelumnya (⌘←)',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  splashRadius: 16,
-                  icon: const Icon(
-                    Icons.history_rounded,
-                    color: Color(0xFF007AFF),
-                    size: 19,
-                  ),
-                  onPressed: _handleHistoryBack,
-                ),
-
-              // Mode Switcher: Reflowable vs PDF (only if processed document is present and not compact)
-              if (_document != null && !isCompact) ...[
-                const SizedBox(width: 4),
-                Container(
-                  height: 26,
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: activeTheme.isDark
-                        ? Colors.white.withAlpha(20)
-                        : Colors.black.withAlpha(12),
-                    borderRadius: BorderRadius.circular(13),
-                  ),
+              // 2. Left Region (Independently positioned on left)
+              Positioned(
+                left: leftPadding,
+                top: 0,
+                bottom: 0,
+                child: Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ModePillButton(
-                        label: 'Book',
-                        isSelected: readingMode == ReadingMode.reflowable,
-                        activeTheme: activeTheme,
-                        onTap: () => _setReadingMode(ReadingMode.reflowable),
-                      ),
-                      _ModePillButton(
-                        label: 'PDF',
-                        isSelected: readingMode == ReadingMode.originalPdf,
-                        activeTheme: activeTheme,
-                        onTap: () => _setReadingMode(ReadingMode.originalPdf),
-                      ),
-                    ],
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: leftControls,
                   ),
                 ),
-                const SizedBox(width: 4),
-              ],
-
-              // Background OCR progress / trigger pill
-              Consumer(
-                builder: (context, ref, _) {
-                  final ocrProgressAsync = ref.watch(
-                    ocrQueueProgressStreamProvider,
-                  );
-                  final ocrProgress = ocrProgressAsync.valueOrNull;
-                  final isThisBookOcrRunning =
-                      ocrProgress != null &&
-                      ocrProgress.bookId == widget.book.id &&
-                      ocrProgress.isRunning;
-
-                  if (isThisBookOcrRunning) {
-                    return Container(
-                      height: 24,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF007AFF).withAlpha(25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF007AFF).withAlpha(60),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 10,
-                            height: 10,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 1.8,
-                              valueColor: AlwaysStoppedAnimation(
-                                Color(0xFF007AFF),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            'OCR ${ocrProgress.completedPages}/${ocrProgress.totalPages} (${(ocrProgress.progressPercentage * 100).toInt()}%)',
-                            style: const TextStyle(
-                              color: Color(0xFF007AFF),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  // If document is null or contains only raw fallback image pages (scanned PDF), allow triggering OCR directly from reader bar
-                  final needsOcr =
-                      _document == null ||
-                      (widget.book.isScanned &&
-                          _document!.chapters.isNotEmpty &&
-                          _document!.chapters.every(
-                            (c) => c.blocks.every(
-                              (b) => b.type == BlockType.image,
-                            ),
-                          ));
-                  if (needsOcr && !isCompact) {
-                    return Tooltip(
-                      message:
-                          'Mulai Pengenalan Teks Latar Belakang (OCR) agar dapat membaca dalam mode Teks / Reflowable',
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          ref
-                              .read(backgroundOcrQueueProvider)
-                              .start(
-                                bookId: widget.book.id,
-                                pdfPath: widget.book.originalPdfPath,
-                                autoReconstruct: true,
-                              );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Pengenalan teks (OCR) dimulai di latar belakang. Mode Buku akan aktif setelah selesai.',
-                              ),
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 24,
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: activeTheme.isDark
-                                ? Colors.white.withAlpha(15)
-                                : Colors.black.withAlpha(8),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: activeTheme.isDark
-                                  ? Colors.white24
-                                  : Colors.black12,
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.document_scanner_outlined,
-                                size: 13,
-                                color: activeTheme.textColor,
-                              ),
-                              if (isWideDesktop) ...[
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Mulai OCR',
-                                  style: TextStyle(
-                                    color: activeTheme.textColor,
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return const SizedBox.shrink();
-                },
               ),
 
-              // 2. Center Book Title & Chapter subtitle
-              Expanded(
+              // 3. Right Region (Independently positioned on right)
+              Positioned(
+                right: rightPadding,
+                top: 0,
+                bottom: 0,
                 child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.book.title,
-                          style: TextStyle(
-                            color: activeTheme.textColor,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (!isCompact)
-                          Text(
-                            _currentChapterTitle.isNotEmpty
-                                ? _currentChapterTitle
-                                : widget.book.author,
-                            style: TextStyle(
-                              color: activeTheme.secondaryTextColor,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.normal,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: rightControls,
                   ),
                 ),
-              ),
-
-              // 3. Right Controls
-              // 1-Page vs 2-Page Slide Toggle in Reflowable Mode
-              if (readingMode == ReadingMode.reflowable && isDesktopOrTablet)
-                Consumer(
-                  builder: (context, ref, _) {
-                    final layoutMode = ref.watch(
-                      reflowableLayoutModeProvider(widget.book.id),
-                    );
-                    if (layoutMode != ReflowableLayoutMode.paginated) {
-                      return const SizedBox.shrink();
-                    }
-                    final typo = ref.watch(typographySettingsStateProvider);
-                    return IconButton(
-                      tooltip: typo.twoPageSpread
-                          ? 'Tampilan 2 Halaman'
-                          : 'Tampilan 1 Halaman',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        typo.twoPageSpread
-                            ? Icons.auto_stories_rounded
-                            : Icons.article_rounded,
-                        color: activeTheme.textColor,
-                        size: 19,
-                      ),
-                      onPressed: () {
-                        final current = ref.read(
-                          typographySettingsStateProvider,
-                        );
-                        ref
-                            .read(typographySettingsStateProvider.notifier)
-                            .state = current.copyWith(
-                          twoPageSpread: !current.twoPageSpread,
-                        );
-                      },
-                    );
-                  },
-                ),
-
-              // PDF Zoom controls & View Mode Toggle
-              if (readingMode == ReadingMode.originalPdf) ...[
-                if (isDesktopOrTablet) ...[
-                  if (pdfViewMode == PdfViewMode.paginated)
-                    IconButton(
-                      tooltip:
-                          _pdfKey.currentState?.isTwoPageSpreadActive == true
-                          ? 'Tampilan 1 Halaman'
-                          : 'Tampilan 2 Halaman (Buku Terbuka)',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        _pdfKey.currentState?.isTwoPageSpreadActive == true
-                            ? Icons.auto_stories_rounded
-                            : Icons.article_rounded,
-                        color: activeTheme.textColor,
-                        size: 19,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _pdfKey.currentState?.toggleTwoPageSpread();
-                        });
-                      },
-                    )
-                  else
-                    IconButton(
-                      tooltip:
-                          'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        Icons.article_rounded,
-                        color: activeTheme.textColor.withAlpha(80),
-                        size: 19,
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
-                            ),
-                            duration: Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-                  if (isWideDesktop) ...[
-                    IconButton(
-                      tooltip: 'Zoom Out (Cmd -)',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        Icons.zoom_out,
-                        color: activeTheme.textColor,
-                        size: 19,
-                      ),
-                      onPressed: () => _pdfKey.currentState?.zoomOut(),
-                    ),
-                    IconButton(
-                      tooltip: 'Zoom In (Cmd +)',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        Icons.zoom_in,
-                        color: activeTheme.textColor,
-                        size: 19,
-                      ),
-                      onPressed: () => _pdfKey.currentState?.zoomIn(),
-                    ),
-                  ],
-                ],
-                if (!isUltraCompact)
-                  IconButton(
-                    tooltip: pdfViewMode == PdfViewMode.continuous
-                        ? 'Mode Halaman'
-                        : 'Mode Gulir Vertikal',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    splashRadius: 16,
-                    icon: Icon(
-                      pdfViewMode == PdfViewMode.continuous
-                          ? Icons.view_headline_rounded
-                          : Icons.view_carousel_outlined,
-                      color: activeTheme.textColor,
-                      size: 19,
-                    ),
-                    onPressed: () {
-                      final next = pdfViewMode == PdfViewMode.paginated
-                          ? PdfViewMode.continuous
-                          : PdfViewMode.paginated;
-                      ref.read(pdfViewModeProvider.notifier).state = next;
-                    },
-                  ),
-              ],
-
-              // Table of Contents
-              if (!isUltraCompact)
-                IconButton(
-                  key: const ValueKey('reader_toc_button'),
-                  tooltip: 'Daftar Isi',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  splashRadius: 16,
-                  icon: Icon(
-                    Icons.list_alt_rounded,
-                    color: activeTheme.textColor,
-                    size: 19,
-                  ),
-                  onPressed: _openTocDialog,
-                ),
-
-              // In-Book Search button
-              if ((_document != null || _readerDocument != null) &&
-                  isDesktopOrTablet)
-                IconButton(
-                  key: const ValueKey('reader_search_button'),
-                  tooltip: 'Cari dalam buku',
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  splashRadius: 16,
-                  icon: Icon(
-                    Icons.search_rounded,
-                    color: _showSearchTraversal
-                        ? const Color(0xFFFF9500)
-                        : activeTheme.textColor,
-                    size: 19,
-                  ),
-                  onPressed: _openBookSearchDialog,
-                ),
-
-              // Quick Scan Enhancement Toggle for Original PDF Reader
-              if (readingMode == ReadingMode.originalPdf)
-                Consumer(
-                  builder: (context, ref, _) {
-                    final config = ref.watch(
-                      scanEnhancementConfigProvider(widget.book.id),
-                    );
-                    return IconButton(
-                      key: const ValueKey('reader_enhancement_toggle'),
-                      tooltip: config.isEnabled
-                          ? 'Enhance Aktif (Klik untuk Mode Asli)'
-                          : 'Tingkatkan Kualitas Scan (Enhance)',
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      splashRadius: 16,
-                      icon: Icon(
-                        config.isEnabled
-                            ? Icons.auto_fix_high
-                            : Icons.auto_fix_normal_outlined,
-                        color: config.isEnabled
-                            ? const Color(0xFFD4AF37)
-                            : activeTheme.textColor,
-                        size: 19,
-                      ),
-                      onPressed: () {
-                        ref
-                            .read(
-                              scanEnhancementConfigProvider(
-                                widget.book.id,
-                              ).notifier,
-                            )
-                            .state = config.copyWith(
-                          isEnabled: !config.isEnabled,
-                        );
-                      },
-                    );
-                  },
-                ),
-
-              // Appearance Settings (aA)
-              IconButton(
-                key: const ValueKey('reader_appearance_button'),
-                tooltip: 'Tampilan & Tema',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                splashRadius: 16,
-                icon: Text(
-                  'aA',
-                  style: TextStyle(
-                    color: activeTheme.textColor,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                onPressed: _openAppearanceSheet,
-              ),
-
-              // Annotations Library (Highlights, Notes, Bookmarks)
-              IconButton(
-                key: const ValueKey('reader_annotations_button'),
-                tooltip: 'Daftar Anotasi & Catatan',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                splashRadius: 16,
-                icon: Icon(
-                  Icons.collections_bookmark_rounded,
-                  color: activeTheme.textColor,
-                  size: 19,
-                ),
-                onPressed: _openAnnotationsSheet,
-              ),
-
-              // Bookmark button
-              IconButton(
-                key: const ValueKey('reader_bookmark_button'),
-                tooltip: isBookmarked ? 'Hapus Markah' : 'Tambah Markah',
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                splashRadius: 16,
-                icon: Icon(
-                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  color: isBookmarked
-                      ? const Color(0xFF007AFF)
-                      : activeTheme.textColor,
-                  size: 19,
-                ),
-                onPressed: _toggleBookmark,
               ),
             ],
           ),
@@ -2491,27 +2918,40 @@ class _ModePillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3.5),
         decoration: BoxDecoration(
           color: isSelected
-              ? (activeTheme.isDark ? Colors.white.withAlpha(45) : Colors.white)
+              ? (activeTheme.isDark
+                    ? Colors.white.withAlpha(45)
+                    : (activeTheme == ReadingThemeType.sepia
+                          ? const Color(0xFFFBF0D9)
+                          : Colors.white))
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(11),
-          boxShadow: isSelected && !activeTheme.isDark
-              ? [BoxShadow(color: Colors.black.withAlpha(15), blurRadius: 2)]
+          borderRadius: BorderRadius.circular(13),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(activeTheme.isDark ? 30 : 15),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
               : null,
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 12.0,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color: isSelected
                 ? activeTheme.textColor
                 : activeTheme.secondaryTextColor,
+            letterSpacing: 0.1,
           ),
         ),
       ),

@@ -98,21 +98,25 @@ void main() {
 
   Widget buildTestApp({
     required GlobalKey key,
+    Book? book,
+    double width = 1200,
+    double height = 800,
     ReadingMode mode = ReadingMode.reflowable,
     ReadingThemeType theme = ReadingThemeType.black,
     TargetPlatform platform = TargetPlatform.macOS,
   }) {
+    final activeBook = book ?? testBook;
     return ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         databaseServiceProvider.overrideWithValue(dbService),
         bookBookmarksStreamProvider(
-          testBook.id,
+          activeBook.id,
         ).overrideWith((ref) => Stream.value(<Bookmark>[])),
         bookAnnotationsStreamProvider(
-          testBook.id,
+          activeBook.id,
         ).overrideWith((ref) => Stream.value(<BookAnnotation>[])),
-        activeReadingModeProvider(testBook.id).overrideWith((ref) => mode),
+        activeReadingModeProvider(activeBook.id).overrideWith((ref) => mode),
         readingThemeStateProvider.overrideWith((ref) => theme),
       ],
       child: MaterialApp(
@@ -125,9 +129,9 @@ void main() {
           body: RepaintBoundary(
             key: key,
             child: SizedBox(
-              width: 1200,
-              height: 800,
-              child: ReadingScreen(book: testBook, initialMode: mode),
+              width: width,
+              height: height,
+              child: ReadingScreen(book: activeBook, initialMode: mode),
             ),
           ),
         ),
@@ -355,6 +359,130 @@ void main() {
         tester,
         key: key,
         filename: '08_pdf_mode_controls_visible.png',
+      );
+      await teardownWidget(tester);
+    });
+
+    testWidgets('Capture 9: Long Title Truncation with Ellipsis', (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      tester.view.physicalSize = const Size(2400, 1600);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final longTitleBook = testBook.copyWith(
+        id: 'test-long-title-book',
+        title:
+            'A Very Extremely Long Book Title Specifically Designed To Validate That The Top Bar Architecture Correctly Truncates With Ellipsis When Constrained By Symmetrical Clearance',
+      );
+      await db.into(db.books).insert(longTitleBook);
+
+      await tester.pumpWidget(
+        buildTestApp(
+          key: key,
+          book: longTitleBook,
+          mode: ReadingMode.reflowable,
+          theme: ReadingThemeType.black,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await captureScreen(
+        tester,
+        key: key,
+        filename: '09_long_title_truncation.png',
+      );
+      await teardownWidget(tester);
+    });
+
+    testWidgets('Capture 10: Long Chapter Subtitle Truncation with Ellipsis', (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      tester.view.physicalSize = const Size(2400, 1600);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final longSubtitleBook = testBook.copyWith(
+        id: 'test-long-subtitle-book',
+        author:
+            'Professor Bartholomew Alexander Montgomery III, Distinguished Chair of Comparative Typography and Cognitive Ergonomics',
+      );
+      await db.into(db.books).insert(longSubtitleBook);
+
+      await tester.pumpWidget(
+        buildTestApp(
+          key: key,
+          book: longSubtitleBook,
+          mode: ReadingMode.reflowable,
+          theme: ReadingThemeType.black,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await captureScreen(
+        tester,
+        key: key,
+        filename: '10_long_subtitle_truncation.png',
+      );
+      await teardownWidget(tester);
+    });
+
+    testWidgets('Capture 11: Medium Window Responsive Top Bar (800dp)', (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      await tester.binding.setSurfaceSize(const Size(800, 700));
+      tester.view.physicalSize = const Size(1600, 1400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          key: key,
+          width: 800,
+          height: 700,
+          mode: ReadingMode.reflowable,
+          theme: ReadingThemeType.black,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await captureScreen(
+        tester,
+        key: key,
+        filename: '11_medium_window_800dp.png',
+      );
+      await teardownWidget(tester);
+    });
+
+    testWidgets('Capture 12: Narrow Window Responsive Top Bar (450dp)', (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      await tester.binding.setSurfaceSize(const Size(450, 700));
+      tester.view.physicalSize = const Size(900, 1400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        buildTestApp(
+          key: key,
+          width: 450,
+          height: 700,
+          mode: ReadingMode.reflowable,
+          theme: ReadingThemeType.black,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await captureScreen(
+        tester,
+        key: key,
+        filename: '12_narrow_window_450dp.png',
       );
       await teardownWidget(tester);
     });
