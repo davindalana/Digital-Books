@@ -395,5 +395,50 @@ void main() {
         }
       },
     );
+
+    testWidgets(
+      '10. macOS unified window controls integration: traffic light clearance and shared vertical centerline',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final book = createTestBook();
+        await tester.pumpWidget(
+          buildTopBarTestWidget(
+            book: book,
+            mode: ReadingMode.originalPdf,
+            platform: TargetPlatform.macOS,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Back button starts at exactly 104dp on macOS
+        final backButton = find.byKey(const ValueKey('reader_top_back_button'));
+        expect(backButton, findsOneWidget);
+        final backRect = tester.getRect(backButton);
+        expect(backRect.left, equals(104.0));
+
+        // 2. Traffic light cluster right edge is at 78.0dp in native AppKit
+        // Clearance between native zoom button and Flutter back button must be 26dp (within 24-32dp)
+        const nativeTrafficLightRightEdge = 78.0;
+        final clearance = backRect.left - nativeTrafficLightRightEdge;
+        expect(clearance, inInclusiveRange(24.0, 32.0));
+
+        // 3. Shared vertical centerline:
+        // Native traffic lights are centered at Y = 40.0dp
+        // Back button, mode pill, and right controls are centered at Y = 40.0dp
+        const nativeTrafficLightCenterY = 40.0;
+        final backCenter = tester.getCenter(backButton);
+        expect((backCenter.dy - nativeTrafficLightCenterY).abs(), lessThanOrEqualTo(1.0));
+
+        // 4. Title and subtitle form a vertically centered group with center Y = 40.0dp
+        final titleFinder = find.text(book.title);
+        final subtitleFinder = find.text(book.author);
+        final titleRect = tester.getRect(titleFinder);
+        final subtitleRect = tester.getRect(subtitleFinder);
+        final groupMidY = (titleRect.top + subtitleRect.bottom) / 2.0;
+        expect((groupMidY - nativeTrafficLightCenterY).abs(), lessThanOrEqualTo(2.0));
+      },
+    );
   });
 }
