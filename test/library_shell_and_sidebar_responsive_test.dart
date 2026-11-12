@@ -207,5 +207,39 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
+
+    testWidgets(
+      '6. Currently Reading entry point: status filter chip in Semua Buku',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1000, 700));
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox());
+          await tester.binding.setSurfaceSize(null);
+        });
+
+        await tester.pumpWidget(buildTestApp(width: 1000, height: 700));
+        await tester.pumpAndSettle();
+
+        // Tap 'Semua Buku' in sidebar
+        await tester.tap(find.text(AppStrings.navSemuaBuku));
+        await tester.pumpAndSettle();
+
+        // Status filter chips appear: 'Semua (0)', 'Sedang Dibaca (0)', 'Selesai (0)'
+        expect(find.text('Semua (0)'), findsOneWidget);
+        expect(find.text('${AppStrings.navSedangDibaca} (0)'), findsOneWidget);
+        expect(find.text('${AppStrings.navSelesai} (0)'), findsOneWidget);
+
+        // Tap 'Sedang Dibaca' filter chip
+        await tester.tap(find.text('${AppStrings.navSedangDibaca} (0)'));
+        await tester.pumpAndSettle();
+
+        // Displays in-progress empty state
+        expect(find.text('No Books Currently In Progress'), findsOneWidget);
+
+        // Clean up
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
   });
 }

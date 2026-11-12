@@ -52,6 +52,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryNavigationSection _selectedSection = LibraryNavigationSection.home;
   LibraryNavigationSection _previousSection = LibraryNavigationSection.home;
   String? _selectedCollectionId;
+  int _allBooksFilterIndex = 0; // 0 = Semua, 1 = Sedang Dibaca, 2 = Selesai
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
@@ -681,6 +682,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     // "Penanda", "Sorotan & Catatan", and "Pengaturan".
     final showListControls =
         _selectedSection == LibraryNavigationSection.allBooks ||
+        _selectedSection == LibraryNavigationSection.currentlyReading ||
         (_selectedSection == LibraryNavigationSection.collections &&
             _selectedCollectionId != null) ||
         _selectedSection == LibraryNavigationSection.search;
@@ -1040,14 +1042,53 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               children: [
                 _buildHeroReadingCard(heroItem, isStarted: true),
                 if (remainingBooks.isNotEmpty) ...[
-                  const Text(
-                    'BUKU LAIN SEDANG DIBACA',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: Colors.grey,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'BUKU LAIN SEDANG DIBACA',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      InkWell(
+                        borderRadius: AppThemeTokens.br10,
+                        onTap: () {
+                          setState(() {
+                            _selectedSection =
+                                LibraryNavigationSection.currentlyReading;
+                          });
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Lihat Semua',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppThemeTokens.goldAccent,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 14,
+                                color: AppThemeTokens.goldAccent,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -1114,30 +1155,120 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  // --- All Books Section ---
+  // --- All Books Section with Quick Status Filter ---
   Widget _buildAllBooksSection() {
     final allBooksAsync = ref.watch(allBooksStreamProvider);
+    final currentlyReadingAsync = ref.watch(currentlyReadingStreamProvider);
+    final finishedAsync = ref.watch(finishedBooksStreamProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return allBooksAsync.when(
-      data: (books) {
-        if (books.isEmpty) {
-          return _buildEmptyState(
-            title: 'No Books in Library',
-            subtitle: 'Click "Import PDF" to add your books.',
-          );
-        }
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: _buildBookListOrGrid(books),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status Filter Chips
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          child: Row(
+            children: [
+              _buildFilterChip(
+                label: 'Semua',
+                count: allBooksAsync.valueOrNull?.length,
+                isSelected: _allBooksFilterIndex == 0,
+                onTap: () => setState(() => _allBooksFilterIndex = 0),
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                label: AppStrings.navSedangDibaca,
+                count: currentlyReadingAsync.valueOrNull?.length,
+                isSelected: _allBooksFilterIndex == 1,
+                onTap: () => setState(() => _allBooksFilterIndex = 1),
+                isDark: isDark,
+              ),
+              const SizedBox(width: 8),
+              _buildFilterChip(
+                label: AppStrings.navSelesai,
+                count: finishedAsync.valueOrNull?.length,
+                isSelected: _allBooksFilterIndex == 2,
+                onTap: () => setState(() => _allBooksFilterIndex = 2),
+                isDark: isDark,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _allBooksFilterIndex == 1
+              ? _buildCurrentlyReadingSection(showBackButton: false)
+              : _allBooksFilterIndex == 2
+                  ? _buildFinishedBooksSection()
+                  : allBooksAsync.when(
+                      data: (books) {
+                        if (books.isEmpty) {
+                          return _buildEmptyState(
+                            title: 'No Books in Library',
+                            subtitle: 'Click "Import PDF" to add your books.',
+                          );
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
+                          child: _buildBookListOrGrid(books),
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Center(child: Text('Error: $e')),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required int? count,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    final text = count != null ? '$label ($count)' : label;
+    return InkWell(
+      borderRadius: AppThemeTokens.br10,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark
+                    ? Colors.white.withAlpha(35)
+                    : Colors.black.withAlpha(20))
+              : Colors.transparent,
+          borderRadius: AppThemeTokens.br10,
+          border: Border.all(
+            color: isSelected
+                ? AppThemeTokens.goldAccent
+                : (isDark ? Colors.white.withAlpha(25) : Colors.black12),
+            width: 1.0,
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected
+                ? AppThemeTokens.goldAccent
+                : (isDark ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ),
     );
   }
 
   // --- Currently Reading Section ---
-  Widget _buildCurrentlyReadingSection() {
+  Widget _buildCurrentlyReadingSection({bool showBackButton = true}) {
     final readingAsync = ref.watch(currentlyReadingStreamProvider);
 
     return readingAsync.when(
@@ -1154,10 +1285,57 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             i.book.id: i.progress?.progressPercentage ?? 0.0,
         };
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          child: _buildBookListOrGrid(
-            items.map((i) => i.book).toList(),
-            progressMap: progressMap,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showBackButton) ...[
+                Row(
+                  children: [
+                    InkWell(
+                      borderRadius: AppThemeTokens.br10,
+                      onTap: () {
+                        setState(() {
+                          _selectedSection = LibraryNavigationSection.home;
+                        });
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_back_rounded,
+                              size: 14,
+                              color: AppThemeTokens.goldAccent,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Kembali ke Sedang Dibaca',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppThemeTokens.goldAccent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              Expanded(
+                child: _buildBookListOrGrid(
+                  items.map((i) => i.book).toList(),
+                  progressMap: progressMap,
+                ),
+              ),
+            ],
           ),
         );
       },
