@@ -14,6 +14,7 @@ import '../../../../core/theme/app_theme_tokens.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/typography/typography_settings.dart';
 import '../../../../core/utils/book_sort_helper.dart';
+import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../../../core/utils/sample_book_generator.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
@@ -2815,7 +2816,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${(pct * 100).toInt()}% Selesai • Halaman ${progress?.currentPosition ?? 1} dari ${book.totalPages}',
+                          ReadingProgressCalculator.formatProgressText(
+                            progressPercentage: progress?.progressPercentage,
+                            lastReadingMode: progress?.lastReadingMode,
+                            currentPosition: progress?.currentPosition,
+                            totalPages: book.totalPages,
+                            currentChapter: progress?.currentChapter,
+                          ),
                           style: TextStyle(
                             fontSize: 11,
                             color: isDark ? Colors.grey[400] : Colors.grey[600],

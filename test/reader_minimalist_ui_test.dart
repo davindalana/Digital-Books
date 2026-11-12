@@ -121,7 +121,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Page label exists in bottom bar
-        final pageLabelFinder = find.textContaining('Page 1 of');
+        final pageLabelFinder = find.textContaining('Hal. 1 dari');
         expect(pageLabelFinder, findsOneWidget);
 
         // Verify bottom bar container sits at the very bottom edge (y=700 - 32 = 668)

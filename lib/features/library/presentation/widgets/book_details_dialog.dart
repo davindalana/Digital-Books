@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import '../../../processing/providers/background_ocr_provider.dart';
 import '../../../processing/services/book_document_rebuilder.dart';
@@ -368,7 +369,13 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                     data: (p) => _DetailRow(
                                       label: 'Progress',
                                       value: p != null
-                                          ? '${(p.progressPercentage * 100).toInt()}% (Page ${p.currentPosition})'
+                                          ? ReadingProgressCalculator.formatProgressText(
+                                              progressPercentage: p.progressPercentage,
+                                              lastReadingMode: p.lastReadingMode,
+                                              currentPosition: p.currentPosition,
+                                              totalPages: _currentBook.totalPages,
+                                              currentChapter: p.currentChapter,
+                                            )
                                           : 'Not started',
                                     ),
                                     loading: () => const SizedBox(),

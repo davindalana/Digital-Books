@@ -439,8 +439,7 @@ void main() {
       expect(find.text('Design Patterns'), findsOneWidget);
       expect(find.text('Gang of Four'), findsOneWidget);
       expect(find.text('PDF'), findsOneWidget);
-      expect(find.textContaining('25%'), findsOneWidget);
-      expect(find.textContaining('Page 50 of 395'), findsOneWidget);
+      expect(find.textContaining('25% Selesai'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 

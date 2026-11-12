@@ -43,12 +43,23 @@ abstract final class AppStrings {
   // --- Reading Shelves & Sections ---
   static const String shelfBukuLainSedangDibaca =
       'Buku lain yang sedang kamu baca';
+  static const String shelfBelumDimulai = 'Belum dimulai';
   static const String shelfBaruDitambahkan = 'Baru ditambahkan';
 
+  // --- Reading Progress Statuses ---
+  static const String statusBelumDibaca = 'Belum dibaca';
+  static const String statusSelesai = 'Selesai';
+  static const String statusBaruDimulai = 'Baru dimulai';
+
   // --- Badges ---
+  static const String badgePindai = 'Pindai';
   static const String badgeHasilPindai = 'Hasil pindai';
   static const String badgeHasilPindaiTooltip =
       'Buku ini berasal dari pindaian gambar dan membutuhkan OCR untuk pencarian kata dan teks fleksibel.';
+  static const String badgePindaiOcrTooltip =
+      'Dokumen hasil pindai • Teks sudah diproses (OCR)';
+  static const String badgePindaiNeedsOcrTooltip =
+      'Dokumen hasil pindai • Memerlukan pemrosesan OCR';
   static const String badgeTeksDigital = 'Teks Digital';
 
   // --- Search ---

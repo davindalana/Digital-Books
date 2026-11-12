@@ -70,7 +70,7 @@ void main() {
         expect(find.text('The 48 Laws Of Power'), findsOneWidget);
 
         // Bottom bar page indicator
-        expect(find.text('Page 1 of 13'), findsOneWidget);
+        expect(find.text('Hal. 1 dari 13'), findsOneWidget);
 
         // Verify no RenderFlex overflow exception
         expect(tester.takeException(), isNull);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import 'book_details_dialog.dart';
@@ -195,7 +196,13 @@ class BookListTile extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${(pct * 100).toInt()}% • Page ${progress?.currentPosition ?? 1} of ${book.totalPages}',
+                            ReadingProgressCalculator.formatProgressText(
+                              progressPercentage: pct,
+                              lastReadingMode: progress?.lastReadingMode,
+                              currentPosition: progress?.currentPosition,
+                              totalPages: book.totalPages,
+                              currentChapter: progress?.currentChapter,
+                            ),
                             style: TextStyle(
                               fontSize: 11,
                               color: isDark

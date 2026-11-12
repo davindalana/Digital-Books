@@ -13,6 +13,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/utils/file_storage_service.dart';
+import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../models/book_document.dart';
 import '../../services/book_document_loader.dart';
 import '../../domain/engines/in_book_search_engine.dart';
@@ -1417,17 +1418,20 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                           },
                           onPageChanged: (page, total) {
                             _pdfPage = page;
+                            final fraction =
+                                ReadingProgressCalculator.calculatePdfFraction(
+                              lastVisiblePage: page,
+                              totalPages: total,
+                            );
                             setState(() {
                               _currentPage = page;
                               _totalPages = total;
-                              _progressPercentage = total > 0
-                                  ? (page / total)
-                                  : 0.0;
+                              _progressPercentage = fraction;
                             });
                             _saveProgress(
                               chapter: _reflowableChapter,
                               position: page,
-                              percentage: total > 0 ? (page / total) : 0.0,
+                              percentage: fraction,
                             );
                           },
                         ),
@@ -2412,26 +2416,36 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                 child: Builder(
                   builder: (context) {
                     String pageLabel;
-                    final secPage = _readingMode == ReadingMode.originalPdf
-                        ? _pdfKey.currentState?.currentSecondaryPage
-                        : null;
+                    String? tooltipText;
 
-                    if (secPage != null && secPage != displayPage) {
-                      final start = math.min(displayPage, secPage);
-                      final end = math.max(displayPage, secPage);
-                      pageLabel = 'Pages $start–$end of $_totalPages';
+                    if (_readingMode == ReadingMode.originalPdf) {
+                      final secPage =
+                          _pdfKey.currentState?.currentSecondaryPage;
+                      if (secPage != null && secPage != displayPage) {
+                        final start = math.min(displayPage, secPage);
+                        final end = math.max(displayPage, secPage);
+                        pageLabel = 'Hal. $start–$end dari $_totalPages';
+                      } else {
+                        pageLabel = 'Hal. $displayPage dari $_totalPages';
+                      }
                     } else {
-                      pageLabel = 'Page $displayPage of $_totalPages';
+                      // Reflowable mode: percentage and chapter without page count
+                      pageLabel = ReadingProgressCalculator.formatProgressText(
+                        progressPercentage: currentProgress,
+                        lastReadingMode: 'reflowable_paginated',
+                        currentChapter: _currentChapter,
+                        chapterTitle: _currentChapterTitle,
+                      );
+
+                      if (_estimatedMinutesLeftInChapter > 0 && !isCompact) {
+                        pageLabel +=
+                            ' • ±$_estimatedMinutesLeftInChapter mnt tersisa';
+                        tooltipText =
+                            ReadingProgressCalculator.timeEstimateTooltip;
+                      }
                     }
 
-                    if (_readingMode == ReadingMode.reflowable &&
-                        _estimatedMinutesLeftInChapter > 0 &&
-                        !isCompact) {
-                      pageLabel +=
-                          ' • ~$_estimatedMinutesLeftInChapter mnt tersisa';
-                    }
-
-                    return Text(
+                    final labelWidget = Text(
                       pageLabel,
                       style: TextStyle(
                         color: activeTheme.secondaryTextColor,
@@ -2441,6 +2455,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     );
+
+                    return tooltipText != null
+                        ? Tooltip(message: tooltipText, child: labelWidget)
+                        : labelWidget;
                   },
                 ),
               ),
