@@ -1,3 +1,4 @@
+import 'package:digital_books/core/constants/app_strings.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
@@ -550,14 +551,18 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Sidebar items exist
-      expect(find.text('READING'), findsOneWidget);
-      expect(find.text('LIBRARY'), findsOneWidget);
-      expect(find.text('COLLECTIONS'), findsOneWidget);
-      expect(find.text('ANNOTATIONS'), findsOneWidget);
-      expect(find.text('All Books'), findsWidgets);
-      expect(find.text('Bookmarks'), findsOneWidget);
-      expect(find.text('Highlights & Notes'), findsOneWidget);
+      // Sidebar items exist with consistent Indonesian terminology
+      expect(find.text(AppStrings.categoryPustaka), findsOneWidget);
+      expect(find.text(AppStrings.categoryKoleksi), findsOneWidget);
+      expect(find.text(AppStrings.categoryCatatan), findsOneWidget);
+      expect(find.text(AppStrings.navSedangDibaca), findsWidgets);
+      expect(find.text(AppStrings.navSemuaBuku), findsOneWidget);
+      expect(find.text(AppStrings.navPenanda), findsOneWidget);
+      expect(find.text(AppStrings.navSorotanCatatan), findsOneWidget);
+
+      // Navigate to 'Semua Buku' where grid and list controls are placed
+      await tester.tap(find.text(AppStrings.navSemuaBuku));
+      await tester.pumpAndSettle();
 
       // View mode buttons exist (Grid and List)
       expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);

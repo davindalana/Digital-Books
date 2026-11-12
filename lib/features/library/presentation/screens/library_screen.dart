@@ -1,13 +1,16 @@
 import 'dart:io';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/database_service.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/theme/app_theme_tokens.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../../../core/typography/typography_settings.dart';
 import '../../../../core/utils/book_sort_helper.dart';
@@ -23,15 +26,15 @@ import '../widgets/backup_restore_dialog.dart';
 import '../widgets/import_pdf_dialog.dart';
 
 enum LibraryNavigationSection {
-  home('Reading Now', Icons.auto_stories),
-  allBooks('All Books', Icons.library_books),
-  currentlyReading('Currently Reading', Icons.bookmark_added),
-  finished('Finished', Icons.check_circle_outline),
-  collections('Collections', Icons.folder_outlined),
-  bookmarks('Bookmarks', Icons.bookmark_border_rounded),
-  highlights('Highlights & Notes', Icons.border_color_outlined),
-  search('Search', Icons.search),
-  settings('Settings', Icons.settings_outlined);
+  home(AppStrings.navSedangDibaca, Icons.auto_stories_rounded),
+  allBooks(AppStrings.navSemuaBuku, Icons.library_books_rounded),
+  currentlyReading(AppStrings.navSedangDibaca, Icons.bookmark_added_rounded),
+  finished(AppStrings.navSelesai, Icons.check_circle_outline_rounded),
+  collections(AppStrings.navKoleksi, Icons.folder_rounded),
+  bookmarks(AppStrings.navPenanda, Icons.bookmark_border_rounded),
+  highlights(AppStrings.navSorotanCatatan, Icons.border_color_outlined),
+  search('Pencarian', Icons.search_rounded),
+  settings(AppStrings.navPengaturan, Icons.settings_outlined);
 
   final String label;
   final IconData icon;
@@ -47,168 +50,385 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   LibraryNavigationSection _selectedSection = LibraryNavigationSection.home;
+  LibraryNavigationSection _previousSection = LibraryNavigationSection.home;
   String? _selectedCollectionId;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _focusSearch() {
+    _searchFocusNode.requestFocus();
+    if (_selectedSection != LibraryNavigationSection.search) {
+      _previousSection = _selectedSection;
+      setState(() {
+        _selectedSection = LibraryNavigationSection.search;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 800;
-
-        return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
-          bottomNavigationBar: isDesktop ? null : _buildMobileBottomBar(),
-        );
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+            _focusSearch,
+        const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
+            _focusSearch,
       },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isExpansive = width >= AppThemeTokens.breakpointExpansive;
+          final isStandard =
+              width >= AppThemeTokens.breakpointStandard &&
+              width < AppThemeTokens.breakpointExpansive;
+          final isCompact = width < AppThemeTokens.breakpointStandard;
+
+          final double sidebarWidth = isExpansive
+              ? AppThemeTokens.sidebarExpansiveWidth
+              : (isStandard
+                    ? AppThemeTokens.sidebarStandardWidth
+                    : AppThemeTokens.sidebarCompactWidth);
+
+          return Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: Row(
+              children: [
+                // 1. Sidebar or Compact Icon Rail (macOS native responsive navigation)
+                isCompact
+                    ? _buildCompactIconRail()
+                    : _buildExpandedSidebar(sidebarWidth),
+
+                // 2. Main Content Area with Safe Top Inset and optional Expansive centering
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildDesktopTopBar(isCompact),
+                      Expanded(
+                        child: isExpansive
+                            ? Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: AppThemeTokens.contentMaxWidth,
+                                  ),
+                                  child: _buildSectionContent(),
+                                ),
+                              )
+                            : _buildSectionContent(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
-  // --- 1. macOS Desktop Split Layout ---
-  Widget _buildDesktopLayout() {
-    return Row(
-      children: [
-        // macOS Sidebar
-        Container(
-          width: 250,
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF161618)
-                : const Color(0xFFF2F2F7),
-            border: Border(
-              right: BorderSide(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withAlpha(15)
-                    : Colors.black.withAlpha(15),
+  // --- 1. Compact Icon Rail (width < 760pt) ---
+  Widget _buildCompactIconRail() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: AppThemeTokens.sidebarCompactWidth,
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppThemeTokens.darkSurface
+            : AppThemeTokens.lightSurface,
+        border: Border(
+          right: BorderSide(
+            color: isDark
+                ? AppThemeTokens.darkSeparator
+                : AppThemeTokens.lightSeparator,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Clear macOS title bar area (52pt) - traffic lights sit at top-left
+          const SizedBox(height: AppThemeTokens.titlebarHeight),
+
+          // Primary "Tambah Buku" compact icon button
+          Tooltip(
+            message: AppStrings.actionTambahBuku,
+            preferBelow: false,
+            waitDuration: const Duration(milliseconds: 300),
+            child: InkWell(
+              borderRadius: AppThemeTokens.br10,
+              onTap: () => ImportPdfHelper.pickAndImportPdf(context, ref),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF242428)
+                      : const Color(0xFFE5E5EA),
+                  borderRadius: AppThemeTokens.br10,
+                  border: Border.all(
+                    color: AppThemeTokens.goldAccent.withAlpha(
+                      isDark ? 80 : 120,
+                    ),
+                    width: 1.0,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 20,
+                  color: AppThemeTokens.goldAccent,
+                ),
               ),
             ),
           ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // macOS App Header
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF007AFF),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.menu_book_rounded,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Books',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+          const SizedBox(height: AppThemeTokens.space8),
 
-                // Import Button in Sidebar
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF007AFF),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text(
-                        'Import PDF',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      onPressed: () =>
-                          ImportPdfHelper.pickAndImportPdf(context, ref),
+          // Navigation Icons
+          _buildRailIcon(
+            section: LibraryNavigationSection.home,
+            icon: Icons.auto_stories_rounded,
+            tooltip: AppStrings.navSedangDibaca,
+          ),
+          _buildRailIcon(
+            section: LibraryNavigationSection.allBooks,
+            icon: Icons.library_books_rounded,
+            tooltip: AppStrings.navSemuaBuku,
+          ),
+          _buildRailIcon(
+            section: LibraryNavigationSection.finished,
+            icon: Icons.check_circle_outline_rounded,
+            tooltip: AppStrings.navSelesai,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: Divider(height: 1, thickness: 0.5),
+          ),
+          _buildRailIcon(
+            section: LibraryNavigationSection.collections,
+            icon: Icons.folder_rounded,
+            tooltip: AppStrings.navKoleksi,
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            child: Divider(height: 1, thickness: 0.5),
+          ),
+          _buildRailIcon(
+            section: LibraryNavigationSection.bookmarks,
+            icon: Icons.bookmark_border_rounded,
+            tooltip: AppStrings.navPenanda,
+          ),
+          _buildRailIcon(
+            section: LibraryNavigationSection.highlights,
+            icon: Icons.border_color_outlined,
+            tooltip: AppStrings.navSorotanCatatan,
+          ),
+
+          const Spacer(),
+
+          _buildRailIcon(
+            section: LibraryNavigationSection.settings,
+            icon: Icons.settings_outlined,
+            tooltip: AppStrings.navPengaturan,
+          ),
+          const SizedBox(height: AppThemeTokens.space12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRailIcon({
+    required LibraryNavigationSection section,
+    required IconData icon,
+    required String tooltip,
+  }) {
+    final isSelected =
+        _selectedSection == section && _selectedCollectionId == null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Tooltip(
+        message: tooltip,
+        preferBelow: false,
+        waitDuration: const Duration(milliseconds: 300),
+        child: InkWell(
+          borderRadius: AppThemeTokens.br10,
+          onTap: () {
+            setState(() {
+              _selectedSection = section;
+              _selectedCollectionId = null;
+            });
+          },
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark
+                        ? Colors.white.withAlpha(28)
+                        : Colors.black.withAlpha(16))
+                  : Colors.transparent,
+              borderRadius: AppThemeTokens.br10,
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: isSelected
+                  ? AppThemeTokens.goldAccent
+                  : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- 2. macOS Expanded Sidebar (Standard & Expansive widths) ---
+  Widget _buildExpandedSidebar(double sidebarWidth) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: sidebarWidth,
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppThemeTokens.darkSurface
+            : AppThemeTokens.lightSurface,
+        border: Border(
+          right: BorderSide(
+            color: isDark
+                ? AppThemeTokens.darkSeparator
+                : AppThemeTokens.lightSeparator,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // macOS App Title bar zone (offset right from traffic lights at X in [20, 78])
+            Container(
+              height: AppThemeTokens.titlebarHeight,
+              padding: const EdgeInsets.only(left: 88, top: 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppThemeTokens.blueAccent,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Colors.white,
+                      size: 14,
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      AppStrings.appNameShort,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-                // Navigation Items List
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
+            // Native "Tambah Buku" Primary Action Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: InkWell(
+                borderRadius: AppThemeTokens.br10,
+                onTap: () => ImportPdfHelper.pickAndImportPdf(context, ref),
+                child: Container(
+                  height: AppThemeTokens.minButtonHeight + 4,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF242428)
+                        : const Color(0xFFE5E5EA),
+                    borderRadius: AppThemeTokens.br10,
+                    border: Border.all(
+                      color: AppThemeTokens.goldAccent.withAlpha(
+                        isDark ? 80 : 120,
+                      ),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildSidebarCategoryHeader('READING'),
-                      _buildSidebarItem(LibraryNavigationSection.home),
-
-                      const SizedBox(height: 12),
-                      _buildSidebarCategoryHeader('LIBRARY'),
-                      _buildSidebarItem(LibraryNavigationSection.allBooks),
-                      _buildSidebarItem(
-                        LibraryNavigationSection.currentlyReading,
+                      const Icon(
+                        Icons.add_rounded,
+                        size: 16,
+                        color: AppThemeTokens.goldAccent,
                       ),
-                      _buildSidebarItem(LibraryNavigationSection.finished),
-
-                      const SizedBox(height: 12),
-                      _buildCollectionsSidebarCategory(),
-
-                      const SizedBox(height: 12),
-                      _buildSidebarCategoryHeader('ANNOTATIONS'),
-                      _buildSidebarItem(LibraryNavigationSection.bookmarks),
-                      _buildSidebarItem(LibraryNavigationSection.highlights),
-
-                      const SizedBox(height: 16),
-                      Divider(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withAlpha(15)
-                            : Colors.black.withAlpha(15),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          AppStrings.actionTambahBuku,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
                       ),
-                      _buildSidebarItem(LibraryNavigationSection.settings),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+            const SizedBox(height: 6),
 
-        // Main Content Area
-        Expanded(
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildDesktopTopBar(),
-                Expanded(child: _buildSectionContent()),
-              ],
+            // Navigation Items List
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                children: [
+                  _buildSidebarCategoryHeader(AppStrings.categoryPustaka),
+                  _buildSidebarItem(LibraryNavigationSection.home),
+                  _buildSidebarItem(LibraryNavigationSection.allBooks),
+                  _buildSidebarItem(LibraryNavigationSection.finished),
+
+                  const SizedBox(height: 12),
+                  _buildCollectionsSidebarCategory(),
+
+                  const SizedBox(height: 12),
+                  _buildSidebarCategoryHeader(AppStrings.categoryCatatan),
+                  _buildSidebarItem(LibraryNavigationSection.bookmarks),
+                  _buildSidebarItem(LibraryNavigationSection.highlights),
+
+                  const SizedBox(height: 16),
+                  Divider(
+                    color: isDark
+                        ? AppThemeTokens.darkSeparator
+                        : AppThemeTokens.lightSeparator,
+                  ),
+                  _buildSidebarItem(LibraryNavigationSection.settings),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -216,15 +436,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-          color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-        ),
-      ),
+      child: Text(title, style: AppThemeTokens.sectionHeader(isDark: isDark)),
     );
   }
 
@@ -242,13 +454,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'COLLECTIONS',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
-                  color: isDark ? Colors.grey.shade500 : Colors.grey.shade600,
-                ),
+                AppStrings.categoryKoleksi,
+                style: AppThemeTokens.sectionHeader(isDark: isDark),
               ),
               InkWell(
                 borderRadius: BorderRadius.circular(4),
@@ -256,7 +463,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: Icon(
-                    Icons.add,
+                    Icons.add_rounded,
                     size: 16,
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                   ),
@@ -265,23 +472,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ],
           ),
         ),
-        // All Collections Item
-        _buildSidebarItem(
-          LibraryNavigationSection.collections,
-          onTap: () {
-            setState(() {
-              _selectedSection = LibraryNavigationSection.collections;
-              _selectedCollectionId = null;
-            });
-          },
-          isSelected:
-              _selectedSection == LibraryNavigationSection.collections &&
-              _selectedCollectionId == null,
-        ),
-        // Dynamic collections list
+        // Dynamic collections list (Collections header is not a navigable item itself)
         collectionsAsync.when(
           data: (collections) {
             final counts = bookCountsAsync.asData?.value ?? {};
+            if (collections.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                child: Text(
+                  AppStrings.emptyKoleksiTitle,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade500,
+                  ),
+                ),
+              );
+            }
             return Column(
               children: collections.map((col) {
                 final isSelected =
@@ -292,7 +502,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 1),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppThemeTokens.br10,
                     onTap: () {
                       setState(() {
                         _selectedSection = LibraryNavigationSection.collections;
@@ -307,10 +517,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? (isDark
-                                  ? Colors.white.withAlpha(30)
+                                  ? Colors.white.withAlpha(28)
                                   : const Color(0xFFE5E5EA))
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppThemeTokens.br10,
                       ),
                       child: Row(
                         children: [
@@ -318,7 +528,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             Icons.folder_rounded,
                             size: 16,
                             color: isSelected
-                                ? const Color(0xFF007AFF)
+                                ? AppThemeTokens.goldAccent
                                 : Colors.grey.shade500,
                           ),
                           const SizedBox(width: 10),
@@ -348,7 +558,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFF007AFF)
+                                    ? AppThemeTokens.goldAccent.withAlpha(180)
                                     : (isDark
                                           ? Colors.white.withAlpha(20)
                                           : Colors.black.withAlpha(15)),
@@ -395,7 +605,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppThemeTokens.br10,
         onTap:
             onTap ??
             () {
@@ -409,10 +619,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           decoration: BoxDecoration(
             color: selected
                 ? (isDark
-                      ? Colors.white.withAlpha(30)
+                      ? Colors.white.withAlpha(28)
                       : const Color(0xFFE5E5EA))
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppThemeTokens.br10,
           ),
           child: Row(
             children: [
@@ -420,7 +630,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 section.icon,
                 size: 17,
                 color: selected
-                    ? const Color(0xFF007AFF)
+                    ? AppThemeTokens.goldAccent
                     : Colors.grey.shade500,
               ),
               const SizedBox(width: 10),
@@ -447,7 +657,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  Widget _buildDesktopTopBar() {
+  Widget _buildDesktopTopBar(bool isCompact) {
     final viewMode = ref.watch(libraryViewModeProvider);
     final sortOption = ref.watch(bookSortOptionProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -465,130 +675,175 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       }
     }
 
+    // Sort and View Mode controls are displayed ONLY on "Semua Buku",
+    // inside a specific collection, or on search results.
+    // They are intentionally hidden on "Sedang Dibaca" (home), "Selesai",
+    // "Penanda", "Sorotan & Catatan", and "Pengaturan".
     final showListControls =
-        _selectedSection == LibraryNavigationSection.home ||
         _selectedSection == LibraryNavigationSection.allBooks ||
-        _selectedSection == LibraryNavigationSection.currentlyReading ||
-        _selectedSection == LibraryNavigationSection.finished ||
-        _selectedSection == LibraryNavigationSection.collections ||
+        (_selectedSection == LibraryNavigationSection.collections &&
+            _selectedCollectionId != null) ||
         _selectedSection == LibraryNavigationSection.search;
 
+    // Traffic light clearance: in compact mode (rail width = 64pt), traffic lights
+    // extend 14pt into content area (X in [20, 78]). An inset of 32pt ensures
+    // the title begins at X = 96pt from the window left edge.
+    final double leftInset = isCompact ? 32.0 : AppThemeTokens.space24;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
+      padding: EdgeInsets.fromLTRB(leftInset, 14, AppThemeTokens.space24, 10),
       child: Row(
         children: [
           // Breadcrumb or Section Title
-          if (_selectedSection == LibraryNavigationSection.collections &&
-              _selectedCollectionId != null) ...[
-            InkWell(
-              onTap: () {
-                setState(() => _selectedCollectionId = null);
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child:
+                  _selectedSection == LibraryNavigationSection.collections &&
+                      _selectedCollectionId != null
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() => _selectedCollectionId = null);
+                          },
+                          child: Text(
+                            AppStrings.collectionsHeader,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            headerTitle,
+                            style: AppThemeTokens.largeTitle(isDark: isDark),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      headerTitle,
+                      style: AppThemeTokens.largeTitle(isDark: isDark),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+            ),
+          ),
+
+          const SizedBox(width: AppThemeTokens.space12),
+
+          // Global Search Field
+          SizedBox(
+            width: isCompact ? 150 : 200,
+            height: 32,
+            child: TextField(
+              focusNode: _searchFocusNode,
+              controller: _searchController,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: isDark
+                    ? AppThemeTokens.darkTextPrimary
+                    : AppThemeTokens.lightTextPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: AppStrings.searchHint,
+                hintStyle: TextStyle(
+                  fontSize: 12.0,
+                  color: isDark
+                      ? AppThemeTokens.darkTextMuted
+                      : AppThemeTokens.lightTextMuted,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 16,
+                  color: isDark
+                      ? AppThemeTokens.darkTextSecondary
+                      : AppThemeTokens.lightTextSecondary,
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 14),
+                        padding: EdgeInsets.zero,
+                        tooltip: AppStrings.searchClear,
+                        onPressed: () {
+                          _searchController.clear();
+                          ref.read(searchQueryProvider.notifier).state = '';
+                          if (_selectedSection ==
+                              LibraryNavigationSection.search) {
+                            setState(() {
+                              _selectedSection = _previousSection;
+                            });
+                          }
+                        },
+                      )
+                    : null,
+                contentPadding: EdgeInsets.zero,
+                filled: true,
+                fillColor: isDark
+                    ? Colors.white.withAlpha(20)
+                    : Colors.black.withAlpha(10),
+                border: OutlineInputBorder(
+                  borderRadius: AppThemeTokens.br10,
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                ref.read(searchQueryProvider.notifier).state = val;
+                if (val.isNotEmpty &&
+                    _selectedSection != LibraryNavigationSection.search) {
+                  _previousSection = _selectedSection;
+                  setState(() {
+                    _selectedSection = LibraryNavigationSection.search;
+                  });
+                }
               },
-              child: Text(
-                'Collections',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                  color: Colors.grey.shade500,
-                ),
-              ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-            ),
-            Flexible(
-              child: Text(
-                headerTitle,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ] else ...[
-            Flexible(
-              child: Text(
-                headerTitle,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.5,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-
-          const Spacer(),
-
-          // Search Field
-          if (_selectedSection != LibraryNavigationSection.search)
-            SizedBox(
-              width: 170,
-              height: 34,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search...',
-                  hintStyle: const TextStyle(fontSize: 12),
-                  prefixIcon: const Icon(Icons.search, size: 16),
-                  contentPadding: EdgeInsets.zero,
-                  filled: true,
-                  fillColor: isDark
-                      ? Colors.white.withAlpha(20)
-                      : Colors.black.withAlpha(10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (val) {
-                  ref.read(searchQueryProvider.notifier).state = val;
-                  if (val.isNotEmpty &&
-                      _selectedSection != LibraryNavigationSection.search) {
-                    setState(() {
-                      _selectedSection = LibraryNavigationSection.search;
-                    });
-                  }
-                },
-              ),
-            ),
+          ),
 
           if (showListControls) ...[
-            const SizedBox(width: 12),
+            const SizedBox(width: AppThemeTokens.space12),
 
             // Sort Dropdown Button
             PopupMenuButton<BookSortOption>(
-              tooltip: 'Sort by',
+              tooltip: AppStrings.sortTooltip,
               elevation: 8,
               color: isDark ? const Color(0xFF222226) : Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppThemeTokens.br10,
                 side: BorderSide(
                   color: isDark ? Colors.white.withAlpha(20) : Colors.black12,
                 ),
               ),
               child: Container(
-                height: 34,
+                height: 32,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.white.withAlpha(15)
                       : Colors.black.withAlpha(8),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppThemeTokens.br10,
                 ),
                 child: Row(
                   children: [
-                    Icon(sortOption.icon, size: 16),
+                    Icon(sortOption.icon, size: 15),
                     const SizedBox(width: 6),
                     Text(
-                      sortOption.label,
+                      _getSortOptionLabel(sortOption),
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -614,20 +869,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           option.icon,
                           size: 16,
                           color: isCurrent
-                              ? const Color(0xFF007AFF)
+                              ? AppThemeTokens.goldAccent
                               : Colors.grey.shade400,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            option.label,
+                            _getSortOptionLabel(option),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: isCurrent
                                   ? FontWeight.bold
                                   : FontWeight.normal,
                               color: isCurrent
-                                  ? const Color(0xFF007AFF)
+                                  ? AppThemeTokens.goldAccent
                                   : (isDark ? Colors.white : Colors.black87),
                             ),
                           ),
@@ -636,7 +891,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           const Icon(
                             Icons.check,
                             size: 15,
-                            color: Color(0xFF007AFF),
+                            color: AppThemeTokens.goldAccent,
                           ),
                       ],
                     ),
@@ -645,16 +900,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               },
             ),
 
-            const SizedBox(width: 10),
+            const SizedBox(width: AppThemeTokens.space8),
 
             // View Mode Toggle (Grid vs List)
             Container(
-              height: 34,
+              height: 32,
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withAlpha(15)
                     : Colors.black.withAlpha(8),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppThemeTokens.br10,
               ),
               child: Row(
                 children: [
@@ -662,11 +917,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     mode: LibraryViewMode.grid,
                     icon: Icons.grid_view_rounded,
                     isActive: viewMode == LibraryViewMode.grid,
+                    tooltip: AppStrings.viewModeGrid,
                   ),
                   _buildViewModeButton(
                     mode: LibraryViewMode.list,
                     icon: Icons.view_list_rounded,
                     isActive: viewMode == LibraryViewMode.list,
+                    tooltip: AppStrings.viewModeList,
                   ),
                 ],
               ),
@@ -677,160 +934,66 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
+  String _getSortOptionLabel(BookSortOption option) {
+    switch (option) {
+      case BookSortOption.dateAddedDesc:
+        return AppStrings.sortRecentlyAdded;
+      case BookSortOption.dateAddedAsc:
+        return AppStrings.sortOldestAdded;
+      case BookSortOption.titleAsc:
+        return AppStrings.sortTitleAsc;
+      case BookSortOption.titleDesc:
+        return AppStrings.sortTitleDesc;
+      case BookSortOption.authorAsc:
+        return AppStrings.sortAuthorAsc;
+      case BookSortOption.progressDesc:
+        return AppStrings.sortProgressDesc;
+      case BookSortOption.progressAsc:
+        return AppStrings.sortProgressAsc;
+    }
+  }
+
   Widget _buildViewModeButton({
     required LibraryViewMode mode,
     required IconData icon,
     required bool isActive,
+    required String tooltip,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(7),
-      onTap: () {
-        ref.read(libraryViewModeProvider.notifier).state = mode;
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? Colors.white.withAlpha(35) : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(7),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 50 : 15),
-                    blurRadius: 4,
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          icon,
-          size: 17,
-          color: isActive
-              ? const Color(0xFF007AFF)
-              : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
-        ),
-      ),
-    );
-  }
-
-  // --- 2. Mobile Layout ---
-  Widget _buildMobileLayout() {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedSection.label,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(7),
+        onTap: () {
+          ref.read(libraryViewModeProvider.notifier).state = mode;
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: isActive
+                ? (isDark ? Colors.white.withAlpha(35) : Colors.white)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(isDark ? 50 : 15),
+                      blurRadius: 4,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.add_circle,
-                    color: Color(0xFF007AFF),
-                    size: 28,
-                  ),
-                  onPressed: () =>
-                      ImportPdfHelper.pickAndImportPdf(context, ref),
-                ),
-              ],
-            ),
+                  ]
+                : null,
           ),
-          Expanded(child: _buildSectionContent()),
-        ],
+          child: Icon(
+            icon,
+            size: 16,
+            color: isActive
+                ? AppThemeTokens.goldAccent
+                : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+          ),
+        ),
       ),
     );
-  }
-
-  Widget _buildMobileBottomBar() {
-    return NavigationBar(
-      selectedIndex: _getMobileNavIndex(_selectedSection),
-      onDestinationSelected: (index) {
-        setState(() {
-          switch (index) {
-            case 0:
-              _selectedSection = LibraryNavigationSection.home;
-              _selectedCollectionId = null;
-              break;
-            case 1:
-              _selectedSection = LibraryNavigationSection.allBooks;
-              _selectedCollectionId = null;
-              break;
-            case 2:
-              _selectedSection = LibraryNavigationSection.collections;
-              _selectedCollectionId = null;
-              break;
-            case 3:
-              _selectedSection = LibraryNavigationSection.bookmarks;
-              _selectedCollectionId = null;
-              break;
-            case 4:
-              _selectedSection = LibraryNavigationSection.settings;
-              _selectedCollectionId = null;
-              break;
-          }
-        });
-      },
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.auto_stories_outlined),
-          selectedIcon: Icon(Icons.auto_stories),
-          label: 'Reading',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.library_books_outlined),
-          selectedIcon: Icon(Icons.library_books),
-          label: 'Library',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.folder_outlined),
-          selectedIcon: Icon(Icons.folder),
-          label: 'Collections',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.bookmark_border_rounded),
-          selectedIcon: Icon(Icons.bookmark),
-          label: 'Bookmarks',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-      ],
-    );
-  }
-
-  int _getMobileNavIndex(LibraryNavigationSection section) {
-    switch (section) {
-      case LibraryNavigationSection.home:
-      case LibraryNavigationSection.currentlyReading:
-        return 0;
-      case LibraryNavigationSection.allBooks:
-      case LibraryNavigationSection.finished:
-        return 1;
-      case LibraryNavigationSection.collections:
-        return 2;
-      case LibraryNavigationSection.bookmarks:
-      case LibraryNavigationSection.highlights:
-        return 3;
-      case LibraryNavigationSection.search:
-      case LibraryNavigationSection.settings:
-        return 4;
-    }
   }
 
   // --- 3. Section Content Routing ---
