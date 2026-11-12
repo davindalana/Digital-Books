@@ -65,6 +65,8 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
   String? _activeAnchorNodeId;
   int _activeCharOffset = 0;
+  bool _isHoveringLeft = false;
+  bool _isHoveringRight = false;
 
   int get totalPages => _pages.length;
   int get currentPageIndex => _currentPageIndex;
@@ -370,6 +372,16 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                         cursor: canGoPrevious
                             ? SystemMouseCursors.click
                             : SystemMouseCursors.basic,
+                        onEnter: (_) {
+                          if (mounted && !_isHoveringLeft) {
+                            setState(() => _isHoveringLeft = true);
+                          }
+                        },
+                        onExit: (_) {
+                          if (mounted && _isHoveringLeft) {
+                            setState(() => _isHoveringLeft = false);
+                          }
+                        },
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: canGoPrevious ? previousPage : null,
@@ -387,6 +399,16 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                         cursor: canGoNext
                             ? SystemMouseCursors.click
                             : SystemMouseCursors.basic,
+                        onEnter: (_) {
+                          if (mounted && !_isHoveringRight) {
+                            setState(() => _isHoveringRight = true);
+                          }
+                        },
+                        onExit: (_) {
+                          if (mounted && _isHoveringRight) {
+                            setState(() => _isHoveringRight = false);
+                          }
+                        },
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: canGoNext ? nextPage : null,
@@ -406,35 +428,55 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                       ),
                     ),
 
-                    // Desktop Left Chevron Control
+                    // Desktop Left Chevron Control (revealed on hover)
                     if (canGoPrevious)
                       Positioned(
-                        left: 12,
+                        left: 14,
                         top: 0,
                         bottom: 0,
                         child: Center(
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: previousPage,
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: widget.theme.isDark
-                                      ? Colors.white.withAlpha(16)
-                                      : Colors.black.withAlpha(10),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: widget.theme.secondaryTextColor
-                                        .withAlpha(30),
-                                    width: 0.8,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            opacity: _isHoveringLeft ? 1.0 : 0.0,
+                            child: IgnorePointer(
+                              ignoring: !_isHoveringLeft,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                onEnter: (_) {
+                                  if (mounted && !_isHoveringLeft) {
+                                    setState(() => _isHoveringLeft = true);
+                                  }
+                                },
+                                onExit: (_) {
+                                  if (mounted && _isHoveringLeft) {
+                                    setState(() => _isHoveringLeft = false);
+                                  }
+                                },
+                                child: GestureDetector(
+                                  onTap: previousPage,
+                                  child: Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: widget.theme.isDark
+                                          ? Colors.white.withAlpha(22)
+                                          : Colors.black.withAlpha(14),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: widget.theme.secondaryTextColor
+                                            .withAlpha(35),
+                                        width: 0.6,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.chevron_left_rounded,
+                                      size: 22,
+                                      color: widget.theme.textColor.withAlpha(
+                                        200,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.chevron_left_rounded,
-                                  size: 24,
-                                  color: widget.theme.textColor.withAlpha(190),
                                 ),
                               ),
                             ),
@@ -442,35 +484,55 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
                         ),
                       ),
 
-                    // Desktop Right Chevron Control
+                    // Desktop Right Chevron Control (revealed on hover)
                     if (canGoNext)
                       Positioned(
-                        right: 12,
+                        right: 14,
                         top: 0,
                         bottom: 0,
                         child: Center(
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: GestureDetector(
-                              onTap: nextPage,
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: widget.theme.isDark
-                                      ? Colors.white.withAlpha(16)
-                                      : Colors.black.withAlpha(10),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: widget.theme.secondaryTextColor
-                                        .withAlpha(30),
-                                    width: 0.8,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
+                            opacity: _isHoveringRight ? 1.0 : 0.0,
+                            child: IgnorePointer(
+                              ignoring: !_isHoveringRight,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                onEnter: (_) {
+                                  if (mounted && !_isHoveringRight) {
+                                    setState(() => _isHoveringRight = true);
+                                  }
+                                },
+                                onExit: (_) {
+                                  if (mounted && _isHoveringRight) {
+                                    setState(() => _isHoveringRight = false);
+                                  }
+                                },
+                                child: GestureDetector(
+                                  onTap: nextPage,
+                                  child: Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: widget.theme.isDark
+                                          ? Colors.white.withAlpha(22)
+                                          : Colors.black.withAlpha(14),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: widget.theme.secondaryTextColor
+                                            .withAlpha(35),
+                                        width: 0.6,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 22,
+                                      color: widget.theme.textColor.withAlpha(
+                                        200,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                child: Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 24,
-                                  color: widget.theme.textColor.withAlpha(190),
                                 ),
                               ),
                             ),

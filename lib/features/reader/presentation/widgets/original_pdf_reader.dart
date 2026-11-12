@@ -1124,15 +1124,16 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                     ),
                   ),
 
-                  // Floating Previous Button on left edge
+                  // Floating Previous Button on left edge (hover revealed)
                   if (isDesktopOrTablet &&
                       !isContinuous &&
                       widget.showControls &&
                       _currentSpreadIndex > 0)
                     Positioned(
-                      left: 16,
+                      left: 0,
                       top: 0,
                       bottom: 0,
+                      width: 56,
                       child: Center(
                         child: _FloatingNavArrow(
                           icon: Icons.chevron_left,
@@ -1142,15 +1143,16 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
                       ),
                     ),
 
-                  // Floating Next Button on right edge
+                  // Floating Next Button on right edge (hover revealed)
                   if (isDesktopOrTablet &&
                       !isContinuous &&
                       widget.showControls &&
                       _currentSpreadIndex < spreads.length - 1)
                     Positioned(
-                      right: 16,
+                      right: 0,
                       top: 0,
                       bottom: 0,
+                      width: 56,
                       child: Center(
                         child: _FloatingNavArrow(
                           icon: Icons.chevron_right,
@@ -2165,43 +2167,35 @@ class _FloatingNavArrowState extends State<_FloatingNavArrow> {
 
   @override
   Widget build(BuildContext context) {
-    final bgAlpha = _isHovered
-        ? (widget.isDark ? 210 : 190)
-        : (widget.isDark ? 90 : 70);
-    final borderAlpha = _isHovered ? 80 : 35;
-
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
         onTap: widget.onPressed,
-        child: AnimatedContainer(
+        child: AnimatedOpacity(
           duration: const Duration(milliseconds: 180),
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: widget.isDark
-                ? Color.fromARGB(bgAlpha, 25, 25, 28)
-                : Color.fromARGB(bgAlpha, 255, 255, 255),
-            shape: BoxShape.circle,
-            border: Border.all(
+          curve: Curves.easeInOut,
+          opacity: _isHovered ? 1.0 : 0.0,
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
               color: widget.isDark
-                  ? Color.fromARGB(borderAlpha, 255, 255, 255)
-                  : Color.fromARGB(borderAlpha, 0, 0, 0),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(widget.isDark ? 70 : 25),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                  ? Colors.white.withAlpha(22)
+                  : Colors.black.withAlpha(14),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: widget.isDark
+                    ? Colors.white.withAlpha(35)
+                    : Colors.black.withAlpha(25),
+                width: 0.6,
               ),
-            ],
-          ),
-          child: Icon(
-            widget.icon,
-            size: 26,
-            color: widget.isDark ? Colors.white : Colors.black87,
+            ),
+            child: Icon(
+              widget.icon,
+              size: 22,
+              color: widget.isDark ? Colors.white : Colors.black87,
+            ),
           ),
         ),
       ),
