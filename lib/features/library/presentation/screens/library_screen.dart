@@ -350,7 +350,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // macOS App Title bar zone (offset right from traffic lights at X in [20, 78])
             Container(
               height: AppThemeTokens.titlebarHeight,
-              padding: const EdgeInsets.only(left: 88, right: 12),
+              padding: const EdgeInsets.only(left: 88, right: 12, top: 14),
               child: Row(
                 children: [
                   Container(
@@ -724,7 +724,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     // Traffic light clearance: in compact mode (rail width = 64pt), traffic lights
     // extend 14pt into content area (X in [20, 78]). An inset of 32pt ensures
     // the title begins at X = 96pt from the window left edge.
-    final double leftInset = isCompact ? 32.0 : AppThemeTokens.space24;
+    // Match the 24pt inset used by the section content so the title aligns
+    // with the hero card. Compact mode also clears the native traffic lights.
+    final double leftInset = isCompact ? 32.0 : 48.0;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(leftInset, 14, AppThemeTokens.space24, 10),
@@ -733,7 +735,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           // Breadcrumb or Section Title
           Expanded(
             child: Align(
-              alignment: Alignment.center,
+              alignment: Alignment.centerLeft,
               child:
                   _selectedSection == LibraryNavigationSection.collections &&
                       _selectedCollectionId != null
