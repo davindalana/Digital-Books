@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'features/library/presentation/screens/library_screen.dart';
 
-void main() {
+void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -27,11 +27,20 @@ void main() {
     return true;
   };
 
-  runApp(const ProviderScope(child: DigitalBooksApp()));
+  final initialSection = args.contains('--semua-buku') ||
+          Platform.environment['DIGITAL_BOOKS_SECTION'] == 'allBooks'
+      ? LibraryNavigationSection.allBooks
+      : LibraryNavigationSection.home;
+
+  runApp(ProviderScope(child: DigitalBooksApp(initialSection: initialSection)));
 }
 
 class DigitalBooksApp extends StatelessWidget {
-  const DigitalBooksApp({super.key});
+  final LibraryNavigationSection initialSection;
+  const DigitalBooksApp({
+    super.key,
+    this.initialSection = LibraryNavigationSection.home,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +77,7 @@ class DigitalBooksApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const LibraryScreen(),
+      home: LibraryScreen(initialSection: initialSection),
     );
   }
 }

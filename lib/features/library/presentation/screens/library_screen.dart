@@ -42,19 +42,30 @@ enum LibraryNavigationSection {
 }
 
 class LibraryScreen extends ConsumerStatefulWidget {
-  const LibraryScreen({super.key});
+  final LibraryNavigationSection initialSection;
+  const LibraryScreen({
+    super.key,
+    this.initialSection = LibraryNavigationSection.home,
+  });
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  LibraryNavigationSection _selectedSection = LibraryNavigationSection.home;
-  LibraryNavigationSection _previousSection = LibraryNavigationSection.home;
+  late LibraryNavigationSection _selectedSection;
+  late LibraryNavigationSection _previousSection;
   String? _selectedCollectionId;
   int _allBooksFilterIndex = 0; // 0 = Semua, 1 = Sedang Dibaca, 2 = Selesai
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSection = widget.initialSection;
+    _previousSection = widget.initialSection;
+  }
 
   @override
   void dispose() {
@@ -81,8 +92,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             _focusSearch,
         const SingleActivator(LogicalKeyboardKey.keyF, meta: true):
             _focusSearch,
+        const SingleActivator(LogicalKeyboardKey.digit1, meta: true): () {
+          setState(() {
+            _selectedSection = LibraryNavigationSection.home;
+            _selectedCollectionId = null;
+          });
+        },
+        const SingleActivator(LogicalKeyboardKey.digit2, meta: true): () {
+          setState(() {
+            _selectedSection = LibraryNavigationSection.allBooks;
+            _selectedCollectionId = null;
+          });
+        },
+        const SingleActivator(LogicalKeyboardKey.digit3, meta: true): () {
+          setState(() {
+            _selectedSection = LibraryNavigationSection.finished;
+            _selectedCollectionId = null;
+          });
+        },
       },
-      child: LayoutBuilder(
+      child: Focus(
+        autofocus: true,
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
           final isExpansive = width >= AppThemeTokens.breakpointExpansive;
@@ -132,7 +163,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           );
         },
       ),
-    );
+    ),
+  );
   }
 
   // --- 1. Compact Icon Rail (width < 760pt) ---
