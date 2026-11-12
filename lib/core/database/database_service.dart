@@ -85,6 +85,32 @@ class DatabaseService {
     });
   }
 
+  Stream<List<Book>> watchUnstartedBooks() {
+    final query =
+        db.select(db.books).join([
+            leftOuterJoin(
+              db.readingProgresses,
+              db.readingProgresses.bookId.equalsExp(db.books.id),
+            ),
+          ])
+          ..where(
+            db.readingProgresses.id.isNull() |
+                db.readingProgresses.progressPercentage.isSmallerOrEqualValue(
+                  0.0,
+                ),
+          )
+          ..orderBy([
+            OrderingTerm(
+              expression: db.books.createdAt,
+              mode: OrderingMode.desc,
+            ),
+          ]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) => row.readTable(db.books)).toList();
+    });
+  }
+
   Future<Book?> getBookById(String id) {
     return (db.select(
       db.books,

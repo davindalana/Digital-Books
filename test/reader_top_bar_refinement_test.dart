@@ -429,7 +429,10 @@ void main() {
         // Back button, mode pill, and right controls are centered at Y = 40.0dp
         const nativeTrafficLightCenterY = 40.0;
         final backCenter = tester.getCenter(backButton);
-        expect((backCenter.dy - nativeTrafficLightCenterY).abs(), lessThanOrEqualTo(1.0));
+        expect(
+          (backCenter.dy - nativeTrafficLightCenterY).abs(),
+          lessThanOrEqualTo(1.0),
+        );
 
         // 4. Title and subtitle form a vertically centered group with center Y = 40.0dp
         final titleFinder = find.text(book.title);
@@ -437,7 +440,10 @@ void main() {
         final titleRect = tester.getRect(titleFinder);
         final subtitleRect = tester.getRect(subtitleFinder);
         final groupMidY = (titleRect.top + subtitleRect.bottom) / 2.0;
-        expect((groupMidY - nativeTrafficLightCenterY).abs(), lessThanOrEqualTo(2.0));
+        expect(
+          (groupMidY - nativeTrafficLightCenterY).abs(),
+          lessThanOrEqualTo(2.0),
+        );
       },
     );
   });

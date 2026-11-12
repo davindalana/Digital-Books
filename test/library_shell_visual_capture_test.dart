@@ -139,6 +139,11 @@ void main() {
             ),
           ]),
         ),
+        unstartedBooksStreamProvider.overrideWith(
+          (ref) => Stream.value(
+            sampleBooks.length > 1 ? sampleBooks.sublist(1) : <Book>[],
+          ),
+        ),
         finishedBooksStreamProvider.overrideWith(
           (ref) => Stream.value(<BookWithProgress>[]),
         ),

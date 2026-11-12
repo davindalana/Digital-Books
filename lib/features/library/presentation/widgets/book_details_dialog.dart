@@ -370,10 +370,14 @@ class _BookDetailsDialogState extends ConsumerState<BookDetailsDialog> {
                                       label: 'Progress',
                                       value: p != null
                                           ? ReadingProgressCalculator.formatProgressText(
-                                              progressPercentage: p.progressPercentage,
-                                              lastReadingMode: p.lastReadingMode,
-                                              currentPosition: p.currentPosition,
-                                              totalPages: _currentBook.totalPages,
+                                              progressPercentage:
+                                                  p.progressPercentage,
+                                              lastReadingMode:
+                                                  p.lastReadingMode,
+                                              currentPosition:
+                                                  p.currentPosition,
+                                              totalPages:
+                                                  _currentBook.totalPages,
                                               currentChapter: p.currentChapter,
                                             )
                                           : 'Not started',

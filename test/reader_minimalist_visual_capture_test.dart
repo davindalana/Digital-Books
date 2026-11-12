@@ -363,7 +363,9 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 9: Long Title Truncation with Ellipsis', (tester) async {
+    testWidgets('Capture 9: Long Title Truncation with Ellipsis', (
+      tester,
+    ) async {
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -395,7 +397,9 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 10: Long Chapter Subtitle Truncation with Ellipsis', (tester) async {
+    testWidgets('Capture 10: Long Chapter Subtitle Truncation with Ellipsis', (
+      tester,
+    ) async {
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -427,7 +431,9 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 11: Medium Window Responsive Top Bar (800dp)', (tester) async {
+    testWidgets('Capture 11: Medium Window Responsive Top Bar (800dp)', (
+      tester,
+    ) async {
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(800, 700));
       tester.view.physicalSize = const Size(1600, 1400);
@@ -453,7 +459,9 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 12: Narrow Window Responsive Top Bar (450dp)', (tester) async {
+    testWidgets('Capture 12: Narrow Window Responsive Top Bar (450dp)', (
+      tester,
+    ) async {
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(450, 700));
       tester.view.physicalSize = const Size(900, 1400);
@@ -479,103 +487,104 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 13: Traffic Lights and Toolbar in Same Horizontal Band', (
-      tester,
-    ) async {
-      final key = GlobalKey();
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      tester.view.physicalSize = const Size(2400, 1600);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'Capture 13: Traffic Lights and Toolbar in Same Horizontal Band',
+      (tester) async {
+        final key = GlobalKey();
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        tester.view.physicalSize = const Size(2400, 1600);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(db),
-            databaseServiceProvider.overrideWithValue(dbService),
-            bookBookmarksStreamProvider(
-              testBook.id,
-            ).overrideWith((ref) => Stream.value(<Bookmark>[])),
-            bookAnnotationsStreamProvider(
-              testBook.id,
-            ).overrideWith((ref) => Stream.value(<BookAnnotation>[])),
-            activeReadingModeProvider(
-              testBook.id,
-            ).overrideWith((ref) => ReadingMode.reflowable),
-            readingThemeStateProvider.overrideWith(
-              (ref) => ReadingThemeType.black,
-            ),
-          ],
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              platform: TargetPlatform.macOS,
-              brightness: Brightness.dark,
-            ),
-            home: Scaffold(
-              body: RepaintBoundary(
-                key: key,
-                child: SizedBox(
-                  width: 1200,
-                  height: 800,
-                  child: Stack(
-                    children: [
-                      ReadingScreen(
-                        book: testBook,
-                        initialMode: ReadingMode.reflowable,
-                      ),
-                      Positioned(
-                        left: 20,
-                        top: 33,
-                        width: 14,
-                        height: 14,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF5F56),
-                            shape: BoxShape.circle,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(db),
+              databaseServiceProvider.overrideWithValue(dbService),
+              bookBookmarksStreamProvider(
+                testBook.id,
+              ).overrideWith((ref) => Stream.value(<Bookmark>[])),
+              bookAnnotationsStreamProvider(
+                testBook.id,
+              ).overrideWith((ref) => Stream.value(<BookAnnotation>[])),
+              activeReadingModeProvider(
+                testBook.id,
+              ).overrideWith((ref) => ReadingMode.reflowable),
+              readingThemeStateProvider.overrideWith(
+                (ref) => ReadingThemeType.black,
+              ),
+            ],
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                platform: TargetPlatform.macOS,
+                brightness: Brightness.dark,
+              ),
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: key,
+                  child: SizedBox(
+                    width: 1200,
+                    height: 800,
+                    child: Stack(
+                      children: [
+                        ReadingScreen(
+                          book: testBook,
+                          initialMode: ReadingMode.reflowable,
+                        ),
+                        Positioned(
+                          left: 20,
+                          top: 33,
+                          width: 14,
+                          height: 14,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFF5F56),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 42,
-                        top: 33,
-                        width: 14,
-                        height: 14,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFBD2E),
-                            shape: BoxShape.circle,
+                        Positioned(
+                          left: 42,
+                          top: 33,
+                          width: 14,
+                          height: 14,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFBD2E),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 64,
-                        top: 33,
-                        width: 14,
-                        height: 14,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF27C93F),
-                            shape: BoxShape.circle,
+                        Positioned(
+                          left: 64,
+                          top: 33,
+                          width: 14,
+                          height: 14,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF27C93F),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await captureScreen(
-        tester,
-        key: key,
-        filename: '13_macos_unified_traffic_lights_band.png',
-      );
-      await teardownWidget(tester);
-    });
+        await captureScreen(
+          tester,
+          key: key,
+          filename: '13_macos_unified_traffic_lights_band.png',
+        );
+        await teardownWidget(tester);
+      },
+    );
   });
 }

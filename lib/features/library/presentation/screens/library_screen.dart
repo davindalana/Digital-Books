@@ -24,6 +24,7 @@ import '../widgets/book_card.dart';
 import '../widgets/book_details_dialog.dart';
 import '../widgets/book_list_tile.dart';
 import '../widgets/backup_restore_dialog.dart';
+import '../widgets/horizontal_book_shelf.dart';
 import '../widgets/import_pdf_dialog.dart';
 
 enum LibraryNavigationSection {
@@ -115,57 +116,57 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       child: Focus(
         autofocus: true,
         child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final isExpansive = width >= AppThemeTokens.breakpointExpansive;
-          final isStandard =
-              width >= AppThemeTokens.breakpointStandard &&
-              width < AppThemeTokens.breakpointExpansive;
-          final isCompact = width < AppThemeTokens.breakpointStandard;
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final isExpansive = width >= AppThemeTokens.breakpointExpansive;
+            final isStandard =
+                width >= AppThemeTokens.breakpointStandard &&
+                width < AppThemeTokens.breakpointExpansive;
+            final isCompact = width < AppThemeTokens.breakpointStandard;
 
-          final double sidebarWidth = isExpansive
-              ? AppThemeTokens.sidebarExpansiveWidth
-              : (isStandard
-                    ? AppThemeTokens.sidebarStandardWidth
-                    : AppThemeTokens.sidebarCompactWidth);
+            final double sidebarWidth = isExpansive
+                ? AppThemeTokens.sidebarExpansiveWidth
+                : (isStandard
+                      ? AppThemeTokens.sidebarStandardWidth
+                      : AppThemeTokens.sidebarCompactWidth);
 
-          return Scaffold(
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            body: Row(
-              children: [
-                // 1. Sidebar or Compact Icon Rail (macOS native responsive navigation)
-                isCompact
-                    ? _buildCompactIconRail()
-                    : _buildExpandedSidebar(sidebarWidth),
+            return Scaffold(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              body: Row(
+                children: [
+                  // 1. Sidebar or Compact Icon Rail (macOS native responsive navigation)
+                  isCompact
+                      ? _buildCompactIconRail()
+                      : _buildExpandedSidebar(sidebarWidth),
 
-                // 2. Main Content Area with Safe Top Inset and optional Expansive centering
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildDesktopTopBar(isCompact),
-                      Expanded(
-                        child: isExpansive
-                            ? Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: AppThemeTokens.contentMaxWidth,
+                  // 2. Main Content Area with Safe Top Inset and optional Expansive centering
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildDesktopTopBar(isCompact),
+                        Expanded(
+                          child: isExpansive
+                              ? Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: AppThemeTokens.contentMaxWidth,
+                                    ),
+                                    child: _buildSectionContent(),
                                   ),
-                                  child: _buildSectionContent(),
-                                ),
-                              )
-                            : _buildSectionContent(),
-                      ),
-                    ],
+                                )
+                              : _buildSectionContent(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                ],
+              ),
+            );
+          },
+        ),
       ),
-    ),
-  );
+    );
   }
 
   // --- 1. Compact Icon Rail (width < 760pt) ---
@@ -1055,136 +1056,221 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  // --- Home: Reading Now Hero Spotlight + Shelf + Recently Added ---
+  // --- Home: Reading Now Hero Spotlight + Shelves (Phase 3) ---
   Widget _buildHomeSection() {
+    final allBooksAsync = ref.watch(allBooksStreamProvider);
     final currentlyReadingAsync = ref.watch(currentlyReadingStreamProvider);
-    final recentlyAddedAsync = ref.watch(recentlyAddedStreamProvider);
+    final unstartedBooksAsync = ref.watch(unstartedBooksStreamProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      children: [
-        // Continue Reading Hero Spotlight
-        currentlyReadingAsync.when(
-          data: (books) {
-            if (books.isEmpty) return const SizedBox.shrink();
-            final heroItem = books.first;
-            final remainingBooks = books.sublist(1);
+    return allBooksAsync.when(
+      data: (allBooks) {
+        // Case 1: Empty Library -> CTA "Tambah Buku"
+        if (allBooks.isEmpty) {
+          return _buildEmptyState(
+            title: AppStrings.emptyLibraryTitle,
+            subtitle: AppStrings.emptyLibrarySubtitle,
+            actionLabel: AppStrings.actionTambahBuku,
+            onAction: () => ImportPdfHelper.pickAndImportPdf(context, ref),
+          );
+        }
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeroReadingCard(heroItem, isStarted: true),
-                if (remainingBooks.isNotEmpty) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'BUKU LAIN SEDANG DIBACA',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          color: Colors.grey,
+        final currentlyReading = currentlyReadingAsync.valueOrNull ?? [];
+        final heroItem = currentlyReading.isNotEmpty
+            ? currentlyReading.first
+            : null;
+        final heroBookId = heroItem?.book.id;
+
+        // Rak 1: "Buku lain yang sedang kamu baca" (deduplicated: excludes hero)
+        final rak1Items = currentlyReading
+            .where((item) => item.book.id != heroBookId)
+            .toList();
+        final rak1BookIds = rak1Items.map((i) => i.book.id).toSet();
+
+        // Rak 2: "Belum dimulai" (deduplicated: excludes hero and rak 1)
+        final unstartedBooks = unstartedBooksAsync.valueOrNull ?? [];
+        final rak2Books = unstartedBooks
+            .where((b) => b.id != heroBookId && !rak1BookIds.contains(b.id))
+            .toList();
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          children: [
+            // Continue Reading Hero Spotlight or Friendly Empty Reading State
+            if (heroItem != null) ...[
+              _buildHeroReadingCard(heroItem, isStarted: true),
+            ] else ...[
+              _buildEmptyReadingSpotlight(isDark: isDark),
+            ],
+
+            // Rak 1: "Buku lain yang sedang kamu baca" + "Lihat semua →"
+            if (rak1Items.isNotEmpty) ...[
+              HorizontalBookShelf(
+                title: AppStrings.shelfBukuLainSedangDibaca,
+                action: InkWell(
+                  borderRadius: AppThemeTokens.br10,
+                  onTap: () {
+                    setState(() {
+                      _selectedSection = LibraryNavigationSection.allBooks;
+                      _allBooksFilterIndex = 1; // "Sedang Dibaca" filter chip
+                    });
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Lihat semua',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppThemeTokens.goldAccent,
+                          ),
                         ),
-                      ),
-                      InkWell(
-                        borderRadius: AppThemeTokens.br10,
-                        onTap: () {
-                          setState(() {
-                            _selectedSection =
-                                LibraryNavigationSection.currentlyReading;
-                          });
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Lihat Semua',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppThemeTokens.goldAccent,
-                                ),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                size: 14,
-                                color: AppThemeTokens.goldAccent,
-                              ),
-                            ],
-                          ),
+                        SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: AppThemeTokens.goldAccent,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 250,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: remainingBooks.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(width: 18),
-                      itemBuilder: (context, index) {
-                        final item = remainingBooks[index];
-                        return SizedBox(
-                          width: 140,
-                          child: BookCard(
-                            book: item.book,
-                            progressPercentage:
-                                item.progress?.progressPercentage,
-                            onDetails: () => _openBookDetails(item.book),
-                          ),
-                        );
-                      },
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                ],
-              ],
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (e, stack) => const SizedBox.shrink(),
-        ),
+                ),
+                itemCount: rak1Items.length,
+                itemBuilder: (context, index) {
+                  final item = rak1Items[index];
+                  return SizedBox(
+                    width: 140,
+                    child: BookCard(
+                      book: item.book,
+                      progressPercentage: item.progress?.progressPercentage,
+                      onDetails: () => _openBookDetails(item.book),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 28),
+            ],
 
-        // Recently Added Shelf
-        const Text(
-          'RECENTLY ADDED',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-            color: Colors.grey,
-          ),
+            // Rak 2: "Belum dimulai" (HANYA buku progres <= 0, hide if empty)
+            if (rak2Books.isNotEmpty) ...[
+              HorizontalBookShelf(
+                title: AppStrings.shelfBelumDimulai,
+                itemCount: rak2Books.length,
+                itemBuilder: (context, index) {
+                  final book = rak2Books[index];
+                  return SizedBox(
+                    width: 140,
+                    child: BookCard(
+                      book: book,
+                      progressPercentage: 0.0,
+                      onDetails: () => _openBookDetails(book),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 28),
+            ],
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: CircularProgressIndicator(),
         ),
-        const SizedBox(height: 16),
-        recentlyAddedAsync.when(
-          data: (books) {
-            if (books.isEmpty) {
-              return _buildEmptyState(
-                title: 'Your Library is Empty',
-                subtitle:
-                    'Import personal PDF books from your device to start reading with the Apple Books experience.',
-              );
-            }
-            return _buildBookListOrGrid(books);
-          },
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.all(40),
-              child: CircularProgressIndicator(),
+      ),
+      error: (e, _) => Center(child: Text('Error loading books: $e')),
+    );
+  }
+
+  Widget _buildEmptyReadingSpotlight({required bool isDark}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [const Color(0xFF232328), const Color(0xFF17171A)]
+              : [const Color(0xFFFFFFFF), const Color(0xFFF6F4EF)],
+        ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withAlpha(25)
+              : Colors.black.withAlpha(15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(isDark ? 60 : 15),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppThemeTokens.goldAccent.withAlpha(isDark ? 35 : 25),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_stories_rounded,
+              size: 28,
+              color: AppThemeTokens.goldAccent,
             ),
           ),
-          error: (e, _) => Center(child: Text('Error loading books: $e')),
-        ),
-      ],
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  AppStrings.emptySedangDibacaTitle,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  AppStrings.emptySedangDibacaSubtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppThemeTokens.goldAccent,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                _selectedSection = LibraryNavigationSection.allBooks;
+              });
+            },
+            child: const Text(
+              'Pilih Buku',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1233,27 +1319,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           child: _allBooksFilterIndex == 1
               ? _buildCurrentlyReadingSection(showBackButton: false)
               : _allBooksFilterIndex == 2
-                  ? _buildFinishedBooksSection()
-                  : allBooksAsync.when(
-                      data: (books) {
-                        if (books.isEmpty) {
-                          return _buildEmptyState(
-                            title: 'No Books in Library',
-                            subtitle: 'Click "Import PDF" to add your books.',
-                          );
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 8,
-                          ),
-                          child: _buildBookListOrGrid(books),
-                        );
-                      },
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('Error: $e')),
-                    ),
+              ? _buildFinishedBooksSection()
+              : allBooksAsync.when(
+                  data: (books) {
+                    if (books.isEmpty) {
+                      return _buildEmptyState(
+                        title: 'No Books in Library',
+                        subtitle: 'Click "Import PDF" to add your books.',
+                      );
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
+                      child: _buildBookListOrGrid(books),
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Center(child: Text('Error: $e')),
+                ),
         ),
       ],
     );
@@ -2362,7 +2448,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           itemCount: sorted.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.58,
+            childAspectRatio: 0.50,
             crossAxisSpacing: 18,
             mainAxisSpacing: 22,
           ),
@@ -2588,7 +2674,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  Widget _buildEmptyState({required String title, required String subtitle}) {
+  Widget _buildEmptyState({
+    required String title,
+    required String subtitle,
+    String? actionLabel,
+    VoidCallback? onAction,
+    IconData icon = Icons.auto_stories,
+  }) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
@@ -2601,11 +2693,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 color: const Color(0xFF007AFF).withAlpha(20),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.auto_stories,
-                size: 56,
-                color: Color(0xFF007AFF),
-              ),
+              child: Icon(icon, size: 56, color: const Color(0xFF007AFF)),
             ),
             const SizedBox(height: 20),
             Text(
@@ -2642,9 +2730,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     ),
                   ),
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Import PDF'),
-                  onPressed: () =>
-                      ImportPdfHelper.pickAndImportPdf(context, ref),
+                  label: Text(actionLabel ?? 'Import PDF'),
+                  onPressed:
+                      onAction ??
+                      () => ImportPdfHelper.pickAndImportPdf(context, ref),
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -2679,7 +2768,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final coverFile = book.coverPath != null ? File(book.coverPath!) : null;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: const EdgeInsets.only(bottom: 28),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -2708,42 +2797,56 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () => _openReader(book),
+          onLongPress: () => _openBookDetails(book),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(22),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 3D Book Cover with Shadow
+                // Sampul besar ~220pt tinggi dengan drop shadow lembut (2:3 Aspect Ratio = 147 x 220)
                 Container(
-                  width: 105,
-                  height: 155,
+                  width: 147,
+                  height: 220,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppThemeTokens.br10,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withAlpha(isDark ? 160 : 60),
-                        blurRadius: 16,
-                        offset: const Offset(4, 6),
+                        color: Colors.black.withAlpha(isDark ? 140 : 45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: (coverFile != null && coverFile.existsSync())
-                        ? Image.file(coverFile, fit: BoxFit.cover)
-                        : Container(
-                            color: const Color(0xFF2A2A2E),
-                            child: const Center(
+                    borderRadius: AppThemeTokens.br10,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2E),
+                        borderRadius: AppThemeTokens.br10,
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withAlpha(20)
+                              : Colors.black12,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: (coverFile != null && coverFile.existsSync())
+                          ? Image.file(
+                              coverFile,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                            )
+                          : const Center(
                               child: Icon(
                                 Icons.book,
-                                size: 40,
-                                color: Color(0xFFD4AF37),
+                                size: 48,
+                                color: AppThemeTokens.goldAccent,
                               ),
                             ),
-                          ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 22),
+                const SizedBox(width: 24),
 
                 // Book Details & CTA
                 Expanded(
@@ -2751,70 +2854,84 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Badge
+                      // Eyebrow: Waktu relatif dari lastReadAt: "Terakhir dibaca <relatif>"
                       Row(
                         children: [
                           const Icon(
                             Icons.auto_stories,
                             size: 14,
-                            color: Color(0xFFD4AF37),
+                            color: AppThemeTokens.goldAccent,
                           ),
                           const SizedBox(width: 6),
-                          Text(
-                            isStarted ? 'SEDANG DIBACA' : 'REKOMENDASI BACA',
-                            style: const TextStyle(
-                              color: Color(0xFFD4AF37),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
+                          Expanded(
+                            child: Text(
+                              'Terakhir dibaca ${_formatRelativeTime(progress?.lastReadAt)}'
+                                  .toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppThemeTokens.goldAccent,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
 
-                      // Title
+                      // Title: maks 2 baris
                       Text(
                         book.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'serif',
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           height: 1.25,
                         ),
                       ),
                       const SizedBox(height: 4),
 
-                      // Author
+                      // Author: 1 baris (jika kosong, AppStrings.unknownAuthor redup)
                       Text(
-                        book.author,
+                        book.author.trim().isEmpty
+                            ? AppStrings.unknownAuthor
+                            : book.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                          color: book.author.trim().isEmpty
+                              ? (isDark
+                                    ? Colors.grey.shade600
+                                    : Colors.grey.shade400)
+                              : (isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade700),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
 
-                      // Progress Bar
+                      // Slim progress bar 3pt warna aksen emas
                       if (isStarted && pct > 0.0) ...[
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(2),
                           child: LinearProgressIndicator(
                             value: pct.clamp(0.0, 1.0),
                             backgroundColor: isDark
                                 ? Colors.white.withAlpha(20)
                                 : Colors.black.withAlpha(15),
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFFD4AF37),
+                              AppThemeTokens.goldAccent,
                             ),
-                            minHeight: 5,
+                            minHeight: 3,
                           ),
                         ),
                         const SizedBox(height: 6),
+                        // Teks progres dari ReadingProgressCalculator
                         Text(
                           ReadingProgressCalculator.formatProgressText(
                             progressPercentage: progress?.progressPercentage,
@@ -2828,31 +2945,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
                       ] else ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 10),
                       ],
 
-                      // CTA Button
+                      // Tombol aksi "Lanjutkan"
                       FilledButton.icon(
                         icon: const Icon(
                           Icons.play_arrow_rounded,
                           size: 18,
                           color: Colors.black,
                         ),
-                        label: Text(
-                          isStarted ? 'Lanjutkan Membaca' : 'Mulai Membaca',
-                          style: const TextStyle(
+                        label: const Text(
+                          AppStrings.actionLanjutkan,
+                          style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
                         ),
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37),
+                          backgroundColor: AppThemeTokens.goldAccent,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                            horizontal: 20,
+                            vertical: 12,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -2869,6 +2986,19 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         ),
       ),
     );
+  }
+
+  String _formatRelativeTime(DateTime? dateTime) {
+    if (dateTime == null) return 'baru saja';
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.isNegative || diff.inSeconds < 60) return 'baru saja';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} mnt lalu';
+    if (diff.inHours < 24) return '${diff.inHours} jam lalu';
+    if (diff.inDays == 1) return 'kemarin';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} minggu lalu';
+    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()} bln lalu';
+    return '${(diff.inDays / 365).floor()} thn lalu';
   }
 
   void _openReader(Book book) {

@@ -91,8 +91,9 @@ class ReadingProgressCalculator {
 
     final int pct = formatPercentage(pctValue);
     final bool isJustStarted = pct < 1;
-    final String basePct =
-        isJustStarted ? AppStrings.statusBaruDimulai : '$pct% Selesai';
+    final String basePct = isJustStarted
+        ? AppStrings.statusBaruDimulai
+        : '$pct% Selesai';
 
     // Rule 2: "Hal. X dari T" ONLY when lastReadingMode == 'pdf'
     if (lastReadingMode == 'pdf') {

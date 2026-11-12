@@ -1420,9 +1420,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                             _pdfPage = page;
                             final fraction =
                                 ReadingProgressCalculator.calculatePdfFraction(
-                              lastVisiblePage: page,
-                              totalPages: total,
-                            );
+                                  lastVisiblePage: page,
+                                  totalPages: total,
+                                );
                             setState(() {
                               _currentPage = page;
                               _totalPages = total;

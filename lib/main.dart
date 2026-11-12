@@ -27,7 +27,8 @@ void main(List<String> args) {
     return true;
   };
 
-  final initialSection = args.contains('--semua-buku') ||
+  final initialSection =
+      args.contains('--semua-buku') ||
           Platform.environment['DIGITAL_BOOKS_SECTION'] == 'allBooks'
       ? LibraryNavigationSection.allBooks
       : LibraryNavigationSection.home;

@@ -121,7 +121,11 @@ void main() {
             appDatabaseProvider.overrideWithValue(db),
             databaseServiceProvider.overrideWithValue(dbService),
           ],
-          child: const MaterialApp(home: LibraryScreen()),
+          child: const MaterialApp(
+            home: LibraryScreen(
+              initialSection: LibraryNavigationSection.allBooks,
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();

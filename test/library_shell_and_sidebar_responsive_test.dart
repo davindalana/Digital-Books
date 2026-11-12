@@ -38,6 +38,9 @@ void main() {
         currentlyReadingStreamProvider.overrideWith(
           (ref) => Stream.value(<BookWithProgress>[]),
         ),
+        unstartedBooksStreamProvider.overrideWith(
+          (ref) => Stream.value(<Book>[]),
+        ),
         finishedBooksStreamProvider.overrideWith(
           (ref) => Stream.value(<BookWithProgress>[]),
         ),

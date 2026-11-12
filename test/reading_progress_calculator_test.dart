@@ -41,20 +41,23 @@ void main() {
       },
     );
 
-    test('3. PDF page 1 of 100 (1.0%) displays "1% Selesai • Hal. 1 dari 100"', () {
-      final fraction = ReadingProgressCalculator.calculatePdfFraction(
-        lastVisiblePage: 1,
-        totalPages: 100,
-      );
-      expect(fraction, 0.01);
-      final label = ReadingProgressCalculator.formatProgressText(
-        progressPercentage: fraction,
-        lastReadingMode: 'pdf',
-        currentPosition: 1,
-        totalPages: 100,
-      );
-      expect(label, '1% Selesai • Hal. 1 dari 100');
-    });
+    test(
+      '3. PDF page 1 of 100 (1.0%) displays "1% Selesai • Hal. 1 dari 100"',
+      () {
+        final fraction = ReadingProgressCalculator.calculatePdfFraction(
+          lastVisiblePage: 1,
+          totalPages: 100,
+        );
+        expect(fraction, 0.01);
+        final label = ReadingProgressCalculator.formatProgressText(
+          progressPercentage: fraction,
+          lastReadingMode: 'pdf',
+          currentPosition: 1,
+          totalPages: 100,
+        );
+        expect(label, '1% Selesai • Hal. 1 dari 100');
+      },
+    );
 
     test(
       '4. PDF two-page spread (pages 20-21 of 100) uses last visible page 21',
@@ -91,31 +94,34 @@ void main() {
       },
     );
 
-    test('6. Completed book (fraction >= 0.999 or >= 1.0) displays "Selesai"', () {
-      final fraction = ReadingProgressCalculator.calculatePdfFraction(
-        lastVisiblePage: 255,
-        totalPages: 255,
-      );
-      expect(fraction, 1.0);
-      expect(ReadingProgressCalculator.formatPercentage(fraction), 100);
-
-      expect(
-        ReadingProgressCalculator.formatProgressText(
-          progressPercentage: 1.0,
-          lastReadingMode: 'pdf',
-          currentPosition: 255,
+    test(
+      '6. Completed book (fraction >= 0.999 or >= 1.0) displays "Selesai"',
+      () {
+        final fraction = ReadingProgressCalculator.calculatePdfFraction(
+          lastVisiblePage: 255,
           totalPages: 255,
-        ),
-        AppStrings.statusSelesai,
-      );
-      expect(
-        ReadingProgressCalculator.formatProgressText(
-          progressPercentage: 0.9995,
-          lastReadingMode: 'pdf',
-        ),
-        AppStrings.statusSelesai,
-      );
-    });
+        );
+        expect(fraction, 1.0);
+        expect(ReadingProgressCalculator.formatPercentage(fraction), 100);
+
+        expect(
+          ReadingProgressCalculator.formatProgressText(
+            progressPercentage: 1.0,
+            lastReadingMode: 'pdf',
+            currentPosition: 255,
+            totalPages: 255,
+          ),
+          AppStrings.statusSelesai,
+        );
+        expect(
+          ReadingProgressCalculator.formatProgressText(
+            progressPercentage: 0.9995,
+            lastReadingMode: 'pdf',
+          ),
+          AppStrings.statusSelesai,
+        );
+      },
+    );
 
     test('7. Single page book (T=1, N=1) reaches 1.0 (100% Selesai)', () {
       final fraction = ReadingProgressCalculator.calculatePdfFraction(
@@ -169,14 +175,8 @@ void main() {
     });
 
     test('10. Invalid NaN or negative values gracefully handled as 0.0', () {
-      expect(
-        ReadingProgressCalculator.formatPercentage(double.nan),
-        0,
-      );
-      expect(
-        ReadingProgressCalculator.formatPercentage(-0.5),
-        0,
-      );
+      expect(ReadingProgressCalculator.formatPercentage(double.nan), 0);
+      expect(ReadingProgressCalculator.formatPercentage(-0.5), 0);
       expect(
         ReadingProgressCalculator.formatProgressText(
           progressPercentage: double.nan,
@@ -218,9 +218,10 @@ void main() {
 
     test('13. Reflowable reading time estimation based on 200 words/min', () {
       // 500 words at 200 wpm = ceil(2.5) = 3 minutes
-      final estimate = ReadingProgressCalculator.estimateReflowableRemainingTime(
-        remainingWords: 500,
-      );
+      final estimate =
+          ReadingProgressCalculator.estimateReflowableRemainingTime(
+            remainingWords: 500,
+          );
       expect(estimate, '±3 mnt tersisa');
       expect(
         ReadingProgressCalculator.timeEstimateTooltip,

@@ -26,12 +26,19 @@ func setWindow(x: Int, y: Int, w: Int, h: Int) {
     let script = """
     tell application "System Events" to tell process "Digital Books"
         set frontmost to true
-        set position of window 1 to {\(x), \(y)}
-        set size of window 1 to {\(w), \(h)}
+        repeat with i from 1 to 5
+            try
+                set position of window 1 to {\(x), \(y)}
+                set size of window 1 to {\(w), \(h)}
+                exit repeat
+            on error
+                delay 0.4
+            end try
+        end repeat
     end tell
     """
     runAppleScript(script)
-    usleep(500000)
+    usleep(600000)
 }
 
 func captureWindow(toPath: String) {
@@ -61,7 +68,7 @@ func launchApp(section: String) -> Process {
     env["DIGITAL_BOOKS_SECTION"] = section
     task.environment = env
     try? task.run()
-    usleep(1400000) // Wait for Flutter engine & window to initialize
+    usleep(2200000) // Wait for Flutter engine & window to initialize
     return task
 }
 

@@ -532,6 +532,9 @@ void main() {
             currentlyReadingStreamProvider.overrideWith(
               (ref) => Stream.value([]),
             ),
+            unstartedBooksStreamProvider.overrideWith(
+              (ref) => Stream.value([sampleBook]),
+            ),
             finishedBooksStreamProvider.overrideWith((ref) => Stream.value([])),
             collectionsStreamProvider.overrideWith((ref) => Stream.value([])),
             collectionBookCountsStreamProvider.overrideWith(

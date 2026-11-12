@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/theme/app_theme_tokens.dart';
+import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../../reader/presentation/screens/reading_screen.dart';
 import '../../../reader/providers/reader_settings_provider.dart';
 import 'book_details_dialog.dart';
 import 'manage_collections_dialog.dart';
 
-class BookCard extends ConsumerWidget {
+class BookCard extends ConsumerStatefulWidget {
   final Book book;
   final double? progressPercentage;
   final VoidCallback? onDetails;
@@ -21,181 +24,259 @@ class BookCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final hasProgress = progressPercentage != null && progressPercentage! > 0.0;
+  ConsumerState<BookCard> createState() => _BookCardState();
+}
+
+class _BookCardState extends ConsumerState<BookCard> {
+  bool _isHovered = false;
+  bool _isFocused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final book = widget.book;
+    final progressPercentage = widget.progressPercentage;
+    final hasProgress = progressPercentage != null && progressPercentage > 0.0;
     final activeMode = ref.watch(activeReadingModeProvider(book.id));
     final defaultMode = book.isScanned ? ReadingMode.originalPdf : activeMode;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ReadingScreen(book: book, initialMode: defaultMode),
-          ),
-        );
-      },
-      onSecondaryTapUp: (details) {
-        _showContextMenu(context, ref, details.globalPosition);
-      },
-      onLongPress: () => _openInfo(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Book 3D Cover with Apple Books Spine Effect
-          Expanded(
-            child: Stack(
-              children: [
-                // Book Shadow
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(55),
-                          blurRadius: 12,
-                          offset: const Offset(3, 6),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Focus(
+        onFocusChange: (focused) => setState(() => _isFocused = focused),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ReadingScreen(book: book, initialMode: defaultMode),
+              ),
+            );
+          },
+          onSecondaryTapUp: (details) {
+            _showContextMenu(context, ref, details.globalPosition);
+          },
+          onLongPress: () => _openInfo(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Book 3D Cover with Apple Books Spine Effect (2:3 Aspect Ratio)
+              Expanded(
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 2 / 3,
+                    child: Stack(
+                      children: [
+                        // Book Shadow
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: AppThemeTokens.br10,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(
+                                    isDark ? 80 : 35,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
+
+                        // Cover Image with subtle border so white covers don't bleed into background
+                        ClipRRect(
+                          borderRadius: AppThemeTokens.br10,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2C2C2E),
+                              borderRadius: AppThemeTokens.br10,
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.white.withAlpha(20)
+                                    : Colors.black12,
+                                width: 0.5,
+                              ),
+                            ),
+                            child:
+                                (book.coverPath != null &&
+                                    File(book.coverPath!).existsSync())
+                                ? Image.file(
+                                    File(book.coverPath!),
+                                    fit: BoxFit.cover,
+                                    filterQuality: FilterQuality.medium,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  )
+                                : _buildFallbackCover(),
+                          ),
+                        ),
+
+                        // 3D Spine Crease / Highlight Effect
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: 14,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(10),
+                              ),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.black.withAlpha(70),
+                                  Colors.black.withAlpha(15),
+                                  Colors.white.withAlpha(35),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.4, 0.7, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Scanned PDF badge in bottom-left corner of cover
+                        if (book.isScanned)
+                          Positioned(
+                            bottom: 8,
+                            left: 8,
+                            child: Tooltip(
+                              message: book.processedBookPath != null
+                                  ? AppStrings.badgePindaiOcrTooltip
+                                  : AppStrings.badgePindaiNeedsOcrTooltip,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withAlpha(200),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(60),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.document_scanner_outlined,
+                                      size: 11,
+                                      color: Colors.amberAccent,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      AppStrings.badgePindai,
+                                      style: TextStyle(
+                                        color: Colors.amberAccent,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.6,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // Reading Progress Bar Overlay at bottom of cover
+                        if (hasProgress)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(10),
+                              ),
+                              child: LinearProgressIndicator(
+                                value: progressPercentage.clamp(0.0, 1.0),
+                                backgroundColor: Colors.black.withAlpha(100),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppThemeTokens.goldAccent,
+                                ),
+                                minHeight: 3,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
-
-                // Cover Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    decoration: const BoxDecoration(color: Color(0xFF2C2C2E)),
-                    child:
-                        (book.coverPath != null &&
-                            File(book.coverPath!).existsSync())
-                        ? Image.file(
-                            File(book.coverPath!),
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.medium,
-                            width: double.infinity,
-                            height: double.infinity,
-                          )
-                        : _buildFallbackCover(),
-                  ),
-                ),
-
-                // 3D Spine Crease / Highlight Effect
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: 0,
-                  width: 14,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.horizontal(
-                        left: Radius.circular(8),
-                      ),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withAlpha(70),
-                          Colors.black.withAlpha(15),
-                          Colors.white.withAlpha(35),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.4, 0.7, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Scanned PDF badge
-                if (book.isScanned)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(180),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.white.withAlpha(60),
-                          width: 0.5,
-                        ),
-                      ),
-                      child: const Text(
-                        'SCAN',
-                        style: TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Reading Progress Bar Overlay at bottom of cover
-                if (hasProgress)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(8),
-                      ),
-                      child: LinearProgressIndicator(
-                        value: progressPercentage!.clamp(0.0, 1.0),
-                        backgroundColor: Colors.black.withAlpha(100),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF007AFF),
-                        ),
-                        minHeight: 4,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Title & 3-Dots Button Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      book.title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      book.author,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                        height: 1.1,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
               ),
-              _buildMoreButton(context, ref),
+              const SizedBox(height: 8),
+
+              // Title & 3-Dots Button Row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height:
+                              32, // Fixed height for 2 lines so rows align across cards
+                          child: Text(
+                            book.title,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          book.author.trim().isEmpty
+                              ? AppStrings.unknownAuthor
+                              : book.author,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: book.author.trim().isEmpty
+                                ? (isDark
+                                      ? Colors.grey.shade600
+                                      : Colors.grey.shade400)
+                                : Colors.grey.shade500,
+                            height: 1.1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (hasProgress) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            '${ReadingProgressCalculator.formatPercentage(progressPercentage)}%',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppThemeTokens.goldAccent,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Visibility(
+                    visible: _isHovered || _isFocused,
+                    maintainSize: true,
+                    maintainAnimation: true,
+                    maintainState: true,
+                    child: _buildMoreButton(context, ref),
+                  ),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -218,7 +299,7 @@ class BookCard extends ConsumerWidget {
           if (value == 'info') {
             _openInfo(context);
           } else if (value == 'collections') {
-            ManageBookCollectionsDialog.show(context, book);
+            ManageBookCollectionsDialog.show(context, widget.book);
           } else if (value == 'delete') {
             _confirmDelete(context, ref);
           }
@@ -232,7 +313,7 @@ class BookCard extends ConsumerWidget {
                 Icon(Icons.info_outline, size: 17, color: Colors.white70),
                 SizedBox(width: 10),
                 Text(
-                  'Info About Book',
+                  'Info Buku',
                   style: TextStyle(fontSize: 13, color: Colors.white),
                 ),
               ],
@@ -250,7 +331,7 @@ class BookCard extends ConsumerWidget {
                 ),
                 SizedBox(width: 10),
                 Text(
-                  'Manage Collections',
+                  'Kelola Koleksi',
                   style: TextStyle(fontSize: 13, color: Colors.white),
                 ),
               ],
@@ -265,7 +346,7 @@ class BookCard extends ConsumerWidget {
                 Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
                 SizedBox(width: 10),
                 Text(
-                  'Delete Book',
+                  'Hapus Buku',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.redAccent,
@@ -308,7 +389,7 @@ class BookCard extends ConsumerWidget {
               Icon(Icons.info_outline, size: 17, color: Colors.white70),
               SizedBox(width: 10),
               Text(
-                'Info About Book',
+                'Info Buku',
                 style: TextStyle(fontSize: 13, color: Colors.white),
               ),
             ],
@@ -326,7 +407,7 @@ class BookCard extends ConsumerWidget {
               ),
               SizedBox(width: 10),
               Text(
-                'Manage Collections',
+                'Kelola Koleksi',
                 style: TextStyle(fontSize: 13, color: Colors.white),
               ),
             ],
@@ -341,7 +422,7 @@ class BookCard extends ConsumerWidget {
               Icon(Icons.delete_outline, size: 17, color: Colors.redAccent),
               SizedBox(width: 10),
               Text(
-                'Delete Book',
+                'Hapus Buku',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.redAccent,
@@ -359,19 +440,19 @@ class BookCard extends ConsumerWidget {
     if (selected == 'info') {
       _openInfo(context);
     } else if (selected == 'collections') {
-      ManageBookCollectionsDialog.show(context, book);
+      ManageBookCollectionsDialog.show(context, widget.book);
     } else if (selected == 'delete') {
       _confirmDelete(context, ref);
     }
   }
 
   void _openInfo(BuildContext context) async {
-    if (onDetails != null) {
-      onDetails!();
+    if (widget.onDetails != null) {
+      widget.onDetails!();
     } else {
       final req = await showDialog<BookLaunchRequest>(
         context: context,
-        builder: (_) => BookDetailsDialog(book: book),
+        builder: (_) => BookDetailsDialog(book: widget.book),
       );
       if (req != null && context.mounted) {
         Navigator.of(context).push(
@@ -385,6 +466,7 @@ class BookCard extends ConsumerWidget {
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
+    final book = widget.book;
     final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
@@ -410,7 +492,7 @@ class BookCard extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             const Text(
-              'Hapus Buku?',
+              AppStrings.deleteBookTitle,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -420,7 +502,7 @@ class BookCard extends ConsumerWidget {
           ],
         ),
         content: Text(
-          'Apakah Anda yakin ingin menghapus "${book.title}"?\n\nBuku, file PDF, cover, dan progres membaca akan dihapus secara permanen.',
+          AppStrings.deleteBookMessage(book.title),
           style: const TextStyle(
             fontSize: 13,
             height: 1.5,
@@ -430,7 +512,10 @@ class BookCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              AppStrings.actionBatal,
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -456,7 +541,7 @@ class BookCard extends ConsumerWidget {
               );
             },
             child: const Text(
-              'Hapus Buku',
+              AppStrings.deleteBookConfirm,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -476,7 +561,7 @@ class BookCard extends ConsumerWidget {
             const Icon(Icons.book, size: 36, color: Colors.white70),
             const SizedBox(height: 8),
             Text(
-              book.title,
+              widget.book.title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 12,

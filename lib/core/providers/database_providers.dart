@@ -63,6 +63,11 @@ final finishedBooksStreamProvider = StreamProvider<List<BookWithProgress>>((
   return dbService.watchFinishedBooks();
 });
 
+final unstartedBooksStreamProvider = StreamProvider<List<Book>>((ref) {
+  final dbService = ref.watch(databaseServiceProvider);
+  return dbService.watchUnstartedBooks();
+});
+
 final collectionsStreamProvider = StreamProvider<List<Collection>>((ref) {
   final dbService = ref.watch(databaseServiceProvider);
   return dbService.watchCollections();
