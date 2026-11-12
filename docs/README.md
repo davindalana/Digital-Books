@@ -1,142 +1,155 @@
-# Digital Books — Documentation Hub & Catalog
+# Digital Books — Documentation Hub & Architecture Catalog
 
-Selamat datang di direktori dokumentasi resmi **Digital Books**. Dokumen ini berfungsi sebagai peta navigasi utama, indeks arsitektur, dan katalog seluruh dokumen teknis, standar tata kelola (*governance*), spesifikasi sistem, serta laporan pengujian (*audit & benchmark reports*) proyek Digital Books.
-
----
-
-## 1. Prinsip Utama Pengembangan (Core Principles)
-
-Sesuai mandat [`AGENTS.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/AGENTS.md):
-1. **Local-first**: Data, database, dan pemrosesan berpusat pada mesin pengguna tanpa dependensi awan wajib.
-2. **Immutabilitas Dokumen Asli**: Berkas PDF asli tidak boleh ditimpa atau dimodifikasi; seluruh OCR dan enhancement menghasilkan artefak turunan (*derived artifacts*).
-3. **Stabilitas Posisi Membaca**: Perubahan ukuran jendela, font, atau orientasi tidak boleh merusak posisi membaca (*reading anchor*).
-4. **Preservasi Anotasi**: Modifikasi tata letak atau reflow teks tidak boleh merusak koordinat sorotan (*highlights*), catatan (*notes*), atau markah buku (*bookmarks*).
-5. **Verifikasi Kinerja Terukur**: Performa diukur secara empiris dengan metrik konkret (CPU, memori, frame time), bukan asumsi.
-6. **Validasi Visual Native**: Pengujian harus dibuktikan pada aplikasi native macOS, bukan sekadar unit test.
+Selamat datang di direktori dokumentasi resmi **Digital Books**. Dokumen ini berfungsi sebagai peta navigasi utama, indeks arsitektur, dan katalog kronologis seluruh dokumen teknis, standar tata kelola (*governance*), spesifikasi sistem, serta laporan pengujian (*audit & benchmark reports*) proyek Digital Books.
 
 ---
 
-## 2. Peta Struktur Direktori Dokumentasi
+## 1. Peta Jalan & Linimasa Dua Siklus (The Two-Cycle Evolution Roadmap)
 
-Direktori `docs/` telah ditata secara modular dan hierarkis:
+Untuk memahami penomoran fase di Digital Books (mengapa terdapat **Phase 1, 2, dan 5 yang baru** dibuat, sementara **Phase 3.0 s.d. 3.9A merupakan fase lama**), perhatikan linimasa dua siklus pengembangan berikut:
 
 ```mermaid
 flowchart TD
-    DOCS["docs/"] --> GOV["governance/<br/>(Standar & Tata Kelola)"]
-    DOCS --> ARCH["architecture/<br/>(Arsitektur & Roadmap)"]
-    DOCS --> REP["reports/<br/>(Laporan Fase, Audit & Rilis)"]
-    DOCS --> VIS["visual_evidence/<br/>(Artefak & Bukti Visual Pengujian)"]
+    subgraph S1["Siklus I: Core Engine & Data Pipeline (v1.0 - v1.1.0-alpha.8)"]
+        direction TB
+        P1_OLD["Phase 1 (v0.2)<br/>Fondasi SQLite & Migration"] --> P2_OLD["Phase 2.1 - 2.9<br/>PDFium C-FFI, Caching & Anti-Flash"]
+        P2_OLD --> P3_OLD["Phase 3.0 - 3.5<br/>Apple Vision OCR, Dehyphenation & Search"]
+        P3_OLD --> P3_REL["Phase 3.6 - 3.9A<br/>Multi-Book Corpus & Artifact Integrity"]
+    end
 
-    REP --> R_30["phase_3_0/ (13 Dokumen)"]
-    REP --> R_31["phase_3_1/ (3 Dokumen)"]
-    REP --> R_32["phase_3_2/ (2 Dokumen)"]
-    REP --> R_33["phase_3_3/ (1 Dokumen)"]
-    REP --> R_35["phase_3_5/ (4 Dokumen)"]
-    REP --> R_BM["book_mode/ (5 Dokumen)"]
-    REP --> R_REL["release/ (7 Dokumen)"]
+    subgraph S2["Siklus II: Modernization & Apple Books Polish (v1.2+) — November 2026"]
+        direction TB
+        P1_NEW["Phase 1 (Modern)<br/>Design Tokens & Indonesian Strings"] --> P2_NEW["Phase 2 (Modern)<br/>Responsive macOS Shell, Rail & Sidebar"]
+        P2_NEW --> P3_NEW["Phase 3 - 4 (Modern)<br/>Metadata Dialog & Native Window Transitions"]
+        P3_NEW --> P5_NEW["Phase 5 (Modern)<br/>Unified Reading Progress Calculator"]
+    end
+
+    S1 -.->|"Fondasi Engine Selesai"| S2
 ```
 
-Ringkasan struktur folder:
-- [`governance/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance): Standar siklus pengembangan baku, Conventional Commits, dan kebijakan versioning Semantic Versioning.
-- [`architecture/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture): Rencana teknis, model dokumen semantik, dan cetak biru perombakan sistem membaca.
-- [`reports/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports): Laporan verifikasi, audit independen, uji regresi, dan tolok ukur performa tiap fase.
-- [`visual_evidence/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence): Tangkapan layar resolusi tinggi yang dihasilkan oleh test suite native macOS.
+### Ringkasan Kedua Siklus:
+1. **Siklus I — Core Engine & Document Pipeline (Fase Historis / v1.0 s.d. v1.1.0-alpha.8)**:
+   - Berlangsung selama fase pembentukan arsitektur inti (Oktober – awal November 2026).
+   - Fokus: Stabilitas rendering PDFium native, penghapusan *blank flash*, integrasi OCR lokal tanpa cloud, normalisasi paragraf bahasa Indonesia, dan pencarian semantik berkecepatan tinggi.
+   - Disimpan di: [`docs/reports/historical_engine_v1_1/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1) dan [`docs/reports/release/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/release).
+2. **Siklus II — Modernization & Apple Books Polish Initiative (Fase Terkini / v1.2+)**:
+   - Berjalan aktif mulai **12 November 2026**.
+   - Fokus: Peningkatan pengalaman desktop macOS asli (standar Apple Books), perancangan sistem token desain (`AppThemeTokens`), tata letak adaptif pada 3 breakpoint (`compact`, `standard`, `expansive`), dan kalkulator progres membaca yang mode-aware (`ReadingProgressCalculator`).
+   - Disimpan di: [`docs/reports/modernization_v1_2/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/modernization_v1_2).
+
+---
+
+## 2. Struktur Modular Direktori Dokumentasi
+
+Seluruh dokumen di dalam `docs/` menggunakan penamaan seragam **`lowercase_snake_case.md`**:
+
+```text
+docs/
+├── README.md                                  # Katalog Utama & Peta Navigasi
+├── governance/                                # Standar Tata Kelola & Aturan Rekayasa
+│   ├── development_workflow.md                # Siklus 13 Langkah Baku & Commit Policy
+│   └── versioning_policy.md                   # Spesifikasi SemVer 2.0.0 & Release Gates
+├── architecture/                              # Cetak Biru Sistem & Roadmap Desain
+│   ├── book_mode_finalization_roadmap.md      # Peta Jalan Penyelesaian Book Mode
+│   ├── complete_reading_experience_overhaul.md# Blueprint Redesain Tipografi & Layout
+│   ├── phase_3_0_architecture.md              # Arsitektur Dual-Engine & Cache Bitmap
+│   └── phase_3_1_architecture_plan.md         # Desain Pipeline OCR & Rekonstruksi Teks
+├── reports/                                   # Seluruh Laporan Validasi & Audit
+│   ├── modernization_v1_2/                    # [SIKLUS II — TERKINI] Modernisasi UI/UX
+│   │   ├── phase_1_design_tokens_and_strings.md
+│   │   ├── phase_2_macos_responsive_shell.md
+│   │   └── phase_5_reading_progress_calculator.md
+│   ├── historical_engine_v1_1/                # [SIKLUS I — HISTORIS] Pipeline Mesin
+│   │   ├── phase_3_0/                         # 13 Laporan Phase 3.0, 3.0.1, 3.0.1.1
+│   │   ├── phase_3_1/                         # 3 Laporan Apple Vision OCR
+│   │   ├── phase_3_2/                         # 2 Laporan In-Book Search & Traversal
+│   │   ├── phase_3_3/                         # 1 Laporan Anotasi & Sorotan
+│   │   ├── phase_3_5/                         # 4 Laporan Validasi Korpus Riil & Audit
+│   │   └── book_mode/                         # 5 Laporan Redesain Book Mode
+│   └── release/                               # Laporan Kandidat Rilis & UI Audits (3.6 - 3.9A)
+└── visual_evidence/                           # Artefak Visual Tangkapan Layar Native macOS
+```
 
 ---
 
 ## 3. Tata Kelola & Standar Rekayasa (`governance/`)
 
-| Dokumen | Topik & Cakupan | Tautan |
+| Dokumen | Deskripsi & Isi Utama | Tautan |
 | :--- | :--- | :--- |
-| **Development Workflow** | 13 langkah siklus pengembangan baku, Conventional Commits, aturan `CHANGELOG.md`, prosedur regression test, mitigasi rollback, dan proteksi integritas data. | [`DEVELOPMENT_WORKFLOW.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance/DEVELOPMENT_WORKFLOW.md) |
-| **Versioning Policy** | Skema SemVer 2.0.0 (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`), tahapan siklus rilis (Alpha, Beta, RC, Stable), dan aturan kenaikan nomor rilis. | [`VERSIONING.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance/VERSIONING.md) |
+| **Development Workflow** | 13 langkah siklus pengembangan baku, Conventional Commits, aturan `CHANGELOG.md`, prosedur regression test, mitigasi rollback, dan proteksi integritas data. | [`development_workflow.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance/development_workflow.md) |
+| **Versioning Policy** | Skema SemVer 2.0.0 (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`), tahapan siklus rilis (Alpha, Beta, RC, Stable), dan aturan kenaikan nomor rilis. | [`versioning_policy.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/governance/versioning_policy.md) |
 
 ---
 
 ## 4. Arsitektur & Spesifikasi Desain (`architecture/`)
 
-| Dokumen | Deskripsi | Tautan |
+| Dokumen | Deskripsi & Cakupan | Tautan |
 | :--- | :--- | :--- |
-| **Phase 3.0 Architecture** | Spesifikasi Dual-Engine Reading System (Original PDFium C-FFI vs Reflowable TextPainter), layer caching bitmap dua tingkat, dan state management Riverpod. | [`PHASE_3_0_ARCHITECTURE.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/PHASE_3_0_ARCHITECTURE.md) |
-| **Phase 3.1 Architecture Plan** | Arsitektur pipeline pemrosesan dokumen lokal: Image Enhancement LUT, Apple Vision OCR, dehyphenation bahasa Indonesia, dan Semantic Reconstruction. | [`PHASE_3_1_ARCHITECTURE_PLAN.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/PHASE_3_1_ARCHITECTURE_PLAN.md) |
-| **Complete Reading Experience Overhaul** | Cetak biru perombakan total pengalaman membaca: estetika tipografi Apple Books, mode bentang halaman (single/two-page spread), dan fluid navigation. | [`COMPLETE_READING_EXPERIENCE_OVERHAUL.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/COMPLETE_READING_EXPERIENCE_OVERHAUL.md) |
-| **Book Mode Finalization Roadmap** | Peta jalan penyelesaian Book Mode: paginasi horizontal presisi kata, pembatasan orphan/widow, kalkulasi waktu tersisa bab, dan rendering spread adaptif. | [`BOOK_MODE_FINALIZATION_ROADMAP.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/BOOK_MODE_FINALIZATION_ROADMAP.md) |
+| **Phase 3.0 Architecture** | Spesifikasi Dual-Engine Reading System (Original PDFium C-FFI vs Reflowable TextPainter), layer caching bitmap dua tingkat, dan state management Riverpod. | [`phase_3_0_architecture.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/phase_3_0_architecture.md) |
+| **Phase 3.1 Architecture Plan** | Arsitektur pipeline pemrosesan dokumen lokal: Image Enhancement LUT, Apple Vision OCR, dehyphenation bahasa Indonesia, dan Semantic Reconstruction. | [`phase_3_1_architecture_plan.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/phase_3_1_architecture_plan.md) |
+| **Complete Reading Experience Overhaul** | Cetak biru perombakan total pengalaman membaca: estetika tipografi Apple Books, mode bentang halaman (single/two-page spread), dan fluid navigation. | [`complete_reading_experience_overhaul.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/complete_reading_experience_overhaul.md) |
+| **Book Mode Finalization Roadmap** | Peta jalan penyelesaian Book Mode: paginasi horizontal presisi kata, pembatasan orphan/widow, kalkulasi waktu tersisa bab, dan rendering spread adaptif. | [`book_mode_finalization_roadmap.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/architecture/book_mode_finalization_roadmap.md) |
 
 ---
 
-## 5. Laporan Pengujian, Audit & Tolok Ukur (`reports/`)
+## 5. Laporan Inisiatif Modernisasi v1.2+ (`reports/modernization_v1_2/`)
 
-### A. Fase 3.0 & 3.0.1 (`reports/phase_3_0/`)
+> [!NOTE]
+> Ini adalah rangkaian fase modernisasi antarmuka dan pengalaman pengguna yang aktif dikembangkan pada **November 2026**.
+
+| Dokumen | Topik & Cakupan | Tautan |
+| :--- | :--- | :--- |
+| **Phase 1: Design Tokens & Strings** | Sentralisasi skala spasi (`AppThemeTokens`), skala radius, konstanta breakpoint macOS, dan kamus terminologi UX Bahasa Indonesia baku (`AppStrings`). | [`phase_1_design_tokens_and_strings.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/modernization_v1_2/phase_1_design_tokens_and_strings.md) |
+| **Phase 2: macOS Responsive Shell** | Shell adaptif desktop macOS dengan 3 breakpoint (`compact < 700dp`, `standard 900dp`, `expansive >= 1280dp`), Icon Rail ramping ($64\text{ dp}$), Native Sidebar ($220\text{ dp}$), dan sinkronisasi rak buku aktif. | [`phase_2_macos_responsive_shell.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/modernization_v1_2/phase_2_macos_responsive_shell.md) |
+| **Phase 5: Reading Progress Calculator** | Kalkulator progres membaca mode-aware (`ReadingProgressCalculator`), pemisahan metrik fisik (PDF) vs semantik (Book Mode), dan estimasi waktu baca per bab. | [`phase_5_reading_progress_calculator.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/modernization_v1_2/phase_5_reading_progress_calculator.md) |
+
+---
+
+## 6. Laporan Mesin & Pipeline Historis v1.1 (`reports/historical_engine_v1_1/`)
+
+### A. Fase 3.0 & 3.0.1 (`historical_engine_v1_1/phase_3_0/`)
 
 | Dokumen | Kategori | Ringkasan Isi | Tautan |
 | :--- | :--- | :--- | :--- |
-| `PHASE_3_0_BENCHMARK.md` | Benchmark | Pengukuran baseline performa render PDFium, alokasi memori, dan efisiensi paginasi awal. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_BENCHMARK.md) |
-| `PHASE_3_0_1_IMPLEMENTATION.md` | Milestone | Implementasi stabilisasi cache bitmap ganda, eliminasi double white flash, dan unblocking gesture. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_IMPLEMENTATION.md) |
-| `PHASE_3_0_1_BENCHMARK.md` | Benchmark | Tolok ukur latensi perpindahan halaman dan konsumsi RAM pasca perbaikan cache. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_BENCHMARK.md) |
-| `PHASE_3_0_1_READER_QUALITY.md` | Quality | Evaluasi kualitas keterbacaan, pemilihan font macOS native, dan kontras warna pada 4 palet membaca. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_READER_QUALITY.md) |
-| `PHASE_3_0_1_SEMANTIC_RECONSTRUCTION.md` | Engine | Validasi normalisasi paragraf, deteksi heading bab (H1–H3), dan penanganan tanda hubung kata ulang. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_SEMANTIC_RECONSTRUCTION.md) |
-| `PHASE_3_0_1_PDF_TRANSITION_VALIDATION.md` | Validation | Uji transisi kurva kubik pada perpindahan halaman PDF ganda tanpa frame drop. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_PDF_TRANSITION_VALIDATION.md) |
-| `PHASE_3_0_1_PERFORMANCE.md` | Perf | Profiling CPU dan raster thread selama navigasi cepat 60 FPS pada monitor Retina. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_PERFORMANCE.md) |
-| `PHASE_3_0_1_VISUAL_VALIDATION.md` | Visual | Bukti tangkapan layar transisi halaman, rendering halaman ganda, dan visual palet tema. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_VISUAL_VALIDATION.md) |
-| `PHASE_3_0_1_FINAL_ACCEPTANCE.md` | Acceptance | Laporan kelayakan rilis checkpoint Phase 3.0.1 dengan 240/240 automated test passing. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_FINAL_ACCEPTANCE.md) |
-| `PHASE_3_0_1_1_ENHANCEMENT_FIX.md` | Fix | Perbaikan algoritma tone-mapping S-curve LUT untuk dokumen pindaian fotokopi kontras rendah. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_1_ENHANCEMENT_FIX.md) |
-| `PHASE_3_0_1_1_GUTTER_VALIDATION.md` | Validation | Validasi flattening kelengkungan gutter (punggung buku) pada buku pindaian tebal. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_1_GUTTER_VALIDATION.md) |
-| `PHASE_3_0_1_1_NATIVE_TRANSITION_VALIDATION.md` | Validation | Validasi efek curl 3D native macOS dan retensi permukaan halaman selama animasi buka buku. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_1_NATIVE_TRANSITION_VALIDATION.md) |
-| `PHASE_3_0_1_1_PERFORMANCE.md` | Perf | Pengukuran latensi enhancement LUT (18 ms per halaman 8.1 MB) di bawah anggaran 35 ms. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_0/PHASE_3_0_1_1_PERFORMANCE.md) |
+| `phase_3_0_benchmark.md` | Benchmark | Pengukuran baseline performa render PDFium, alokasi memori, dan efisiensi paginasi awal. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_benchmark.md) |
+| `phase_3_0_1_implementation.md` | Milestone | Implementasi stabilisasi cache bitmap ganda, eliminasi double white flash, dan unblocking gesture. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_implementation.md) |
+| `phase_3_0_1_benchmark.md` | Benchmark | Tolok ukur latensi perpindahan halaman dan konsumsi RAM pasca perbaikan cache. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_benchmark.md) |
+| `phase_3_0_1_reader_quality.md` | Quality | Evaluasi kualitas keterbacaan, pemilihan font macOS native, dan kontras warna pada 4 palet membaca. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_reader_quality.md) |
+| `phase_3_0_1_semantic_reconstruction.md` | Engine | Validasi normalisasi paragraf, deteksi heading bab (H1–H3), dan penanganan tanda hubung kata ulang. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_semantic_reconstruction.md) |
+| `phase_3_0_1_pdf_transition_validation.md` | Validation | Uji transisi kurva kubik pada perpindahan halaman PDF ganda tanpa frame drop. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_pdf_transition_validation.md) |
+| `phase_3_0_1_performance.md` | Perf | Profiling CPU dan raster thread selama navigasi cepat 60 FPS pada monitor Retina. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_performance.md) |
+| `phase_3_0_1_visual_validation.md` | Visual | Bukti tangkapan layar transisi halaman, rendering halaman ganda, dan visual palet tema. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_visual_validation.md) |
+| `phase_3_0_1_final_acceptance.md` | Acceptance | Laporan kelayakan rilis checkpoint Phase 3.0.1 dengan 240/240 automated test passing. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_final_acceptance.md) |
+| `phase_3_0_1_1_enhancement_fix.md` | Fix | Perbaikan algoritma tone-mapping S-curve LUT untuk dokumen pindaian fotokopi kontras rendah. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_1_enhancement_fix.md) |
+| `phase_3_0_1_1_gutter_validation.md` | Validation | Validasi flattening kelengkungan gutter (punggung buku) pada buku pindaian tebal. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_1_gutter_validation.md) |
+| `phase_3_0_1_1_native_transition_validation.md` | Validation | Validasi efek curl 3D native macOS dan retensi permukaan halaman selama animasi buka buku. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_1_native_transition_validation.md) |
+| `phase_3_0_1_1_performance.md` | Perf | Pengukuran latensi enhancement LUT (18 ms per halaman 8.1 MB) di bawah anggaran 35 ms. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_0/phase_3_0_1_1_performance.md) |
 
 ---
 
-### B. Fase 3.1: OCR & Kualitas Bacaan Penuh (`reports/phase_3_1/`)
+### B. Fase 3.1 s.d. 3.5 & Book Mode (`historical_engine_v1_1/`)
 
-| Dokumen | Kategori | Ringkasan Isi | Tautan |
+| Folder & File | Kategori | Ringkasan Isi | Tautan |
 | :--- | :--- | :--- | :--- |
-| `PHASE_3_1_OCR_ACCEPTANCE.md` | Acceptance | Penerimaan integrasi Apple Vision OCR untuk pemrosesan teks lokal pada macOS tanpa cloud API. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_1/PHASE_3_1_OCR_ACCEPTANCE.md) |
-| `PHASE_3_1_1_FULL_BOOK_ACCEPTANCE.md` | Acceptance | Uji ekstraksi dan rekonstruksi semantik buku utuh multi-bab (*Laut Bercerita*, *Bicara Itu Ada Seninya*). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_1/PHASE_3_1_1_FULL_BOOK_ACCEPTANCE.md) |
-| `PHASE_3_1_2_FULL_BOOK_READING_QUALITY.md` | Quality | Audit tipografi, keterbacaan paragraf terjustifikasi, dan preservasi dialog/kutipan. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_1/PHASE_3_1_2_FULL_BOOK_READING_QUALITY.md) |
+| `phase_3_1_ocr_acceptance.md` | Acceptance | Integrasi Apple Vision OCR lokal pada macOS tanpa cloud API. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_1/phase_3_1_ocr_acceptance.md) |
+| `phase_3_1_1_full_book_acceptance.md` | Acceptance | Uji ekstraksi dan rekonstruksi semantik buku utuh multi-bab. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_1/phase_3_1_1_full_book_acceptance.md) |
+| `phase_3_1_2_full_book_reading_quality.md` | Quality | Audit tipografi, keterbacaan paragraf terjustifikasi, dan preservasi dialog. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_1/phase_3_1_2_full_book_reading_quality.md) |
+| `phase_3_2_ocr_search.md` | Feature | Integrasi in-book search pada struktur semantik terekonstruksi. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_2/phase_3_2_ocr_search.md) |
+| `phase_3_2_1_search_accuracy_audit.md` | Audit | Audit akurasi fuzzy match, bounding box PDF, dan navigasi siklis. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_2/phase_3_2_1_search_accuracy_audit.md) |
+| `phase_3_3_annotations_report.md` | Milestone | Text selection toolbar, palet sorotan 6-warna, dan panel catatan. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_3/phase_3_3_annotations_report.md) |
+| `phase_3_5_real_world_product_validation.md` | Validation | Evaluasi performa OCR pada 7 kategori korpus buku riil. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md) |
+| `phase_3_5_1_independent_release_audit.md` | Audit | Audit independen: temuan dehyphenation (CRIT-01) dan metrik (CRIT-02). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_1_independent_release_audit.md) |
+| `phase_3_5_2_remediation_verification.md` | Verification | Verifikasi penyelesaian temuan audit dengan tabel leksem tertutup. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_2_remediation_verification.md) |
+| `phase_3_5_3_native_and_e2e_validation.md` | E2E | Uji kestabilan memori native dan penjelajahan dokumen panjang. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_3_native_and_e2e_validation.md) |
+| `book_mode_horizontal_pagination_report.md` | Milestone | Paginasi horizontal kolom ganda dan resolusi anchor kata presisi. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/book_mode/book_mode_horizontal_pagination_report.md) |
+| `book_mode_reading_experience_redesign_report.md` | Redesign | Redesain Book Mode bergaya buku cetak mewah (margin, drop cap, TOC leaders). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/book_mode/book_mode_reading_experience_redesign_report.md) |
+| `real_book_acceptance_report.md` | Acceptance | Uji visual buku riil bahasa Indonesia (Bab I–V, halaman legal). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/book_mode/real_book_acceptance_report.md) |
+| `final_product_acceptance_report.md` | Acceptance | Evaluasi kesiapan produk menyeluruh lintas mode membaca dan tema. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/book_mode/final_product_acceptance_report.md) |
+| `final_release_readiness_report.md` | Release | Pemeriksaan checklist akhir sebelum pembuatan Release Candidate. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/book_mode/final_release_readiness_report.md) |
 
 ---
 
-### C. Fase 3.2: Pencarian OCR & Penjelajahan Sorotan (`reports/phase_3_2/`)
-
-| Dokumen | Kategori | Ringkasan Isi | Tautan |
-| :--- | :--- | :--- | :--- |
-| `PHASE_3_2_OCR_SEARCH.md` | Feature | Integrasi in-book search pada struktur semantik terekonstruksi dan traversal sorotan instan. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_2/PHASE_3_2_OCR_SEARCH.md) |
-| `PHASE_3_2_1_SEARCH_ACCURACY_AUDIT.md` | Audit | Audit akurasi fuzzy match, bounding box mapping pada PDF asli, dan navigasi siklis (wrap-around). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_2/PHASE_3_2_1_SEARCH_ACCURACY_AUDIT.md) |
-
----
-
-### D. Fase 3.3: Anotasi, Sorotan & Markah Buku (`reports/phase_3_3/`)
-
-| Dokumen | Kategori | Ringkasan Isi | Tautan |
-| :--- | :--- | :--- | :--- |
-| `PHASE_3_3_ANNOTATIONS_REPORT.md` | Milestone | Implementasi contextual selection toolbar, palet sorotan 6-warna, penempelan catatan, dan panel anotasi perpustakaan. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_3/PHASE_3_3_ANNOTATIONS_REPORT.md) |
-
----
-
-### E. Fase 3.5: Validasi Korpus Riil & Audit Independen (`reports/phase_3_5/`)
-
-| Dokumen | Kategori | Ringkasan Isi | Tautan |
-| :--- | :--- | :--- | :--- |
-| `PHASE_3_5_REAL_WORLD_PRODUCT_VALIDATION.md` | Validation | Evaluasi performa OCR dan ekstraksi pada 7 kategori buku riil (fiksi, non-fiksi, jurnal, buku hukum). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_5/PHASE_3_5_REAL_WORLD_PRODUCT_VALIDATION.md) |
-| `PHASE_3_5_1_INDEPENDENT_RELEASE_AUDIT.md` | Audit | Audit independen ketat yang menemukan cacat dehyphenation (CRIT-01) dan ketidaksesuaian metrik (CRIT-02). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_5/PHASE_3_5_1_INDEPENDENT_RELEASE_AUDIT.md) |
-| `PHASE_3_5_2_REMEDIATION_VERIFICATION.md` | Verification | Verifikasi penyelesaian CRIT-01 dan CRIT-02 dengan tabel leksem tertutup dan ground truth empiris. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_5/PHASE_3_5_2_REMEDIATION_VERIFICATION.md) |
-| `PHASE_3_5_3_NATIVE_AND_E2E_VALIDATION.md` | E2E | Uji end-to-end kestabilan memori native dan penjelajahan dokumen pindaian panjang. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_5/PHASE_3_5_3_NATIVE_AND_E2E_VALIDATION.md) |
-
----
-
-### F. Book Mode & Kesiapan Produk (`reports/book_mode/`)
-
-| Dokumen | Kategori | Ringkasan Isi | Tautan |
-| :--- | :--- | :--- | :--- |
-| `BOOK_MODE_HORIZONTAL_PAGINATION_REPORT.md` | Milestone | Implementasi paginasi horizontal berbasis kolom ganda dan resolusi anchor kata presisi. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/book_mode/BOOK_MODE_HORIZONTAL_PAGINATION_REPORT.md) |
-| `BOOK_MODE_READING_EXPERIENCE_REDESIGN_REPORT.md` | Redesign | Redesain pengalaman membaca Book Mode menyerupai buku cetak mewah (margin, drop cap, dot leaders TOC). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/book_mode/BOOK_MODE_READING_EXPERIENCE_REDESIGN_REPORT.md) |
-| `REAL_BOOK_ACCEPTANCE_REPORT.md` | Acceptance | Uji penerimaan visual dengan buku riil bahasa Indonesia (Bab I–V, halaman legal, daftar isi). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/book_mode/REAL_BOOK_ACCEPTANCE_REPORT.md) |
-| `FINAL_PRODUCT_ACCEPTANCE_REPORT.md` | Acceptance | Evaluasi kesiapan produk menyeluruh lintas mode membaca, tema, dan skala ukuran jendela. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/book_mode/FINAL_PRODUCT_ACCEPTANCE_REPORT.md) |
-| `FINAL_RELEASE_READINESS_REPORT.md` | Release | Pemeriksaan akhir checklist release readiness sebelum pembuatan release candidate. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/book_mode/FINAL_RELEASE_READINESS_REPORT.md) |
-
----
-
-### G. Kandidat Rilis & Pemurnian UI (`reports/release/`)
+## 7. Laporan Rilis & Audit Mandiri (`reports/release/`)
 
 | Dokumen | Kategori | Ringkasan Isi | Tautan |
 | :--- | :--- | :--- | :--- |
@@ -150,19 +163,19 @@ Ringkasan struktur folder:
 
 ---
 
-## 6. Bukti Visual Pengujian (`visual_evidence/`)
+## 8. Bukti Visual Pengujian (`visual_evidence/`)
 
 > [!IMPORTANT]
 > **Dilarang memindahkan atau menghapus direktori `docs/visual_evidence/`!**
-> Direktori ini diakses secara langsung oleh rangkaian tes otomatis (`test/*_test.dart`) dan alat native (`tools/capture_native_windows.swift`) untuk memverifikasi regresi visual, perataan tata letak, dan kurva transisi halaman.
+> Direktori ini diakses secara langsung oleh test suite otomatis (`test/*_test.dart`) dan alat native Swift (`tools/capture_native_windows.swift`) untuk memverifikasi regresi visual tata letak macOS.
 
-Direktori bukti visual terbagi dalam sub-folder spesifik:
-- `book_mode_acceptance/`: Tangkapan layar spread bab 1–5 Book Mode pada berbagai lebar layar.
+Sub-direktori bukti visual:
+- `phase_2_shell/` & `phase_2_native/`: Screenshot shell window macOS responsive (compact 700dp, standard 900dp, expansive 1280dp) yang dihasilkan dari inisiatif modernisasi Siklus II.
+- `book_mode_acceptance/`: Tangkapan layar spread bab 1–5 Book Mode.
 - `book_mode_redesign/`: Perbandingan before/after perombakan tampilan Book Mode.
 - `enhancement_fix/`: Visual komparasi preset enhancement (Gentle, Balanced, Strong, Original).
 - `minimalist_ui/`: Bukti visual auto-hide controls, hover strip, tema, dan responsivitas window.
 - `native_transitions/`: Frame demi frame kurva kubik transisi curl native (0 ms hingga 340 ms).
-- `phase_2_native/` & `phase_2_shell/`: Screenshot shell window macOS native (compact, standard, expansive).
 - `phase_3_1_1/` & `phase_3_1_2/`: Bukti visual perbandingan scan asli vs reflowable layout.
 - `phase_3_2/` & `phase_3_2_1/`: Visual in-book search, highlight traversal, dan cycling match.
 - `phase_3_3/`: Visual text selection toolbar, color picker 6-warna, dan panel anotasi.
@@ -172,18 +185,29 @@ Direktori bukti visual terbagi dalam sub-folder spesifik:
 
 ---
 
-## 7. Panduan Menambahkan Dokumentasi Baru
+## 9. Pedoman Penulisan Dokumentasi Baru
 
 Setiap penambahan dokumen baru wajib mengikuti konvensi berikut:
 
 1. **Format Nama Berkas**:
-   - Gunakan format `lowercase_snake_case.md` (misal: `phase_4_0_sync_architecture.md`).
+   - Selalu gunakan format huruf kecil snake_case: **`lowercase_snake_case.md`** (contoh: `phase_4_native_transitions.md`).
 2. **Penentuan Lokasi Folder**:
-   - **Standar & Aturan Tim**: Simpan di `docs/governance/`.
-   - **Rencana Teknis / ADR / Roadmap**: Simpan di `docs/architecture/`.
-   - **Laporan Pengujian / Audit / Rilis**: Simpan di `docs/reports/` di bawah sub-folder fase terkait atau `docs/reports/release/`.
-   - **Screenshot Hasil Tes**: Simpan di `docs/visual_evidence/<kategori>/`.
-3. **Pencatatan ke Katalog**:
-   - Tambahkan entri dokumen baru ke dalam tabel terkait pada `docs/README.md`.
-4. **Prinsip Kejujuran Metrik**:
-   - Sesuai `AGENTS.md`, dilarang mencantumkan metrik buatan atau klaim PASS sebelum dilakukan pengujian aktual.
+   - Standar & Tata Kelola $\to$ `docs/governance/`
+   - Spesifikasi Arsitektur / Blueprint $\to$ `docs/architecture/`
+   - Laporan Inisiatif Modernisasi (v1.2+) $\to$ `docs/reports/modernization_v1_2/`
+   - Laporan Pipeline Mesin Historis (v1.1) $\to$ `docs/reports/historical_engine_v1_1/`
+   - Laporan Release Candidate $\to$ `docs/reports/release/`
+   - Screenshot Uji Coba $\to$ `docs/visual_evidence/<kategori>/`
+3. **Format Metadata Dokumen**:
+   Sertakan blok metadata pada awal setiap laporan:
+   ```markdown
+   # Judul Dokumen
+
+   > **Metadata Dokumen**
+   > - **Siklus / Inisiatif**: Siklus II — Modernization & Apple Books Polish (v1.2+)
+   > - **Fase**: Phase X (...)
+   > - **Tanggal**: DD MMMM YYYY
+   > - **Status Verifikasi**: PASS / CONDITIONAL PASS / FAIL
+   ```
+4. **Pencatatan ke Indeks**:
+   - Daftarkan dokumen baru ke tabel yang relevan di dalam `docs/README.md`.

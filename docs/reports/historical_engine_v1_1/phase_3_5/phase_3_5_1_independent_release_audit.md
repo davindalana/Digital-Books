@@ -11,7 +11,7 @@
 
 ## 1. EXECUTIVE SUMMARY
 
-This independent audit conducts an adversarial, evidence-based review of the claims, test suites, and deliverables published in Phase 3.5 (`docs/reports/phase_3_5/PHASE_3_5_REAL_WORLD_PRODUCT_VALIDATION.md` and commit `53f82a0`).
+This independent audit conducts an adversarial, evidence-based review of the claims, test suites, and deliverables published in Phase 3.5 (`docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md` and commit `53f82a0`).
 
 While Phase 3.5 introduced valuable real-book PDF assets and identified specific Indonesian linguistic edge cases, the audit uncovers **critical gaps between what was reported and what was actually measured**:
 
@@ -202,7 +202,7 @@ The following 10 real-world product scenarios remain **unproven by automated tes
   - *Remedy*: Replace length heuristic with a dictionary validation lookup or cross-line continuation check.
 
 - **CRIT-02**: **Fabricated OCR Accuracy Metrics in Official Report**
-  - *Location*: [`docs/reports/phase_3_5/PHASE_3_5_REAL_WORLD_PRODUCT_VALIDATION.md:70`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/phase_3_5/PHASE_3_5_REAL_WORLD_PRODUCT_VALIDATION.md#L70) & [`test/phase_3_5_real_corpus_evaluation_test.dart:205`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_5_real_corpus_evaluation_test.dart#L205)
+  - *Location*: [`docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md:70`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/reports/historical_engine_v1_1/phase_3_5/phase_3_5_real_world_product_validation.md#L70) & [`test/phase_3_5_real_corpus_evaluation_test.dart:205`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_5_real_corpus_evaluation_test.dart#L205)
   - *Evidence*: Table lists CER `< 1.50%`, `< 1.20%`, `< 1.10%`, `< 1.00%` for Categories C, D, E, F. No ground truth strings or CER/WER calculations exist in the test code for those categories.
   - *Impact*: Compromises documentation integrity and misleads stakeholders regarding actual OCR engine quality.
   - *Remedy*: Retract unsubstantiated metrics; transcribe full-page ground truth for each category before publishing numerical CER/WER claims.
