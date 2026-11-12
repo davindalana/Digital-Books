@@ -83,7 +83,9 @@ class ReflowablePageRenderer extends StatelessWidget {
 
     return Container(
       width: contentWidth,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        vertical: PaginationEngine.pageVerticalInset,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

@@ -188,7 +188,7 @@ class _Metrics {
 
   _Metrics(double viewportWidth, double viewportHeight, this.typography)
     : contentWidth = _contentWidth(viewportWidth, typography),
-      availableHeight = (viewportHeight - 16.0 - 28.0 - 24.0).clamp(
+      availableHeight = (viewportHeight - 48.0 - 28.0 - 24.0).clamp(
         120.0,
         4000.0,
       );
@@ -204,8 +204,8 @@ class _Metrics {
     final margin = rawPageWidth < 400.0
         ? 18.0
         : (rawPageWidth < 650.0
-              ? 24.0
-              : math.max(32.0, typography.horizontalMargin));
+              ? math.max(48.0, typography.horizontalMargin)
+              : math.max(56.0, typography.horizontalMargin));
     return (rawPageWidth - (margin * 2.0)).clamp(160.0, spread ? 620.0 : 680.0);
   }
 

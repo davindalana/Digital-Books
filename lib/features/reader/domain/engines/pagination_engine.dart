@@ -56,6 +56,21 @@ class PaginatedPage {
 
 class PaginationEngine {
   static final Map<String, List<PaginatedPage>> _layoutCache = {};
+  static const double pageVerticalInset = 24.0;
+
+  /// Comfortable text inset for the open-book composition. Each visible page
+  /// gets a generous inner margin so body copy does not run close to the
+  /// window edge or the center spine.
+  static double horizontalPageMargin({
+    required double pageWidth,
+    required TypographySettings typography,
+  }) {
+    if (pageWidth < 400.0) return 18.0;
+    if (pageWidth < 650.0) {
+      return math.max(48.0, typography.horizontalMargin);
+    }
+    return math.max(56.0, typography.horizontalMargin);
+  }
 
   static void clearCache() => _layoutCache.clear();
 
@@ -67,7 +82,7 @@ class PaginationEngine {
     required TypographySettings typography,
     double headerHeight = 28.0,
     double footerHeight = 24.0,
-    double verticalPadding = 8.0,
+    double verticalPadding = pageVerticalInset,
   }) {
     final List<PaginatedPage> allPages = [];
     int runningBookPageIndex = 0;
@@ -130,11 +145,10 @@ class PaginationEngine {
     final double rawPageWidth = isTwoPageSpread
         ? ((viewportWidth - spreadGutterWidth) / 2.0)
         : viewportWidth;
-    final double effectiveMargin = (rawPageWidth < 400.0)
-        ? 18.0
-        : (rawPageWidth < 650.0
-              ? 24.0
-              : math.max(32.0, typography.horizontalMargin));
+    final effectiveMargin = horizontalPageMargin(
+      pageWidth: rawPageWidth,
+      typography: typography,
+    );
     final double maxClampWidth = isTwoPageSpread ? 620.0 : 680.0;
     return (rawPageWidth - (effectiveMargin * 2.0)).clamp(160.0, maxClampWidth);
   }
@@ -145,7 +159,7 @@ class PaginationEngine {
     required double viewportHeight,
     double headerHeight = 28.0,
     double footerHeight = 24.0,
-    double verticalPadding = 8.0,
+    double verticalPadding = pageVerticalInset,
   }) {
     return (viewportHeight -
             (verticalPadding * 2) -
@@ -163,7 +177,7 @@ class PaginationEngine {
     int startBookPageIndex = 0,
     double headerHeight = 28.0,
     double footerHeight = 24.0,
-    double verticalPadding = 8.0,
+    double verticalPadding = pageVerticalInset,
   }) {
     // 1. Check cache
     final contentWidth = contentWidthFor(

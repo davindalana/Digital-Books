@@ -108,15 +108,15 @@ void main() {
         final RenderBox expandedBox = tester.renderObject(expandedFinder);
 
         // Expected content height:
-        // Viewport (600) - Container vertical padding (8 * 2 = 16) - Header (28) - Footer (24) = 532.0 pt
-        const expectedContentHeight = viewportHeight - (8.0 * 2) - 28.0 - 24.0;
-        expect(expectedContentHeight, equals(532.0));
+        // Viewport (600) - Container vertical padding (24 * 2) - Header (28) - Footer (24) = 500.0 pt
+        const expectedContentHeight = viewportHeight - (24.0 * 2) - 28.0 - 24.0;
+        expect(expectedContentHeight, equals(500.0));
         expect(expandedBox.size.height, equals(expectedContentHeight));
 
         // Now compare with PaginationEngine availableHeight formula:
         // (viewportHeight - (verticalPadding * 2) - headerHeight - footerHeight)
         final engineCalculatedHeight =
-            (viewportHeight - (8.0 * 2) - 28.0 - 24.0).clamp(120.0, 4000.0);
+            (viewportHeight - (24.0 * 2) - 28.0 - 24.0).clamp(120.0, 4000.0);
         expect(engineCalculatedHeight, equals(expandedBox.size.height));
         print(
           'Vertical Geometry Verification: Rendered Content Height (${expandedBox.size.height} pt) == Engine Available Height ($engineCalculatedHeight pt). MATCH!',
@@ -154,8 +154,8 @@ void main() {
           final double effectiveMargin = (rawPageWidth < 400.0)
               ? 18.0
               : (rawPageWidth < 650.0
-                    ? 24.0
-                    : math.max(32.0, typo.horizontalMargin));
+                    ? math.max(48.0, typo.horizontalMargin)
+                    : math.max(56.0, typo.horizontalMargin));
           final double expectedContentWidth =
               (rawPageWidth - (effectiveMargin * 2.0)).clamp(160.0, 620.0);
 
@@ -255,7 +255,9 @@ void main() {
 
           final double effectiveMargin = (w < 400.0)
               ? 18.0
-              : (w < 650.0 ? 24.0 : math.max(32.0, typo.horizontalMargin));
+              : (w < 650.0
+                    ? math.max(48.0, typo.horizontalMargin)
+                    : math.max(56.0, typo.horizontalMargin));
           final double expectedContentWidth = (w - (effectiveMargin * 2.0))
               .clamp(160.0, 680.0);
 

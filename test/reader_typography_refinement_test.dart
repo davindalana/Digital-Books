@@ -87,8 +87,9 @@ void main() {
         viewportWidth: wideViewport,
         typography: typoSpread,
       );
-      // Half width is (1000 - 48) / 2 = 476.0; effectiveMargin for < 650 is 24.0; contentWidth = 476 - 48 = 428.0
-      expect(wideContentWidth, equals(428.0));
+      // Half width is (1000 - 48) / 2 = 476.0; a 476 pt page uses the 48 pt
+      // reading inset, so contentWidth = 476 - 96 = 380.0.
+      expect(wideContentWidth, equals(380.0));
 
       // Two-page spread disabled on narrow screens (< 850 dp)
       const narrowViewport = 800.0;
@@ -390,8 +391,8 @@ void main() {
       expect(renderers.length, equals(2));
       expect(renderers[0].isLeftPage, isTrue);
       expect(renderers[1].isLeftPage, isFalse);
-      expect(renderers[0].contentWidth, equals(428.0));
-      expect(renderers[1].contentWidth, equals(428.0));
+      expect(renderers[0].contentWidth, equals(380.0));
+      expect(renderers[1].contentWidth, equals(380.0));
 
       // Verify physical center spine crease container exists with spreadGutterWidth (48.0)
       final containers = tester.widgetList<Container>(find.byType(Container));

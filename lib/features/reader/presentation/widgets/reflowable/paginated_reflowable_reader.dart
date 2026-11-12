@@ -551,11 +551,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
   Widget _buildSinglePage(double width, double height, int index) {
     final page = _pages[index];
-    final effectiveMargin = (width < 400.0)
-        ? 18.0
-        : (width < 650.0
-              ? 24.0
-              : math.max(32.0, widget.typography.horizontalMargin));
+    final effectiveMargin = PaginationEngine.horizontalPageMargin(
+      pageWidth: width,
+      typography: widget.typography,
+    );
     final contentWidth = (width - (effectiveMargin * 2.0)).clamp(160.0, 680.0);
 
     return Center(
@@ -587,11 +586,10 @@ class PaginatedReflowableReaderState extends State<PaginatedReflowableReader> {
 
     const double spineWidth = PaginationEngine.spreadGutterWidth;
     final double halfWidth = (width - spineWidth) / 2.0;
-    final effectiveMargin = (halfWidth < 400.0)
-        ? 18.0
-        : (halfWidth < 650.0
-              ? 24.0
-              : math.max(32.0, widget.typography.horizontalMargin));
+    final effectiveMargin = PaginationEngine.horizontalPageMargin(
+      pageWidth: halfWidth,
+      typography: widget.typography,
+    );
     final contentWidth = (halfWidth - (effectiveMargin * 2.0)).clamp(
       160.0,
       620.0,

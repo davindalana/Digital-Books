@@ -57,6 +57,10 @@ class ReadingScreen extends ConsumerStatefulWidget {
 
 class _ReadingScreenState extends ConsumerState<ReadingScreen>
     with WidgetsBindingObserver {
+  static const MethodChannel _windowChromeChannel = MethodChannel(
+    'digital_books/window_chrome',
+  );
+
   bool _showControls = true;
   BookDocument? _document;
   ReaderDocument? _readerDocument;
@@ -92,6 +96,28 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   bool _isBottomHovered = false;
   bool _isModalActive = false;
 
+  Future<void> _setNativeTrafficLightsVisible(bool visible) async {
+    if (!Platform.isMacOS) return;
+    try {
+      await _windowChromeChannel.invokeMethod<void>(
+        'setTrafficLightsVisible',
+        visible,
+      );
+    } on MissingPluginException {
+      // Widget tests and non-runner hosts do not register the macOS channel.
+    } on PlatformException {
+      // Keep Reader controls usable if a native window has already closed.
+    }
+  }
+
+  void _setControlsVisible(bool visible) {
+    if (_showControls == visible) return;
+    setState(() {
+      _showControls = visible;
+    });
+    unawaited(_setNativeTrafficLightsVisible(visible));
+  }
+
   void _startAutoHideTimer() {
     _autoHideTimer?.cancel();
     if (_isModalActive || _isTopHovered || _isBottomHovered) {
@@ -103,9 +129,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
           !_isModalActive &&
           !_isTopHovered &&
           !_isBottomHovered) {
-        setState(() {
-          _showControls = false;
-        });
+        _setControlsVisible(false);
       }
     });
   }
@@ -116,11 +140,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   }
 
   void _onUserPointerInteraction() {
-    if (!_showControls) {
-      setState(() {
-        _showControls = true;
-      });
-    }
+    _setControlsVisible(true);
     _startAutoHideTimer();
   }
 
@@ -133,6 +153,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // The native window outlives this screen (hot restart, abnormal exit), so
+    // the initial chrome state is asserted instead of assumed.
+    unawaited(_setNativeTrafficLightsVisible(_showControls));
     _navigationHistory = ReadingNavigationHistory(bookId: widget.book.id);
     _currentPdfPath = widget.book.originalPdfPath;
     final currentProviderMode = ref.read(
@@ -204,6 +227,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
     );
     _activeSearchMatches.clear();
     _showSearchTraversal = false;
+    unawaited(_setNativeTrafficLightsVisible(true));
     super.dispose();
   }
 
@@ -995,9 +1019,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   }
 
   void _toggleControls() {
-    setState(() {
-      _showControls = !_showControls;
-    });
+    _setControlsVisible(!_showControls);
     if (_showControls) {
       _startAutoHideTimer();
     } else {
@@ -1210,6 +1232,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
   Widget build(BuildContext context) {
     final activeTheme = ref.watch(readingThemeStateProvider);
     final typoSettings = ref.watch(typographySettingsStateProvider);
+    final nativeTitlebarInset =
+        Theme.of(context).platform == TargetPlatform.macOS ? 80.0 : 0.0;
     final bookmarksAsync = ref.watch(
       bookBookmarksStreamProvider(widget.book.id),
     );
@@ -1304,11 +1328,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
             final screenHeight = MediaQuery.sizeOf(context).height;
             final isNearEdge = y <= 56.0 || y >= (screenHeight - 48.0);
             if (isNearEdge) {
-              if (!_showControls) {
-                setState(() {
-                  _showControls = true;
-                });
-              }
+              _setControlsVisible(true);
               _startAutoHideTimer();
             } else {
               _onUserPointerInteraction();
@@ -1320,6 +1340,7 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               children: [
                 // 1. Reading Body Engine
                 Positioned.fill(
+                  top: nativeTitlebarInset,
                   child: _isLoadingDoc
                       ? Center(
                           child: Column(
@@ -1487,7 +1508,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                 // 2.5 Floating In-Book Search Traversal Bar
                 if (_showSearchTraversal)
                   Positioned(
-                    top: _showControls ? 88.0 : 16.0,
+                    top: _showControls
+                        ? 88.0
+                        : math.max(16.0, nativeTitlebarInset + 8.0),
                     left: 0,
                     right: 0,
                     child: Center(
@@ -1540,7 +1563,9 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       if (!isPoor && !isPartial) return const SizedBox.shrink();
 
                       return Positioned(
-                        top: _showControls ? 52 : 14,
+                        top: nativeTitlebarInset > 0
+                            ? nativeTitlebarInset + 8.0
+                            : (_showControls ? 52 : 14),
                         left: 20,
                         right: 20,
                         child: Center(

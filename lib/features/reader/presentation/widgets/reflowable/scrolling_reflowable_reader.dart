@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
@@ -292,11 +293,10 @@ class ScrollingReflowableReaderState extends State<ScrollingReflowableReader> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final effectiveMargin = (screenWidth < 420.0)
-        ? 18.0
-        : (screenWidth < 680.0
-              ? 24.0
-              : math.max(36.0, widget.typography.horizontalMargin));
+    final effectiveMargin = PaginationEngine.horizontalPageMargin(
+      pageWidth: screenWidth,
+      typography: widget.typography,
+    );
     final maxContentWidth = math.min(
       660.0,
       screenWidth - (effectiveMargin * 2.0),

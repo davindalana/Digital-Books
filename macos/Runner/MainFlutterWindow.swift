@@ -5,6 +5,8 @@ class MainFlutterWindow: NSWindow {
   private let targetToolbarHeight: CGFloat = 80.0
   private let targetTrafficLightCenterY: CGFloat = 40.0
   private let targetTrafficLightLeftX: CGFloat = 20.0
+  private var windowChromeChannel: FlutterMethodChannel?
+  private var trafficLightsVisible = true
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -18,6 +20,23 @@ class MainFlutterWindow: NSWindow {
     self.titleVisibility = .hidden
     self.styleMask.insert(.fullSizeContentView)
     self.isMovableByWindowBackground = true
+
+    windowChromeChannel = FlutterMethodChannel(
+      name: "digital_books/window_chrome",
+      binaryMessenger: flutterViewController.engine.binaryMessenger
+    )
+    windowChromeChannel?.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "setTrafficLightsVisible",
+            let visible = call.arguments as? Bool else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      DispatchQueue.main.async {
+        self?.trafficLightsVisible = visible
+        self?.adjustTrafficLights()
+        result(nil)
+      }
+    }
 
     NotificationCenter.default.addObserver(
       self,
@@ -55,6 +74,10 @@ class MainFlutterWindow: NSWindow {
           let zoom = standardWindowButton(.zoomButton),
           let titlebarView = close.superview,
           let containerView = titlebarView.superview else { return }
+
+    close.isHidden = !trafficLightsVisible
+    min.isHidden = !trafficLightsVisible
+    zoom.isHidden = !trafficLightsVisible
 
     let winH = frame.height
     let containerOriginY = winH - targetToolbarHeight

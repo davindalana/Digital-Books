@@ -205,22 +205,43 @@ void main() {
       );
 
       final ch0Pages = pages.where((p) => p.chapterIndex == 0).toList();
-      // Previously fragmented into 8 pages; now neatly grouped in 5 pages:
-      // Page 1: Cover
-      // Page 2: Imprint (identity + catalog + publisher + legal)
-      // Page 3: Sanksi Pelanggaran + clause 1 + clause 2
-      // Page 4: Clause 3 + clause 4 + footer
-      // Page 5: Title page ("Oleh Oh Su Hyang")
-      expect(ch0Pages.length, lessThanOrEqualTo(5));
+      // With the wider reading margins and 24 pt page inset, the front matter
+      // occupies six pages:
+      // 1. Cover
+      // 2. Imprint (identity + catalog + publisher)
+      // 3. Legal notice heading + first clause
+      // 4. Clause 2 + clause 3
+      // 5. Clause 4 + footer
+      // 6. Title page ("Oleh Oh Su Hyang")
+      // The guard is that headings stay with their first clause and metadata
+      // groups are not split, not that an arbitrary page count is preserved.
+      expect(ch0Pages.length, lessThanOrEqualTo(6));
 
-      final page2 = ch0Pages[1];
-      final page2Kinds = page2.slices
+      final imprintPage = ch0Pages[1];
+      final imprintKinds = imprintPage.slices
           .map((s) => s.node.attributes['kind'])
           .toSet();
       expect(
-        page2Kinds,
-        containsAll(['identity', 'catalog', 'publisher', 'legal']),
-        reason: 'Page 2 should contain all imprint and catalog metadata',
+        imprintKinds,
+        containsAll(['identity', 'catalog', 'publisher']),
+        reason: 'Imprint metadata must not be split across pages',
+      );
+
+      final legalPage = ch0Pages[2];
+      final legalKinds = legalPage.slices
+          .map((s) => s.node.attributes['kind'])
+          .toList();
+      final headingIndex = legalKinds.indexOf('legalHeading');
+      final firstClauseIndex = legalKinds.indexOf('legalClause');
+      expect(
+        headingIndex,
+        isNonNegative,
+        reason: 'The legal notice heading must stay on the legal page',
+      );
+      expect(
+        firstClauseIndex,
+        greaterThan(headingIndex),
+        reason: 'The legal heading must not be left orphaned at a page end',
       );
     });
   });

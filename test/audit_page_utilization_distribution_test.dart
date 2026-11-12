@@ -51,8 +51,8 @@ void main() {
       const typo = TypographySettings(twoPageSpread: true);
       const viewportWidth = 1000.0;
       const viewportHeight = 600.0;
-      const availableHeight = 532.0; // 600 - 16 - 28 - 24
-      const contentWidth = 448.0; // (1000 - 16)/2 = 492; 492 - 44 = 448
+      const availableHeight = 500.0; // 600 - 48 - 28 - 24
+      const contentWidth = 380.0; // (1000 - 48)/2 = 476; 476 - 96 = 380
 
       for (final bookDoc in [suspectXDoc, letThemDoc]) {
         print(

@@ -160,9 +160,24 @@ void main() {
         );
 
         expect(pages, isNotEmpty);
-        // Verify available content height utilized without excessive bottom cutoff
-        // In 700pt viewport, available height should be ~632pt (700 - 68pt), not 520pt!
-        expect(pages.first.slices.length, greaterThanOrEqualTo(2));
+        // The engine must consume the full height budget:
+        // 700 - (2 * 24) - header 28 - footer 24 = 600 pt. A double-deducted
+        // 520 pt budget would ignore part of the viewport.
+        expect(
+          PaginationEngine.availableHeightFor(viewportHeight: viewportHeight),
+          equals(600.0),
+        );
+
+        // Giving the same document 100 pt more height must reduce the page
+        // count. This proves the budget is actually used for layout, without
+        // depending on how many slices a particular paragraph shape yields.
+        final tallerPages = PaginationEngine.paginateDocument(
+          document: doc,
+          typography: typography,
+          viewportWidth: viewportWidth,
+          viewportHeight: viewportHeight + 100.0,
+        );
+        expect(tallerPages.length, lessThan(pages.length));
       },
     );
 

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
@@ -430,6 +431,60 @@ void main() {
           final percentWidget = tester.widget<Text>(percentFinder);
           expect(percentWidget.style?.color, equals(theme.textColor));
         }
+      },
+    );
+    testWidgets(
+      '8. Native window chrome follows toolbar visibility and is restored on exit',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1000, 700));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        const channel = MethodChannel('digital_books/window_chrome');
+        final visibilityCalls = <bool>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          channel,
+          (call) async {
+            if (call.method == 'setTrafficLightsVisible') {
+              visibilityCalls.add(call.arguments as bool);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            channel,
+            null,
+          ),
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(book: testBook, platform: TargetPlatform.macOS),
+        );
+        await tester.pumpAndSettle();
+
+        // Entering the Reader asserts a known native state instead of assuming
+        // the window was left visible by a previous session.
+        expect(visibilityCalls, isNotEmpty);
+        expect(visibilityCalls.first, isTrue);
+
+        // Auto-hide hides the native buttons together with the toolbar.
+        await tester.pump(const Duration(milliseconds: 3300));
+        await tester.pumpAndSettle();
+        expect(visibilityCalls.last, isFalse);
+
+        // Top-edge hover reveals both the toolbar and the native buttons.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: const Offset(500, 300));
+        await gesture.moveTo(const Offset(500, 25));
+        await tester.pumpAndSettle();
+        expect(visibilityCalls.last, isTrue);
+
+        // Leaving the Reader always restores the native buttons.
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+        expect(visibilityCalls.last, isTrue);
       },
     );
   });
