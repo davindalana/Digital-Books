@@ -70,7 +70,7 @@ void main() {
         expect(find.text('The 48 Laws Of Power'), findsOneWidget);
 
         // Bottom bar page indicator
-        expect(find.text('Hal. 1 dari 13'), findsOneWidget);
+        expect(find.text('Page 1 of 13'), findsOneWidget);
 
         // Verify no RenderFlex overflow exception
         expect(tester.takeException(), isNull);
@@ -111,7 +111,7 @@ void main() {
         // Desktop shows Zoom In and Zoom Out tooltips/buttons
         expect(find.byTooltip('Zoom In (Cmd +)'), findsOneWidget);
         expect(find.byTooltip('Zoom Out (Cmd -)'), findsOneWidget);
-        expect(find.byTooltip('Mode Gulir Vertikal'), findsOneWidget);
+        expect(find.byTooltip('Continuous scrolling'), findsOneWidget);
 
         // Tap zoom in without errors
         await tester.tap(find.byTooltip('Zoom In (Cmd +)'));
@@ -119,7 +119,7 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // Tap view mode toggle
-        await tester.tap(find.byTooltip('Mode Gulir Vertikal'));
+        await tester.tap(find.byTooltip('Continuous scrolling'));
         await tester.pump();
         expect(tester.takeException(), isNull);
         await tester.pump(const Duration(milliseconds: 50));
@@ -137,12 +137,12 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap appearance icon
-        await tester.tap(find.byTooltip('Tampilan & Tema'));
+        await tester.tap(find.byTooltip('Appearance & Theme'));
         await tester.pumpAndSettle();
 
         // Verify layout selector is visible in Appearance sheet
         expect(find.text('TATA LETAK HALAMAN'), findsOneWidget);
-        expect(find.text('Halaman'), findsWidgets);
+        expect(find.text('Pages'), findsWidgets);
         expect(find.text('Gulir Vertikal'), findsOneWidget);
 
         // Tap Gulir Vertikal

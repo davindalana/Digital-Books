@@ -1370,52 +1370,61 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                         )
                       : (_readingMode == ReadingMode.reflowable &&
                             _document != null)
-                      ? ReflowableReaderContainer(
-                          key: _reflowableKey,
-                          bookId: widget.book.id,
-                          document: _readerDocument ??=
-                              ReflowableEngine.normalizeDocument(_document!),
-                          theme: activeTheme,
-                          typography: typoSettings,
-                          initialChapterIndex: _currentChapter,
-                          initialPosition: _currentPage,
-                          initialAnchorNodeId: _activeAnchorNodeId,
-                          initialCharOffset: _activeCharOffset,
-                          searchMatches: _activeSearchMatches,
-                          onTapContent: _toggleControls,
-                          onHighlightCreated: _handleHighlightCreated,
-                          onTotalPagesCalculated: (total) {
-                            if (_readingMode == ReadingMode.reflowable &&
-                                mounted &&
-                                _totalPages != total) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted && _totalPages != total) {
-                                  setState(() {
-                                    _totalPages = total > 0 ? total : 1;
-                                  });
-                                }
-                              });
-                            }
-                          },
-                          onProgressChanged:
-                              (ch, page, pct, anchorId, charOffset) {
-                                _reflowableChapter = ch;
-                                _reflowablePosition = page;
-                                _activeAnchorNodeId = anchorId;
-                                _activeCharOffset = charOffset;
+                      ? Padding(
+                          padding: EdgeInsets.only(
+                            top: nativeTitlebarInset > 0
+                                ? nativeTitlebarInset + 20.0
+                                : 100.0,
+                          ),
+                          child: ReflowableReaderContainer(
+                            key: _reflowableKey,
+                            bookId: widget.book.id,
+                            document: _readerDocument ??=
+                                ReflowableEngine.normalizeDocument(_document!),
+                            theme: activeTheme,
+                            typography: typoSettings,
+                            initialChapterIndex: _currentChapter,
+                            initialPosition: _currentPage,
+                            initialAnchorNodeId: _activeAnchorNodeId,
+                            initialCharOffset: _activeCharOffset,
+                            searchMatches: _activeSearchMatches,
+                            onTapContent: _toggleControls,
+                            onHighlightCreated: _handleHighlightCreated,
+                            onTotalPagesCalculated: (total) {
+                              if (_readingMode == ReadingMode.reflowable &&
+                                  mounted &&
+                                  _totalPages != total) {
                                 WidgetsBinding.instance.addPostFrameCallback((
                                   _,
                                 ) {
-                                  if (mounted) {
-                                    _updateChapterInfo(ch);
+                                  if (mounted && _totalPages != total) {
+                                    setState(() {
+                                      _totalPages = total > 0 ? total : 1;
+                                    });
                                   }
                                 });
-                                _saveProgress(
-                                  chapter: ch,
-                                  position: page,
-                                  percentage: pct,
-                                );
-                              },
+                              }
+                            },
+                            onProgressChanged:
+                                (ch, page, pct, anchorId, charOffset) {
+                                  _reflowableChapter = ch;
+                                  _reflowablePosition = page;
+                                  _activeAnchorNodeId = anchorId;
+                                  _activeCharOffset = charOffset;
+                                  WidgetsBinding.instance.addPostFrameCallback((
+                                    _,
+                                  ) {
+                                    if (mounted) {
+                                      _updateChapterInfo(ch);
+                                    }
+                                  });
+                                  _saveProgress(
+                                    chapter: ch,
+                                    position: page,
+                                    percentage: pct,
+                                  );
+                                },
+                          ),
                         )
                       : OriginalPdfReader(
                           key: _pdfKey,
