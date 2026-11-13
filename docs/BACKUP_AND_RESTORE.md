@@ -1,4 +1,4 @@
-# Backup & Disaster Recovery Guide • Digital Books v1.0.0
+# Backup & Disaster Recovery Guide • Digital Books v1.1.0-alpha.8 (build 9)
 
 This guide explains the data architecture, backup formats, conflict resolution policies, and disaster recovery procedures in Digital Books.
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' as drift;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../constants/app_info.dart';
 import '../database/app_database.dart';
 import '../database/database_service.dart';
 
@@ -74,7 +75,7 @@ class RestoreResult {
 
 class BackupRestoreService {
   static const String currentBackupVersion = '1.0';
-  static const String defaultAppVersion = '1.0.0';
+  static const String defaultAppVersion = AppInfo.technicalVersion;
 
   /// Generates a comprehensive JSON backup string of the database
   static Future<String> generateBackupJson({

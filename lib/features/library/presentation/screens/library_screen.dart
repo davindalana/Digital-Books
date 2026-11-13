@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_info.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/database_service.dart';
@@ -2371,9 +2372,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
           child: Column(
             children: [
-              const ListTile(
-                title: Text('Personal Digital Library'),
-                subtitle: Text('Version 1.0.0 • Apple Books Experience'),
+              ListTile(
+                title: const Text('Personal Digital Library'),
+                subtitle: Text(
+                  'Version ${AppInfo.displayVersion} • Apple Books Experience',
+                ),
               ),
               const Divider(height: 1),
               const ListTile(

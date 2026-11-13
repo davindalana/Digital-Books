@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:digital_books/core/constants/app_info.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/services/backup_restore_service.dart';
@@ -115,7 +116,7 @@ void main() {
 
         final data = jsonDecode(jsonStr) as Map<String, dynamic>;
         expect(data['metadata']['formatVersion'], '1.0');
-        expect(data['metadata']['appVersion'], '1.0.0');
+        expect(data['metadata']['appVersion'], AppInfo.technicalVersion);
         expect(data['preferences']['defaultTheme'], 'sepia');
 
         final books = data['books'] as List;
