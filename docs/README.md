@@ -160,6 +160,7 @@ docs/
 | `Phase 3.9A Reader UI Audit.md` | UI Audit | Audit ergonomi UI layar pembaca, hierarchy tombol, dan konsistensi status bar. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Release/Phase%203.9A%20Reader%20UI%20Audit.md) |
 | `Reader Minimalist UI Report.md` | UI Design | Implementasi antarmuka baca minimalis dengan auto-hide bar atas dan indikator hover tepi. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Release/Reader%20Minimalist%20UI%20Report.md) |
 | `Reader Typography Refinement Report.md` | Typography | Pemurnian tipografi, pengaturan spasi baris, dan penyesuaian font multi-resolusi. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Release/Reader%20Typography%20Refinement%20Report.md) |
+| `Reader UI Alignment and Glass Progress Bar.md` | UI Design | Penyesuaian alignment top bar, glass-effect progress bar, dan konsistensi inset antar panel. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Release/Reader%20UI%20Alignment%20and%20Glass%20Progress%20Bar.md) |
 
 ---
 
