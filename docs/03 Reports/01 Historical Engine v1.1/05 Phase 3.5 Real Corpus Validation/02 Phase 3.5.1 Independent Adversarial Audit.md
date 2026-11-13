@@ -205,26 +205,26 @@ The following 10 real-world product scenarios remain **unproven by automated tes
 
 ### 9.1 Critical Findings (P0 — Release Blockers)
 - **CRIT-01**: **Dehyphenation Word Corruption on Standard Syllables**
-  - *Location*: [`lib/features/processing/services/paragraph_reconstructor.dart:460`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/paragraph_reconstructor.dart#L460)
+  - *Location*: [`lib/features/processing/services/paragraph_reconstructor.dart:460`](../../../../lib/features/processing/services/paragraph_reconstructor.dart#L460)
   - *Evidence*: `if (part1.length >= 3 && part2.length >= 3) return '$part1-$part2';` converts standard line-broken words (`dok- umen`, `kom- puter`, `sta- bilitas`) into corrupted hyphenated tokens (`dok-umen`, `kom-puter`, `sta-bilitas`).
   - *Impact*: Readers will encounter erroneously hyphenated Indonesian and English words throughout reflowable books.
   - *Remedy*: Replace length heuristic with a dictionary validation lookup or cross-line continuation check.
 
 - **CRIT-02**: **Fabricated OCR Accuracy Metrics in Official Report**
-  - *Location*: [`Phase 3.5 Real World Product Validation.md:70`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/03%20Reports/01%20Historical%20Engine%20v1.1/05%20Phase%203.5%20Real%20Corpus%20Validation/01%20Phase%203.5%20Real%20World%20Corpus%20Validation.md#L70) & [`test/phase_3_5_real_corpus_evaluation_test.dart:205`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_5_real_corpus_evaluation_test.dart#L205)
+  - *Location*: [`Phase 3.5 Real World Product Validation.md:70`](01%20Phase%203.5%20Real%20World%20Corpus%20Validation.md#L70) & [`test/phase_3_5_real_corpus_evaluation_test.dart:205`](../../../../test/phase_3_5_real_corpus_evaluation_test.dart#L205)
   - *Evidence*: Table lists CER `< 1.50%`, `< 1.20%`, `< 1.10%`, `< 1.00%` for Categories C, D, E, F. No ground truth strings or CER/WER calculations exist in the test code for those categories.
   - *Impact*: Compromises documentation integrity and misleads stakeholders regarding actual OCR engine quality.
   - *Remedy*: Retract unsubstantiated metrics; transcribe full-page ground truth for each category before publishing numerical CER/WER claims.
 
 ### 9.2 High Findings (P1 — Pre-Release Requirements)
 - **HIGH-01**: **Unsubstantiated Memory Stability Claim (+276 MB RSS)**
-  - *Location*: [`test/phase_3_5_navigation_and_lifecycle_stress_test.dart:386`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_5_navigation_and_lifecycle_stress_test.dart#L386)
+  - *Location*: [`test/phase_3_5_navigation_and_lifecycle_stress_test.dart:386`](../../../../test/phase_3_5_navigation_and_lifecycle_stress_test.dart#L386)
   - *Evidence*: Process RSS grew by +276.11 MB during 120 cycles on a 1-paragraph mock book. Claiming "zero memory leak" is unwarranted without heap profiling.
   - *Impact*: Potential progressive memory exhaustion on macOS desktop during prolonged usage.
   - *Remedy*: Conduct macOS Instruments Allocations/Leaks profiling and measure heap delta after forced GC.
 
 - **HIGH-02**: **Misleading Search Latency Metric ("0.036 ms")**
-  - *Location*: [`test/phase_3_2_1_large_book_performance_test.dart:190`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_2_1_large_book_performance_test.dart#L190)
+  - *Location*: [`test/phase_3_2_1_large_book_performance_test.dart:190`](../../../../test/phase_3_2_1_large_book_performance_test.dart#L190)
   - *Evidence*: Metric measures RAM Map instantiation, not UI navigation or highlight rendering.
   - *Impact*: Obscures real end-to-end user perceived latency.
   - *Remedy*: Measure real latency from search result click to `CustomPaint` frame presentation.
@@ -237,7 +237,7 @@ The following 10 real-world product scenarios remain **unproven by automated tes
   - *Remedy*: Migrate dependent legacy tests to current production classes, then remove unreachable files.
 
 - **MED-02**: **Fragile Static Passive Verb Whitelist**
-  - *Location*: [`lib/features/processing/services/paragraph_reconstructor.dart:474`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/paragraph_reconstructor.dart#L474)
+  - *Location*: [`lib/features/processing/services/paragraph_reconstructor.dart:474`](../../../../lib/features/processing/services/paragraph_reconstructor.dart#L474)
   - *Evidence*: 60 hardcoded verbs. Missing common Indonesian verbs (`siksa`, `terjang`, `culik`, `hukum`).
   - *Impact*: Inconsistent OCR cleanup on texts featuring vocabulary outside the 60-verb list.
   - *Remedy*: Combine morphological rule heuristics with general Indonesian verb stem patterns.

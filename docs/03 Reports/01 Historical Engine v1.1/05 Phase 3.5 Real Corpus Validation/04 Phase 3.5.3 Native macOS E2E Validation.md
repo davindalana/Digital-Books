@@ -119,7 +119,7 @@ When a search result was selected, `_handleSearchResultSelected` set `_activeSea
 ```
 
 ### 2.2 Surgical Architectural Remediation
-In [`lib/features/reader/presentation/screens/reading_screen.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/reader/presentation/screens/reading_screen.dart):
+In [`lib/features/reader/presentation/screens/reading_screen.dart`](../../../../lib/features/reader/presentation/screens/reading_screen.dart):
 1. Passed required parameters to `BookSearchDialog`:
    ```dart
    bookId: widget.book.id,

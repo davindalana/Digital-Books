@@ -37,7 +37,7 @@ Three distinct factors caused this over-aggressive erosion:
 
 ## 3. Technical Implementation & Mathematical Curve Refinement
 
-The enhancement pipeline in [`ScannedImageEnhancer`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/scanned_image_enhancer.dart) was overhauled with the following safeguards:
+The enhancement pipeline in [`ScannedImageEnhancer`](../../../../lib/features/processing/services/scanned_image_enhancer.dart) was overhauled with the following safeguards:
 
 ### 3.1 Tamed Preset Parameters
 | Intensity Tier | Contrast | Brightness | Unsharp Amount | Highlight Threshold ($i$) | Quadratic Bonus |
@@ -92,7 +92,7 @@ Evaluated on the dialogue block containing quotation marks, commas, and periods:
 
 ## 5. Visual Evidence Artifacts
 
-All visual comparison crops are generated and verified on disk in [`docs/visual_evidence/enhancement_fix/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/enhancement_fix/):
+All visual comparison crops are generated and verified on disk in [`docs/visual_evidence/enhancement_fix/`](../../../visual_evidence/enhancement_fix):
 - `docs/visual_evidence/enhancement_fix/crop_text_original.png` — Raw scanned dialogue and punctuation.
 - `docs/visual_evidence/enhancement_fix/crop_text_gentle.png` — Gentle preset with natural anti-aliased character edges.
 - `docs/visual_evidence/enhancement_fix/crop_text_balanced.png` — Balanced preset with neutralized background and deep ink.

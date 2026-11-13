@@ -27,7 +27,7 @@ In Phase 3.0.1, gutter compensation applied a **blind static mathematical ramp**
 
 ## 2. Technical Implementation: Empirical Adaptive Detection
 
-In [`ScannedImageEnhancer`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/scanned_image_enhancer.dart), the static offset was replaced with a two-phase adaptive pipeline:
+In [`ScannedImageEnhancer`](../../../../lib/features/processing/services/scanned_image_enhancer.dart), the static offset was replaced with a two-phase adaptive pipeline:
 
 ### 2.1 Fast Pre-Sampling & Gradient Analysis (`_detectGutterShadow`)
 - **Sampling Budget**: Samples 40 rows evenly spaced down the document height ($\le 0.4\text{ ms}$ execution overhead).
@@ -48,7 +48,7 @@ $$\text{textProtection} = \text{clamp}\left(\frac{L - 90}{130}, 0.0, 1.0\right),
 
 ## 3. Empirical Test Results on Real Documents
 
-Evaluated in [`test/phase_3_0_1_1_enhancement_and_gutter_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_0_1_1_enhancement_and_gutter_test.dart):
+Evaluated in [`test/phase_3_0_1_1_enhancement_and_gutter_test.dart`](../../../../test/phase_3_0_1_1_enhancement_and_gutter_test.dart):
 
 ### 3.1 Scenario A: Flatbed Scan (*Laut Bercerita* P.15)
 - **Geometry**: Left page geometry test (inner gutter on right edge).

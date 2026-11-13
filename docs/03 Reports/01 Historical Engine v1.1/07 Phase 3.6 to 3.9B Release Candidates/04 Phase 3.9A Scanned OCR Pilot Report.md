@@ -162,7 +162,7 @@ Measurements recorded during test execution on macOS Apple Silicon (ARM64):
 
 ## 7. Verification Test Suite
 
-All pilot findings are codified and permanently regression-tested in [`test/phase_3_9a_scanned_ocr_pilot_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_9a_scanned_ocr_pilot_test.dart):
+All pilot findings are codified and permanently regression-tested in [`test/phase_3_9a_scanned_ocr_pilot_test.dart`](../../../../test/phase_3_9a_scanned_ocr_pilot_test.dart):
 
 ```bash
 # Execute Phase 3.9A OCR Pilot Suite

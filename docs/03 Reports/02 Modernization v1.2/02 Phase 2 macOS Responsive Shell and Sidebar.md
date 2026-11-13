@@ -21,7 +21,7 @@ Sebelum Phase 2, layar perpustakaan (`LibraryScreen`) memiliki batasan ergonomi 
 ## 2. Arsitektur & Solusi Implementasi
 
 ### 2.1 Tiga Mode Tata Letak Adaptif (Responsive Breakpoints)
-Sesuai token [`AppThemeTokens`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/theme/app_theme_tokens.dart), `LibraryScreen` dipecah menjadi 3 mode visual adaptif:
+Sesuai token [`AppThemeTokens`](../../../lib/core/theme/app_theme_tokens.dart), `LibraryScreen` dipecah menjadi 3 mode visual adaptif:
 
 | Breakpoint | Lebar Jendela | Mode Navigasi | Lebar Nav | Karakteristik Grid |
 | :--- | :--- | :--- | :--- | :--- |
@@ -38,8 +38,8 @@ Sesuai token [`AppThemeTokens`](file:///Users/davindalana/Documents/Project/Digi
 ## 3. Bukti Visual Pengujian Native macOS
 
 Bukti visual tangkapan layar asli macOS Retina dihasilkan oleh:
-- Flutter Widget Driver: [`test/library_shell_visual_capture_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/library_shell_visual_capture_test.dart) $\to$ [`docs/visual_evidence/phase_2_shell/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_2_shell)
-- Native Swift Screencapture Tool: [`tools/capture_native_windows.swift`](file:///Users/davindalana/Documents/Project/Digital%20Books/tools/capture_native_windows.swift) $\to$ [`docs/visual_evidence/phase_2_native/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_2_native)
+- Flutter Widget Driver: [`test/library_shell_visual_capture_test.dart`](../../../test/library_shell_visual_capture_test.dart) $\to$ [`docs/visual_evidence/phase_2_shell/`](../../visual_evidence/phase_2_shell)
+- Native Swift Screencapture Tool: [`tools/capture_native_windows.swift`](../../../tools/capture_native_windows.swift) $\to$ [`docs/visual_evidence/phase_2_native/`](../../visual_evidence/phase_2_native)
 
 Daftar artefak visual terverifikasi:
 1. `01_compact_700_sedang_dibaca.png`: Tampilan compact $700\text{ dp}$ pada rak Sedang Dibaca.

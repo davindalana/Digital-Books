@@ -47,8 +47,8 @@ All notable changes to the **Digital Books** application are documented in this 
 - **Permanent Development Governance & Git Workflow (`AGENTS.md`)**:
   - Established permanent engineering principles, quality policies, atomic commit standards, and macOS-native testing mandates.
 - **Standardized Workflow & Versioning Guides**:
-  - Created [`docs/01 Governance/01 Development Workflow.md`](<docs/01 Governance/01 Development Workflow.md>) detailing the 13-step development cycle, commit taxonomy, changelog maintenance, and rollback protocols.
-  - Created [`docs/01 Governance/02 Versioning Policy.md`](<docs/01 Governance/02 Versioning Policy.md>) defining Semantic Versioning for Flutter (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`) and release lifecycle gates.
+  - Created [`docs/01 Governance/01 Development Workflow.md`](docs/01%20Governance/01%20Development%20Workflow.md) detailing the 13-step development cycle, commit taxonomy, changelog maintenance, and rollback protocols.
+  - Created [`docs/01 Governance/02 Versioning Policy.md`](docs/01%20Governance/02%20Versioning%20Policy.md) defining Semantic Versioning for Flutter (`MAJOR.MINOR.PATCH-PRERELEASE+BUILD`) and release lifecycle gates.
 - **Phase 2.9.2 Rendering Stability Regression Test Suite (`test/phase_2_9_2_rendering_stability_test.dart`)**:
   - 6 unit test scenarios verifying zero white flash, retained bitmap surface survival across page turns, and rapid non-blocking navigation.
 

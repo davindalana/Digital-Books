@@ -93,7 +93,7 @@ Pengujian komparatif dijalankan terhadap 5 dokumen target dengan berbagai karakt
 
 ## 5. Validasi Rekonstruksi Semantik End-to-End
 
-Hasil pengujian otomatis pada [`test/phase_3_0_reconstruction_spike_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_0_reconstruction_spike_test.dart):
+Hasil pengujian otomatis pada [`test/phase_3_0_reconstruction_spike_test.dart`](../../../../test/phase_3_0_reconstruction_spike_test.dart):
 - **Skenario 1**: Rekonstruksi baris OCR *Laut Bercerita* ke dalam `ReadingOrderResolver` dan `ParagraphReconstructor`.
   - Hasil: Paragraf bersambung terhubung tanpa pemotongan liar; dialog `"Matilah engkau mati..."` terisolasi sebagai blok mandiri. Status: **PASS**.
 - **Skenario 2**: Rekonstruksi *Bicara Itu Ada Seninya* ke dalam format `BookDocument` (Reflowable).

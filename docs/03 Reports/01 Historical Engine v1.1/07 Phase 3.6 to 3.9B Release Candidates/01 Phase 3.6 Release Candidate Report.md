@@ -12,7 +12,7 @@
 > **Auditor note (11 November 2026):** This report is preserved as a historical
 > milestone artifact, but several of its quantitative and manual-validation
 > claims were later found to be inaccurate. See
-> [`Phase 3.7 Independent Audit Report.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/03%20Reports/01%20Historical%20Engine%20v1.1/07%20Release%20Candidates%203.6%20to%203.9A/02%20Phase%203.7%20Independent%20Audit%20Report.md)
+> [`Phase 3.7 Independent Audit Report.md`](02%20Phase%203.7%20Independent%20Audit%20Report.md)
 > for the independent verification. In particular, the four-book coverage, the
 > "manual" reader UX steps, the 1,468 pages at 1200×800 pagination figure, the
 > RSS delta, the visual-evidence captions, and the 480/480 test count are

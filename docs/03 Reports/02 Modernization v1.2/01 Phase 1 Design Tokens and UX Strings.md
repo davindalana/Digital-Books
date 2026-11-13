@@ -21,7 +21,7 @@ Sebelum inisiatif modernisasi Siklus II, aplikasi Digital Books memiliki beberap
 ## 2. Arsitektur & Solusi Implementasi
 
 ### 2.1 Centralized Design Tokens (`AppThemeTokens`)
-Dibuat berkas [`lib/core/theme/app_theme_tokens.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/theme/app_theme_tokens.dart) yang menyediakan standar token desain terpusat:
+Dibuat berkas [`lib/core/theme/app_theme_tokens.dart`](../../../lib/core/theme/app_theme_tokens.dart) yang menyediakan standar token desain terpusat:
 - **Spacing Scale**:
   - `spaceXXS = 2.0`, `spaceXS = 4.0`, `spaceS = 8.0`, `spaceM = 12.0`, `spaceL = 16.0`, `spaceXL = 24.0`, `spaceXXL = 32.0`
 - **Border Radius Scale**:
@@ -35,7 +35,7 @@ Dibuat berkas [`lib/core/theme/app_theme_tokens.dart`](file:///Users/davindalana
   - `iconRailWidth = 64.0`
 
 ### 2.2 Centralized UX Strings Dictionary (`AppStrings`)
-Dibuat berkas [`lib/core/constants/app_strings.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/constants/app_strings.dart) yang menstandarisasi seluruh istilah antarmuka bernuansa Apple Books:
+Dibuat berkas [`lib/core/constants/app_strings.dart`](../../../lib/core/constants/app_strings.dart) yang menstandarisasi seluruh istilah antarmuka bernuansa Apple Books:
 - Navigasi: *Currently Reading*, *All Books*, *Collections*, *Bookmarks*, *Highlights & Notes*, *Settings*.
 - Aksi Utama: *Add Book*, *Continue Reading*, *Start Reading*, *View All*, *Import PDF…*.
 - Badge & Metadata: *Scanned*, *Digital Text*, *Unknown Author*, *Untitled*.
@@ -46,7 +46,7 @@ Dibuat berkas [`lib/core/constants/app_strings.dart`](file:///Users/davindalana/
 
 ## 3. Verifikasi Pengujian
 
-Rangkaian pengujian unit di [`test/app_theme_tokens_and_strings_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/app_theme_tokens_and_strings_test.dart) menguji:
+Rangkaian pengujian unit di [`test/app_theme_tokens_and_strings_test.dart`](../../../test/app_theme_tokens_and_strings_test.dart) menguji:
 1. Urutan monotonic token spasi dan radius (`spaceXXS < spaceXS < ...`).
 2. Validitas hierarki breakpoint jendela macOS (`compact < standard < expansive`).
 3. Kelengkapan dan konsistensi terminologi `AppStrings`.

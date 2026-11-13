@@ -123,15 +123,15 @@ Nine high-resolution evidence screenshots were generated and saved into `docs/vi
 
 | No. | Evidence File | Size | Description |
 | :---: | :--- | :---: | :--- |
-| 1 | [`01_text_selection_toolbar.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/01_text_selection_toolbar.png) | 21.2 KB | Floating macOS text selection contextual toolbar with color mini-pills, Copy, and Note actions. |
-| 2 | [`02_highlight_palette_multi_color.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/02_highlight_palette_multi_color.png) | 26.5 KB | 6-color palette picker (Kuning, Hijau, Biru, Merah Muda, Ungu, Emas) with active checkmark. |
-| 3 | [`03_add_edit_note_sheet.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/03_add_edit_note_sheet.png) | 36.9 KB | `HighlightInteractionSheet` displaying quote snippet, color chips, and multi-line note editor. |
-| 4 | [`04_bookmark_creation_active.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/04_bookmark_creation_active.png) | 10.8 KB | Reading action bar with active blue bookmark icon and confirmation toast badge. |
-| 5 | [`05_annotations_sheet_library.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/05_annotations_sheet_library.png) | 36.6 KB | Unified Annotation Library with search field, filter chips (`Semua`, `Sorotan`, `Catatan`, `Penanda`), quotes, and page numbers. |
-| 6 | [`06_navigation_from_annotation_library.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/06_navigation_from_annotation_library.png) | 21.7 KB | Tap-to-jump navigation from annotation card directly to target page and paragraph. |
-| 7 | [`07_highlight_original_pdf.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/07_highlight_original_pdf.png) | 19.5 KB | Original PDF page rendered with `PdfUserAnnotationPainter` rounded highlight boxes and note indicator. |
-| 8 | [`08_highlight_reflowable_paginated.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/08_highlight_reflowable_paginated.png) | 30.2 KB | `PaginatedReflowableReader` displaying inline highlight spans on structured semantic novel blocks. |
-| 9 | [`09_highlight_reflowable_scrolling.png`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3/09_highlight_reflowable_scrolling.png) | 25.4 KB | `ScrollingReflowableReader` displaying continuous scrolling text with preserved multi-color annotations. |
+| 1 | [`01_text_selection_toolbar.png`](../../../visual_evidence/phase_3_3/01_text_selection_toolbar.png) | 21.2 KB | Floating macOS text selection contextual toolbar with color mini-pills, Copy, and Note actions. |
+| 2 | [`02_highlight_palette_multi_color.png`](../../../visual_evidence/phase_3_3/02_highlight_palette_multi_color.png) | 26.5 KB | 6-color palette picker (Kuning, Hijau, Biru, Merah Muda, Ungu, Emas) with active checkmark. |
+| 3 | [`03_add_edit_note_sheet.png`](../../../visual_evidence/phase_3_3/03_add_edit_note_sheet.png) | 36.9 KB | `HighlightInteractionSheet` displaying quote snippet, color chips, and multi-line note editor. |
+| 4 | [`04_bookmark_creation_active.png`](../../../visual_evidence/phase_3_3/04_bookmark_creation_active.png) | 10.8 KB | Reading action bar with active blue bookmark icon and confirmation toast badge. |
+| 5 | [`05_annotations_sheet_library.png`](../../../visual_evidence/phase_3_3/05_annotations_sheet_library.png) | 36.6 KB | Unified Annotation Library with search field, filter chips (`Semua`, `Sorotan`, `Catatan`, `Penanda`), quotes, and page numbers. |
+| 6 | [`06_navigation_from_annotation_library.png`](../../../visual_evidence/phase_3_3/06_navigation_from_annotation_library.png) | 21.7 KB | Tap-to-jump navigation from annotation card directly to target page and paragraph. |
+| 7 | [`07_highlight_original_pdf.png`](../../../visual_evidence/phase_3_3/07_highlight_original_pdf.png) | 19.5 KB | Original PDF page rendered with `PdfUserAnnotationPainter` rounded highlight boxes and note indicator. |
+| 8 | [`08_highlight_reflowable_paginated.png`](../../../visual_evidence/phase_3_3/08_highlight_reflowable_paginated.png) | 30.2 KB | `PaginatedReflowableReader` displaying inline highlight spans on structured semantic novel blocks. |
+| 9 | [`09_highlight_reflowable_scrolling.png`](../../../visual_evidence/phase_3_3/09_highlight_reflowable_scrolling.png) | 25.4 KB | `ScrollingReflowableReader` displaying continuous scrolling text with preserved multi-color annotations. |
 
 ---
 

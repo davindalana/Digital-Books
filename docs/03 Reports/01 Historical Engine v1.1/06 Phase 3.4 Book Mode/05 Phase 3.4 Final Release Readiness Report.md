@@ -48,19 +48,19 @@ This consolidated report represents the unified finalization cycle for Digital B
 ## 3. CHANGE AUDIT
 
 ### Modified Files:
-- [`lib/features/reader/presentation/screens/reading_screen.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/reader/presentation/screens/reading_screen.dart):
+- [`lib/features/reader/presentation/screens/reading_screen.dart`](../../../../lib/features/reader/presentation/screens/reading_screen.dart):
   - **Problem:** `BookSearchDialog` was invoked without `bookId`, `pdfPath`, and `dbService`, preventing disk-indexed search execution in original PDF mode. Additionally, when search results were selected or traversed via next/previous buttons, `_activePdfSearchHighlights` in `OriginalPdfReader` was never assigned the resulting bounding boxes, causing page navigation to occur without any visual highlight painted.
   - **Surgical Solution:**
     1. Passed `bookId: widget.book.id`, `pdfPath: _currentPdfPath`, `dbService: ref.read(databaseServiceProvider)` into `BookSearchDialog`.
     2. Populated `_activePdfSearchHighlights = {result.sourcePdfPage: result.boundingBoxes}` upon search match selection and traversal.
     3. Cleared `_activePdfSearchHighlights = {}` when search traversal is dismissed (via Close icon or Escape key).
-- [`lib/core/database/app_database.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/database/app_database.dart):
+- [`lib/core/database/app_database.dart`](../../../../lib/core/database/app_database.dart):
   - **Problem:** When an existing user database from an earlier version or interrupted migration had columns like `page_index` already present while `user_version < 6`, Drift's `onUpgrade` threw `SqliteException(1): duplicate column name: page_index`, breaking the library query.
   - **Surgical Solution:** Implemented `addColumnSafe` and `createTableSafe` helper wrappers to make SQLite schema migrations strictly idempotent. Existing columns and tables are recognized without throwing exceptions.
 
 ### New Test Suites:
-- [`integration_test/macos_phase_3_5_3_high01_memory_stress_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/integration_test/macos_phase_3_5_3_high01_memory_stress_test.dart): Automated 50-cycle native memory stress test with baseline/final `.memgraph` generation and Apple differential leak detection.
-- [`integration_test/macos_phase_3_5_3_high02_search_navigation_latency_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/integration_test/macos_phase_3_5_3_high02_search_navigation_latency_test.dart): 150-sample ($N=30 \times 5$) end-to-end latency measurement across all search navigation modes.
+- [`integration_test/macos_phase_3_5_3_high01_memory_stress_test.dart`](../../../../integration_test/macos_phase_3_5_3_high01_memory_stress_test.dart): Automated 50-cycle native memory stress test with baseline/final `.memgraph` generation and Apple differential leak detection.
+- [`integration_test/macos_phase_3_5_3_high02_search_navigation_latency_test.dart`](../../../../integration_test/macos_phase_3_5_3_high02_search_navigation_latency_test.dart): 150-sample ($N=30 \times 5$) end-to-end latency measurement across all search navigation modes.
 
 ---
 

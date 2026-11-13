@@ -21,7 +21,7 @@ Sebelum Phase 5, representasi progres membaca (*reading progress*) memiliki inko
 ## 2. Arsitektur & Solusi Implementasi
 
 ### 2.1 Kalkulator Terpusat (`ReadingProgressCalculator`)
-Dibuat kelas utilitas [`lib/core/utils/reading_progress_calculator.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/utils/reading_progress_calculator.dart) dengan logika mode-aware:
+Dibuat kelas utilitas [`lib/core/utils/reading_progress_calculator.dart`](../../../lib/core/utils/reading_progress_calculator.dart) dengan logika mode-aware:
 
 1. **Original PDF Mode**:
    - Berbasis nomor halaman fisik PDFium: `calculatePdfFraction(lastVisiblePage, totalPages)`.
@@ -43,7 +43,7 @@ Dibuat kelas utilitas [`lib/core/utils/reading_progress_calculator.dart`](file:/
 
 ## 3. Hasil Pengujian Otomatis
 
-Rangkaian unit test komprehensif di [`test/reading_progress_calculator_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/reading_progress_calculator_test.dart) mencakup:
+Rangkaian unit test komprehensif di [`test/reading_progress_calculator_test.dart`](../../../test/reading_progress_calculator_test.dart) mencakup:
 - Boundary conditions: $0$ halaman, total halaman negatif, posisi melebihi total.
 - Pembulatan persentase matematis dan batas ambang *Selesai*.
 - Formatting label mode original PDF vs reflowable book mode.

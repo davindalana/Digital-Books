@@ -11,7 +11,7 @@
 
 Date: 2026-11-01  
 Environment: macOS (Darwin 24.3.0, Apple Silicon)  
-Benchmark Suite: [`test/phase_3_0_1_1_performance_regression_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_0_1_1_performance_regression_test.dart)  
+Benchmark Suite: [`test/phase_3_0_1_1_performance_regression_test.dart`](../../../../test/phase_3_0_1_1_performance_regression_test.dart)<br/>
 Stress Target: *Bicara Itu Ada Seninya* (64 MB Scanned Book, 255 pages)  
 
 ---

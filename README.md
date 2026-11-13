@@ -117,8 +117,8 @@ The native interaction and visual acceptance checklist still requires a human ru
 
 ## Documentation Suite
 
-- [Documentation Hub & Catalog](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/README.md)
-- [Installation & Release Notes](file:///Users/davindalana/Documents/Project/Digital%20Books/INSTALLATION.md)
-- [Backup & Disaster Recovery Guide](file:///Users/davindalana/Documents/Project/Digital%20Books/BACKUP_AND_RESTORE.md)
-- [Release Changelog](file:///Users/davindalana/Documents/Project/Digital%20Books/CHANGELOG.md)
-- [Known Issues & Technical Disclosures](file:///Users/davindalana/Documents/Project/Digital%20Books/KNOWN_ISSUES.md)
+- [Documentation Hub & Catalog](docs/README.md)
+- [Installation & Release Notes](docs/INSTALLATION.md)
+- [Backup & Disaster Recovery Guide](docs/BACKUP_AND_RESTORE.md)
+- [Release Changelog](CHANGELOG.md)
+- [Known Issues & Technical Disclosures](docs/KNOWN_ISSUES.md)

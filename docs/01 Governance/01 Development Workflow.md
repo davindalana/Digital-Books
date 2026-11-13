@@ -84,7 +84,7 @@ fix(pdf): eliminate double white flash and implement non-blocking page navigatio
 
 ## 4. Pencatatan di `CHANGELOG.md`
 
-Setiap checkpoint rilis atau kenaikan versi wajib dicatat di [`CHANGELOG.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/CHANGELOG.md) dengan kategori:
+Setiap checkpoint rilis atau kenaikan versi wajib dicatat di [`CHANGELOG.md`](../../CHANGELOG.md) dengan kategori:
 - `Added`: Fitur atau berkas baru.
 - `Changed`: Perubahan alur atau modifikasi implementasi yang ada.
 - `Fixed`: Bug atau kegagalan yang berhasil dieliminasi.
@@ -130,7 +130,7 @@ Sebelum merilis perubahan:
   - Dilarang keras menggunakan `git push --force`.
   - Dilarang melakukan destructive rebase pada commit yang sudah dibagikan ke remote.
 - **Rilis Checkpoint**:
-  - Penentuan versi mengikuti [`Versioning Policy.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/01%20Governance/02%20Versioning%20Policy.md).
+  - Penentuan versi mengikuti [`Versioning Policy.md`](02%20Versioning%20Policy.md).
 
 ---
 

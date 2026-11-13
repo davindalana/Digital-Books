@@ -26,7 +26,7 @@ To meet this challenge, Phase 3.0.1.1 replaced low-frequency sampling with an **
 
 ## 2. Methodology & Native Rasterization Capture
 
-Implemented in [`test/phase_3_0_1_1_high_frequency_native_transition_test.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/test/phase_3_0_1_1_high_frequency_native_transition_test.dart):
+Implemented in [`test/phase_3_0_1_1_high_frequency_native_transition_test.dart`](../../../../test/phase_3_0_1_1_high_frequency_native_transition_test.dart):
 - **Sampling Frequency**: Every **10 milliseconds** across the entire 350 ms animation window (**35+ consecutive frames per turn**). This temporal resolution matches 60 Hz to 120 Hz native ProMotion refresh cycles.
 - **Raster Inspection**: Each frame's render boundary is rasterized via `RenderRepaintBoundary.toImage(pixelRatio: 1.0)` and decoded into uncompressed 32-bit RGBA pixel buffers (960,000 pixels per frame).
 - **Blank Frame Detector**: Every single pixel is scanned for luminance ($L = \frac{77R + 150G + 29B}{256}$). A frame is flagged as a **CRITICAL BLANK FLASH** if:

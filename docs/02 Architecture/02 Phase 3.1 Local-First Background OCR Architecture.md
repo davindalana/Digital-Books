@@ -66,7 +66,7 @@ flowchart TD
 
 ## 3. Database Schema Migration (Drift v3 -> v4)
 
-A new table `OcrPages` will be added to [`lib/core/database/tables.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/database/tables.dart) without modifying or breaking any existing tables:
+A new table `OcrPages` will be added to [`lib/core/database/tables.dart`](../../lib/core/database/tables.dart) without modifying or breaking any existing tables:
 
 ```dart
 class OcrPages extends Table {
@@ -132,9 +132,9 @@ class OcrPages extends Table {
 ## 6. Layout & Semantic Reconstruction Integration
 
 When OCR completes for all pages (or a batch of pages), the lines are converted to `ExtractedPageGeometry` and fed into:
-1. [`ReadingOrderResolver`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/reading_order_resolver.dart): Solves multi-column gutters and reading flow.
-2. [`ParagraphReconstructor`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/paragraph_reconstructor.dart): Solves hyphenated line wraps (e.g. `se-` $\to$ `buah`), indented paragraph beginnings, ordered lists (`1.`, `2.`), bullet items (`•`), and dialogues (`"..."`).
-3. [`SemanticClassifier`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/semantic_classifier.dart): Identifies H1, H2, H3 chapter titles, blockquotes, footnotes, and copyright metadata.
+1. [`ReadingOrderResolver`](../../lib/features/processing/services/reading_order_resolver.dart): Solves multi-column gutters and reading flow.
+2. [`ParagraphReconstructor`](../../lib/features/processing/services/paragraph_reconstructor.dart): Solves hyphenated line wraps (e.g. `se-` $\to$ `buah`), indented paragraph beginnings, ordered lists (`1.`, `2.`), bullet items (`•`), and dialogues (`"..."`).
+3. [`SemanticClassifier`](../../lib/features/processing/services/semantic_classifier.dart): Identifies H1, H2, H3 chapter titles, blockquotes, footnotes, and copyright metadata.
 4. Outputs standard `BookDocument`, serialized to `Books.processedBookPath`.
 
 ---

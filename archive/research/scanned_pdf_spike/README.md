@@ -16,8 +16,8 @@ This directory preserves the experimental research scripts and raw benchmark res
 ## 3. Production Supersession
 These experimental spike files have been superseded by production components:
 1. Native OCR binary & runner:
-   - Source: [`macos/tools/vision_ocr.swift`](file:///Users/davindalana/Documents/Project/Digital%20Books/macos/tools/vision_ocr.swift)
-   - Executable: [`bin/vision_ocr`](file:///Users/davindalana/Documents/Project/Digital%20Books/bin/vision_ocr)
-   - Service: [`lib/features/processing/services/apple_vision_ocr_service.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/apple_vision_ocr_service.dart)
+   - Source: [`macos/tools/vision_ocr.swift`](../../../macos/tools/vision_ocr.swift)
+   - Executable: [`bin/vision_ocr`](../../../bin/vision_ocr)
+   - Service: [`lib/features/processing/services/apple_vision_ocr_service.dart`](../../../lib/features/processing/services/apple_vision_ocr_service.dart)
 2. Image Enhancement Service:
-   - Implementation: [`lib/features/processing/services/scanned_image_enhancer.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/features/processing/services/scanned_image_enhancer.dart)
+   - Implementation: [`lib/features/processing/services/scanned_image_enhancer.dart`](../../../lib/features/processing/services/scanned_image_enhancer.dart)
