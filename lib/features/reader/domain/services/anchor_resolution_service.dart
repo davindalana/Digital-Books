@@ -5,8 +5,12 @@ import '../models/book_annotation.dart';
 import '../models/reader_content.dart';
 import '../models/search_geometry.dart';
 
-/// Service responsible for resolving and synchronizing annotation anchors
+/// Pure domain service responsible for resolving and synchronizing annotation anchors
 /// across reading modes (Reflowable Paginated/Scrolling vs. Original PDF).
+///
+/// ARCHITECTURAL NOTE: This service resides in `domain/services/` because it operates
+/// purely on in-memory domain models without performing disk, database, or network I/O.
+/// Services performing disk/file I/O reside in `features/reader/services/`.
 ///
 /// Follows a strict multi-tier fallback strategy:
 /// 1. Exact semantic node & character offset match.

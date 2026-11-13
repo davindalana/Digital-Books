@@ -2,7 +2,7 @@
 import 'dart:io';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
-import 'package:digital_books/core/utils/file_storage_service.dart';
+import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/core/utils/sample_book_generator.dart';
 import 'package:digital_books/features/processing/models/processing_status.dart';
 import 'package:digital_books/features/processing/services/pdf_processing_pipeline.dart';

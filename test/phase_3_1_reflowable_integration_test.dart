@@ -11,13 +11,13 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
-import 'package:digital_books/core/utils/file_storage_service.dart';
+import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
 import 'package:digital_books/features/reader/domain/engines/in_book_search_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 

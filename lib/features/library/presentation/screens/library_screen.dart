@@ -12,7 +12,7 @@ import '../../../../core/database/database_service.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/app_theme_tokens.dart';
 import '../../../../core/theme/reading_theme.dart';
-import '../../../../core/typography/typography_settings.dart';
+import '../../../../core/theme/typography_settings.dart';
 import '../../../../core/utils/book_sort_helper.dart';
 import '../../../../core/utils/reading_progress_calculator.dart';
 import '../../../../core/utils/sample_book_generator.dart';

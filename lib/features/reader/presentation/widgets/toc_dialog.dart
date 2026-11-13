@@ -6,7 +6,7 @@ import '../../../../core/providers/database_providers.dart';
 import '../../../../core/theme/reading_theme.dart';
 import '../../domain/models/reader_content.dart';
 import '../../domain/models/toc_item.dart';
-import '../../models/book_document.dart';
+import '../../domain/models/book_document.dart';
 import '../../providers/reader_settings_provider.dart';
 
 class TocDialog extends ConsumerStatefulWidget {

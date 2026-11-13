@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/in_book_search_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';

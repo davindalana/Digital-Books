@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/reading_theme.dart';
-import '../../../../core/typography/typography_settings.dart';
-import '../../models/book_document.dart';
+import '../../../../core/theme/typography_settings.dart';
+import '../../domain/models/book_document.dart';
 import 'book_page_turn_view.dart';
 
 class ReflowablePageContent {

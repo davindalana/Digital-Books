@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../models/book_document.dart';
+import 'book_document.dart';
 
 enum ContentNodeType {
   heading,

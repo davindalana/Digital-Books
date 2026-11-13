@@ -6,7 +6,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/anchor_resolution_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_highlight_span_builder.dart';
 import 'package:digital_books/features/reader/domain/models/highlight_palette.dart';

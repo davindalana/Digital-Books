@@ -15,14 +15,14 @@ import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/models/ocr_queue_state.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 
 int _levenshtein(String s, String t) {

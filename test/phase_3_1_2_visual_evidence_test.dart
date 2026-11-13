@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';

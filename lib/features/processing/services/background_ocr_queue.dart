@@ -5,7 +5,7 @@ import 'package:drift/drift.dart' hide isNotNull;
 import 'package:pdfrx/pdfrx.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_service.dart';
-import '../../../core/utils/file_storage_service.dart';
+import '../../../core/services/file_storage_service.dart';
 import '../models/ocr_queue_state.dart';
 import 'apple_vision_ocr_service.dart';
 import 'ocr_semantic_pipeline.dart';

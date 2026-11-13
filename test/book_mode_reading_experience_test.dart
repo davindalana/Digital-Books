@@ -1,14 +1,14 @@
 import 'dart:ui' show Rect;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/models/semantic_reconstruction_models.dart';
 import 'package:digital_books/features/processing/services/front_matter_reconstructor.dart';
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/toc_reconstructor.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 
 ExtractedTextLine _line(
   String text, {

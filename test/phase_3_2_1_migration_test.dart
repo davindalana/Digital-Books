@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:ui' show Rect;
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
-import 'package:digital_books/core/utils/file_storage_service.dart';
+import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/features/reader/domain/services/book_search_indexer.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';

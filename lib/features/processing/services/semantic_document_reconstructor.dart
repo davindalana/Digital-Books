@@ -1,5 +1,5 @@
 import 'package:uuid/uuid.dart';
-import '../../reader/models/book_document.dart';
+import '../../reader/domain/models/book_document.dart';
 import '../models/extracted_page_geometry.dart';
 import '../models/semantic_reconstruction_models.dart';
 import 'chapter_quality_normalizer.dart';

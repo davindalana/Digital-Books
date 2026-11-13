@@ -6,8 +6,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_service.dart';
-import '../../../core/utils/file_storage_service.dart';
-import '../../reader/models/book_document.dart';
+import '../../../core/services/file_storage_service.dart';
+import '../../reader/domain/models/book_document.dart';
 import '../models/processing_manifest.dart';
 import 'annotation_remapper.dart';
 import 'processed_artifact_inspector.dart';

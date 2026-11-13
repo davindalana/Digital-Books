@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'file_storage_service.dart';
+import '../services/file_storage_service.dart';
 
 class CoverGenerator {
   static const List<List<Color>> _coverPalettes = [

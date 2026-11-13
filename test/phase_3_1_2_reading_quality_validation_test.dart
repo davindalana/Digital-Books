@@ -11,7 +11,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/models/semantic_reconstruction_models.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
@@ -19,7 +19,7 @@ import 'package:digital_books/features/processing/services/semantic_document_rec
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

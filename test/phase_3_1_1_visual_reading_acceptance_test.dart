@@ -8,11 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:path/path.dart' as p;
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
 
 void main() {

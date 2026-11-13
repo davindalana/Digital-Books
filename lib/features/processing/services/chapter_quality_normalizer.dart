@@ -1,4 +1,4 @@
-import '../../reader/models/book_document.dart';
+import '../../reader/domain/models/book_document.dart';
 
 /// Structural clean-up for chapters produced by semantic reconstruction.
 ///

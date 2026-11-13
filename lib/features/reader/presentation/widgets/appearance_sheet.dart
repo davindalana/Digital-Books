@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/reading_theme.dart';
-import '../../../../core/typography/typography_settings.dart';
+import '../../../../core/theme/typography_settings.dart';
 import '../../providers/reader_settings_provider.dart';
 
 class AppearanceSheet extends ConsumerWidget {

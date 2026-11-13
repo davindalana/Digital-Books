@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
-import '../../reader/models/book_document.dart';
+import '../../reader/domain/models/book_document.dart';
 import '../models/processing_manifest.dart';
 
 /// Freshness of a persisted Book Mode artifact.

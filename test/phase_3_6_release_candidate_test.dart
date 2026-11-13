@@ -20,9 +20,9 @@ import 'package:digital_books/features/processing/models/extracted_page_geometry
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/book_annotation.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';

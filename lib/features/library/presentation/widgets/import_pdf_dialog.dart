@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/providers/database_providers.dart';
-import '../../../../core/utils/file_storage_service.dart';
+import '../../../../core/services/file_storage_service.dart';
 import '../../../processing/models/processing_status.dart';
 import '../../../processing/providers/import_provider.dart';
 import '../../../processing/services/pdf_processing_pipeline.dart';

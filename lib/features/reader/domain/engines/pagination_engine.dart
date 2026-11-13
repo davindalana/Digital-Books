@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../../core/typography/typography_settings.dart';
+import '../../../../core/theme/typography_settings.dart';
 import '../models/reader_content.dart';
 
 class PaginatedNodeSlice {

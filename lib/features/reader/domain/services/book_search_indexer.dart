@@ -6,12 +6,15 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:syncfusion_flutter_pdf/pdf.dart' as sf;
 import '../../../../core/database/app_database.dart';
 import '../../../../core/database/database_service.dart';
-import '../../../../core/utils/file_storage_service.dart';
+import '../../../../core/services/file_storage_service.dart';
 import '../../../processing/models/ocr_page_result.dart';
 import '../models/search_geometry.dart';
 
 /// Service responsible for extracting, normalizing, and indexing searchable text
 /// and bounding-box geometry for both OCR scanned pages and digital PDF pages.
+///
+/// ARCHITECTURAL NOTE: This service resides in `domain/services/` as part of the
+/// reader search and geometry indexing subsystem.
 class BookSearchIndexer {
   static const int currentVersion = 1;
 

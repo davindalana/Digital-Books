@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/services/book_document_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;

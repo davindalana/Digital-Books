@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/theme/reading_theme.dart';
-import '../../../../core/typography/typography_settings.dart';
+import '../../../../core/theme/typography_settings.dart';
 import 'reflowable_book_reader.dart';
 
 enum FlipDirection { forward, backward }

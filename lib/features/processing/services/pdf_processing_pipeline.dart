@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_service.dart';
 import '../../../core/utils/cover_generator.dart';
-import '../../../core/utils/file_storage_service.dart';
+import '../../../core/services/file_storage_service.dart';
 import '../models/processing_status.dart';
 import 'geometry_aware_pdf_extractor.dart';
 import 'semantic_document_reconstructor.dart';

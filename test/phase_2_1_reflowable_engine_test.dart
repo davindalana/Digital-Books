@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/reading_location.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';

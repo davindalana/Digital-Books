@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 import 'app_database.dart';
-import '../utils/file_storage_service.dart';
+import '../services/file_storage_service.dart';
 import '../../features/reader/domain/models/book_annotation.dart';
 
 class DatabaseService {

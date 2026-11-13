@@ -1,4 +1,4 @@
-import '../../models/book_document.dart';
+import '../models/book_document.dart';
 import '../../services/book_text_normalizer.dart';
 import '../models/reader_content.dart';
 

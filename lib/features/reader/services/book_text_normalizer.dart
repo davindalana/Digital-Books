@@ -1,6 +1,6 @@
 import 'package:uuid/uuid.dart';
 import '../../processing/services/paragraph_reconstructor.dart';
-import '../../reader/models/book_document.dart';
+import '../domain/models/book_document.dart';
 
 class BookTextNormalizer {
   static const Set<String> _chapterNumeralWords = {

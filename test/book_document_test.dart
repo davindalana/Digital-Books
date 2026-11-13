@@ -1,4 +1,4 @@
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

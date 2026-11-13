@@ -7,7 +7,7 @@ import '../../../../core/theme/reading_theme.dart';
 import '../../domain/engines/in_book_search_engine.dart';
 import '../../domain/models/reader_content.dart';
 import '../../domain/services/book_search_indexer.dart';
-import '../../models/book_document.dart';
+import '../../domain/models/book_document.dart';
 
 class BookSearchDialog extends StatefulWidget {
   final String? bookId;

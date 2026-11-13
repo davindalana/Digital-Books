@@ -1,7 +1,7 @@
-import '../../../core/utils/file_storage_service.dart';
+import '../../../core/services/file_storage_service.dart';
 import '../domain/engines/reflowable_engine.dart';
 import '../domain/models/reader_content.dart';
-import '../models/book_document.dart';
+import '../domain/models/book_document.dart';
 import 'book_text_normalizer.dart';
 
 /// Result of loading a processed book document from disk.

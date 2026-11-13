@@ -8,11 +8,11 @@ import 'package:drift/native.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 
 const _bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
 const _jsonPath =

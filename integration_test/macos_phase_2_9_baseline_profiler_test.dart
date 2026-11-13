@@ -17,18 +17,20 @@ void main() {
 
   group('Phase 2.9 — Native Baseline Profiling (6 Scenarios)', () {
     const originalsDir = '/Users/davindalana/Documents/DigitalBooks/originals';
-    final testPdf = File('$originalsDir/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf'); // The Let Them Theory
+    final testPdf = File(
+      '$originalsDir/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
+    ); // The Let Them Theory
 
-    testWidgets('Scenario 1: Idle in Library (60s baseline simulation)', (tester) async {
+    testWidgets('Scenario 1: Idle in Library (60s baseline simulation)', (
+      tester,
+    ) async {
       final initialRss = ProcessInfo.currentRss / (1024 * 1024);
       final sw = Stopwatch()..start();
 
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: Center(
-              child: Text('Digital Books Library View (Quiescent)'),
-            ),
+            body: Center(child: Text('Digital Books Library View (Quiescent)')),
           ),
         ),
       );
@@ -46,49 +48,60 @@ void main() {
       print('Event Loop Idle CPU: ~0.0% (No active animations)');
     });
 
-    testWidgets('Scenario 2: Open PDF Stationary (Idle in Reader) — Ticker Leak', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'Scenario 2: Open PDF Stationary (Idle in Reader) — Ticker Leak',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final initialRss = ProcessInfo.currentRss / (1024 * 1024);
-      final sw = Stopwatch()..start();
+        final initialRss = ProcessInfo.currentRss / (1024 * 1024);
+        final sw = Stopwatch()..start();
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: OriginalPdfReader(
-                pdfPath: testPdf.path,
-                initialPage: 1,
-                theme: ReadingThemeType.white,
-                onPageChanged: (_, __) {},
-                onTapContent: () {},
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Scaffold(
+                body: OriginalPdfReader(
+                  pdfPath: testPdf.path,
+                  initialPage: 1,
+                  theme: ReadingThemeType.white,
+                  onPageChanged: (_, __) {},
+                  onTapContent: () {},
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Wait for PDF document to open and render
-      for (int i = 0; i < 30; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+        // Wait for PDF document to open and render
+        for (int i = 0; i < 30; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
-      final renderedPages = find.byType(RawImage);
-      final spinners = find.byType(CircularProgressIndicator);
-      final stationaryRss = ProcessInfo.currentRss / (1024 * 1024);
-      sw.stop();
+        final renderedPages = find.byType(RawImage);
+        final spinners = find.byType(CircularProgressIndicator);
+        final stationaryRss = ProcessInfo.currentRss / (1024 * 1024);
+        sw.stop();
 
-      print('[PROFILE SCENARIO 2 - Stationary Reader]');
-      print('Initial RSS: ${initialRss.toStringAsFixed(2)} MB');
-      print('Stationary RSS: ${stationaryRss.toStringAsFixed(2)} MB');
-      print('Rendered Page Image count: ${renderedPages.evaluate().length}');
-      print('Active CircularProgressIndicator count in tree after load: ${spinners.evaluate().length}');
-      expect(spinners.evaluate().length, equals(0), reason: 'Zero active tickers when page is stationary');
-    });
+        print('[PROFILE SCENARIO 2 - Stationary Reader]');
+        print('Initial RSS: ${initialRss.toStringAsFixed(2)} MB');
+        print('Stationary RSS: ${stationaryRss.toStringAsFixed(2)} MB');
+        print('Rendered Page Image count: ${renderedPages.evaluate().length}');
+        print(
+          'Active CircularProgressIndicator count in tree after load: ${spinners.evaluate().length}',
+        );
+        expect(
+          spinners.evaluate().length,
+          equals(0),
+          reason: 'Zero active tickers when page is stationary',
+        );
+      },
+    );
 
-    testWidgets('Scenario 3: Page Navigation (Flipping Pages 60s sample)', (tester) async {
+    testWidgets('Scenario 3: Page Navigation (Flipping Pages 60s sample)', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -138,13 +151,21 @@ void main() {
 
       final endRss = ProcessInfo.currentRss / (1024 * 1024);
       print('[PROFILE SCENARIO 3 - Page Navigation]');
-      print('Elapsed time for 6 flips: ${flipSw.elapsedMilliseconds} ms (${(flipSw.elapsedMilliseconds / 6).toStringAsFixed(1)} ms/flip)');
+      print(
+        'Elapsed time for 6 flips: ${flipSw.elapsedMilliseconds} ms (${(flipSw.elapsedMilliseconds / 6).toStringAsFixed(1)} ms/flip)',
+      );
       print('Page change events fired: $pageChangeEvents');
-      print('Start RSS: ${startRss.toStringAsFixed(2)} MB, End RSS: ${endRss.toStringAsFixed(2)} MB, Delta: +${(endRss - startRss).toStringAsFixed(2)} MB');
-      print('Diagnosis: Each page flip discards previous surface before PDFium completes new page, resulting in a white flash / flicker.');
+      print(
+        'Start RSS: ${startRss.toStringAsFixed(2)} MB, End RSS: ${endRss.toStringAsFixed(2)} MB, Delta: +${(endRss - startRss).toStringAsFixed(2)} MB',
+      );
+      print(
+        'Diagnosis: Each page flip discards previous surface before PDFium completes new page, resulting in a white flash / flicker.',
+      );
     });
 
-    testWidgets('Scenario 4: Continuous Vertical Scroll (60s sample)', (tester) async {
+    testWidgets('Scenario 4: Continuous Vertical Scroll (60s sample)', (
+      tester,
+    ) async {
       final container = ProviderContainer(
         overrides: [
           pdfViewModeProvider.overrideWith((ref) => PdfViewMode.continuous),
@@ -193,10 +214,16 @@ void main() {
 
       final endRss = ProcessInfo.currentRss / (1024 * 1024);
       print('[PROFILE SCENARIO 4 - Continuous Scroll]');
-      print('Elapsed time for 10 scroll drags: ${scrollSw.elapsedMilliseconds} ms');
+      print(
+        'Elapsed time for 10 scroll drags: ${scrollSw.elapsedMilliseconds} ms',
+      );
       print('Scroll page boundary events: $scrollEvents');
-      print('Start RSS: ${startRss.toStringAsFixed(2)} MB, End RSS: ${endRss.toStringAsFixed(2)} MB, Delta: +${(endRss - startRss).toStringAsFixed(2)} MB');
-      print('Diagnosis: Rebuilds entire reader on page boundary, destroys offscreen pages immediately with default cacheExtent, causing re-render churn.');
+      print(
+        'Start RSS: ${startRss.toStringAsFixed(2)} MB, End RSS: ${endRss.toStringAsFixed(2)} MB, Delta: +${(endRss - startRss).toStringAsFixed(2)} MB',
+      );
+      print(
+        'Diagnosis: Rebuilds entire reader on page boundary, destroys offscreen pages immediately with default cacheExtent, causing re-render churn.',
+      );
     });
 
     testWidgets('Scenario 5: Open and Close Appearance Panel', (tester) async {
@@ -210,7 +237,10 @@ void main() {
             home: Scaffold(
               body: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+                  constraints: const BoxConstraints(
+                    maxWidth: 420,
+                    maxHeight: 560,
+                  ),
                   child: const AppearanceSheet(
                     bookId: 'test-profile-book',
                     isDialog: true,
@@ -227,8 +257,15 @@ void main() {
       final sheetFinder = find.byType(AppearanceSheet);
       final sheetSize = tester.getSize(sheetFinder);
       print('[PROFILE SCENARIO 5 - Appearance Panel]');
-      print('Appearance Sheet Rendered Size: ${sheetSize.width.toStringAsFixed(1)} x ${sheetSize.height.toStringAsFixed(1)}');
-      expect(sheetSize.width, lessThanOrEqualTo(420.0), reason: 'Desktop appearance panel is compact and does not occlude reading text');
+      print(
+        'Appearance Sheet Rendered Size: ${sheetSize.width.toStringAsFixed(1)} x ${sheetSize.height.toStringAsFixed(1)}',
+      );
+      expect(
+        sheetSize.width,
+        lessThanOrEqualTo(420.0),
+        reason:
+            'Desktop appearance panel is compact and does not occlude reading text',
+      );
     });
 
     testWidgets('Scenario 6: Reopen Same PDF Document', (tester) async {
@@ -264,7 +301,9 @@ void main() {
       final midRss = ProcessInfo.currentRss / (1024 * 1024);
 
       // Close document (navigate back to library)
-      await tester.pumpWidget(const MaterialApp(home: Scaffold(body: Text('Library'))));
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: Text('Library'))),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       final closeRss = ProcessInfo.currentRss / (1024 * 1024);
@@ -300,7 +339,9 @@ void main() {
       print('First Open RSS: ${midRss.toStringAsFixed(2)} MB');
       print('After Close RSS: ${closeRss.toStringAsFixed(2)} MB');
       print('Reopen RSS: ${reopenRss.toStringAsFixed(2)} MB');
-      print('Diagnosis: Disposing the document frees PdfDocument native handle, but document reopening repeats full file load.');
+      print(
+        'Diagnosis: Disposing the document frees PdfDocument native handle, but document reopening repeats full file load.',
+      );
     });
   });
 }

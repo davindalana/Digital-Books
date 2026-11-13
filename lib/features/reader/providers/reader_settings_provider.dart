@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/reading_theme.dart';
-import '../../../core/typography/typography_settings.dart';
+import '../../../core/theme/typography_settings.dart';
 import '../domain/models/reading_location.dart';
 
 import '../../processing/services/scanned_image_enhancer.dart';

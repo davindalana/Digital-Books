@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
-import 'package:digital_books/core/utils/file_storage_service.dart';
+import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/features/processing/models/processing_manifest.dart';
 import 'package:digital_books/features/processing/services/book_reprocessor.dart';
 import 'package:digital_books/features/processing/services/processed_artifact_inspector.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';

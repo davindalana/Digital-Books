@@ -1,6 +1,6 @@
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/book_page_turn_view.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';

@@ -1,6 +1,6 @@
 import 'dart:ui' show Rect;
 import 'package:uuid/uuid.dart';
-import '../../reader/models/book_document.dart';
+import '../../reader/domain/models/book_document.dart';
 import 'extracted_page_geometry.dart';
 import 'processing_manifest.dart';
 

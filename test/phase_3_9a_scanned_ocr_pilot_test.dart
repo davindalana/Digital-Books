@@ -8,7 +8,7 @@ import 'package:drift/drift.dart' hide isNotNull;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
-import 'package:digital_books/core/utils/file_storage_service.dart';
+import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/features/processing/models/ocr_page_result.dart';
 import 'package:digital_books/features/processing/models/ocr_quality.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';

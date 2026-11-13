@@ -1,5 +1,5 @@
 import 'package:digital_books/features/processing/models/semantic_reconstruction_models.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 ReconstructedDocument _document({

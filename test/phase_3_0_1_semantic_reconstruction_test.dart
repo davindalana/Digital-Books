@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart' show PdfFontStyle;
 import 'package:digital_books/core/theme/reading_theme.dart';
-import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/models/semantic_reconstruction_models.dart';
 import 'package:digital_books/features/processing/services/paragraph_reconstructor.dart';
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/semantic_classifier.dart';
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
 

@@ -6,7 +6,7 @@ import 'package:digital_books/features/processing/models/extracted_page_geometry
 import 'package:digital_books/features/processing/models/processing_manifest.dart';
 import 'package:digital_books/features/processing/services/geometry_aware_pdf_extractor.dart';
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
-import 'package:digital_books/features/reader/models/book_document.dart';
+import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'helpers/real_book_fixtures.dart';

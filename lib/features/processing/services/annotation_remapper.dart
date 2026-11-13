@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 
 import '../../../core/database/app_database.dart';
-import '../../reader/models/book_document.dart';
+import '../../reader/domain/models/book_document.dart';
 
 /// Result of relocating user annotations from an old processed document to a
 /// newly reconstructed one.
