@@ -350,7 +350,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // macOS App Title bar zone (offset right from traffic lights at X in [20, 78])
             Container(
               height: AppThemeTokens.titlebarHeight,
-              padding: const EdgeInsets.only(left: 88, right: 12, top: 20),
+              padding: const EdgeInsets.only(left: 88, right: 12, top: 24),
               child: Row(
                 children: [
                   Container(
@@ -382,6 +382,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 10),
 
             // Native "Tambah Buku" Primary Action Button
             Padding(
@@ -729,7 +731,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final double leftInset = isCompact ? 32.0 : AppThemeTokens.space24;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(leftInset, 14, AppThemeTokens.space24, 10),
+      padding: EdgeInsets.fromLTRB(leftInset, 21, AppThemeTokens.space24, 10),
       child: Row(
         children: [
           // Breadcrumb or Section Title
