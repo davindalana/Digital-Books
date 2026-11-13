@@ -66,7 +66,7 @@ Digital Books Architecture
 
 ## Performance Benchmarks
 
-Measured on macOS (ARM64 / Apple Silicon):
+*Catatan Metrik*: Diukur pada v1.0.0, belum diukur ulang pada 1.1.0-alpha.8 (macOS ARM64 / Apple Silicon):
 
 | Benchmark Scenario | Dataset / Workload | Latency / Metric | Performance Target | Result |
 | :--- | :--- | :--- | :--- | :--- |
@@ -103,7 +103,7 @@ flutter run -d macos
 # Static analysis (0 issues required)
 flutter analyze
 
-# Full unit, widget, and stability test suite
+# Full unit, widget, and stability test suite (647 PASSED, 2 SKIPPED — terverifikasi 2026-11-13)
 flutter test --reporter expanded
 
 # Native macOS integration tests are listed under integration_test/.

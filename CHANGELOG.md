@@ -4,6 +4,30 @@ All notable changes to the **Digital Books** application are documented in this 
 
 ---
 
+## [1.1.0-alpha.8+9] - 2026-11-13
+
+### Added
+- **Repository Organization, Efficiency & Structure Consolidation**:
+  - Centralized application version metadata in `AppInfo` (`1.1.0-alpha.8 (build 9)` display / `1.1.0-alpha.8+9` technical).
+  - Consolidated reader domain models under `lib/features/reader/domain/models/`.
+  - Relocated `FileStorageService` to `lib/core/services/` and `TypographySettings` to `lib/core/theme/`.
+  - Removed unused `cupertino_icons` dependency and removed hardcoded developer paths in `AppleVisionOcrService`.
+  - Centralized operational documentation (`INSTALLATION.md`, `BACKUP_AND_RESTORE.md`, `KNOWN_ISSUES.md`) in `docs/` and eliminated all absolute `file:///` URLs across the repository.
+- **Siklus II Modernization & Apple Books Polish Initiative (Phase 1, 2, 5)**:
+  - Phase 1: Centralized design tokens in `AppThemeTokens` and standardized Indonesian UX strings in `AppStrings`.
+  - Phase 2: macOS responsive shell with 3 breakpoints (Compact 700dp, Standard 900dp, Expansive 1280dp), collapsible navigation sidebar, and native window capture tools.
+  - Phase 5: Mode-aware reading progress calculation in `ReadingProgressCalculator`.
+- **Siklus I Engine Milestones (Phase 3.1 s.d. 3.9B)**:
+  - Phase 3.1 & 3.1.1: Local-first Apple Vision OCR pipeline (`bin/vision_ocr`), background OCR queue, dehyphenation, and paragraph reconstruction.
+  - Phase 3.2 & 3.2.1: Semantic in-book search with precision bounding box gold highlight and cyclical navigation traversal.
+  - Phase 3.3: Annotations and highlights subsystem with 5-color palette, persistent notes, bookmarks, and cross-mode anchor resolution.
+  - Phase 3.4 & 3.6: Book Mode horizontal pagination, real book visual acceptance, and print aesthetics.
+  - Phase 3.5: Real-world multi-corpus OCR and layout validation across 7 authentic book genres.
+  - Phase 3.8: Processing manifest versioning (`currentPipelineVersion = '3.8.0'`, `artifactSchemaVersion = 2`) and safe reprocessing.
+  - Phase 3.9A & 3.9B: Minimalist reader UI with unified macOS title bar band, auto-hide chrome, and running title centering.
+
+---
+
 ## [Phase 3.0.1] - 2026-11-01
 
 ### Added
@@ -156,6 +180,10 @@ All notable changes to the **Digital Books** application are documented in this 
   - Validates bidirectional mode switching and page mapping in `ReadingScreen`.
   - Validates real-world structural integrity across imported library books (e.g. *The Devotion of Suspect X* with 20 chapters and 1,907 paragraphs).
   - 171/171 automated tests passing with 0 `flutter analyze` issues.
+
+---
+
+## [1.1.0-alpha.3] - Real-World Reconstruction Validation & Reader Integration (Phase 2.7E)
 
 ### Added
 - **End-to-End Modernized Pipeline**: Integrated `GeometryAwarePdfExtractor` and `SemanticDocumentReconstructor` into `PdfProcessingPipeline.processAndImportPdf()`, retiring legacy plain-text splitting.
