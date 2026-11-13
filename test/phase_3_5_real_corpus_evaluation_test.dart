@@ -8,6 +8,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/geometry_aware_pdf_extractor.dart';
+import 'helpers/test_evidence_dir.dart';
 
 int levenshteinDistance<T>(List<T> a, List<T> b) {
   if (a.isEmpty) return b.length;
@@ -55,7 +56,7 @@ double calculateWer(String groundTruth, String ocrText) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const ocrService = AppleVisionOcrService();
-  const visualDir = 'docs/visual_evidence/phase_3_5';
+  final visualDir = resolveTestEvidenceDir('phase_3_5');
 
   final lautFile = File(
     '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',

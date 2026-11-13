@@ -13,13 +13,14 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/scrolling_reflowable_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final ocrService = AppleVisionOcrService();
   late Directory tempDir;
-  final evidenceDir = 'docs/visual_evidence/phase_3_1_2';
+  final evidenceDir = resolveTestEvidenceDir('phase_3_1_2');
 
   final bicaraSeninyaPath =
       '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';

@@ -24,6 +24,7 @@ import 'package:digital_books/features/reader/domain/models/reader_content.dart'
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 int _levenshtein(String s, String t) {
   if (s == t) return 0;
@@ -666,7 +667,7 @@ void main() {
       print('STEP 6: REAL BOOK NATIVE VISUAL EVIDENCE CAPTURE');
       print('===============================================================');
 
-      final evidenceDir = Directory('docs/visual_evidence/phase_3_6');
+      final evidenceDir = resolveTestEvidenceDirectory('phase_3_6');
       if (!evidenceDir.existsSync()) {
         evidenceDir.createSync(recursive: true);
       }

@@ -16,11 +16,12 @@ import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
 import 'package:digital_books/core/theme/app_theme_tokens.dart';
 import 'package:digital_books/features/library/presentation/screens/library_screen.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final evidenceDir = Directory('docs/visual_evidence/phase_2_shell');
+  final evidenceDir = resolveTestEvidenceDirectory('phase_2_shell');
 
   late AppDatabase db;
   late DatabaseService dbService;

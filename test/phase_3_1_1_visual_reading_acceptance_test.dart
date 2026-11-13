@@ -14,13 +14,14 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final ocrService = AppleVisionOcrService();
   late Directory tempDir;
-  final visualEvidenceDir = 'docs/visual_evidence/phase_3_1_1';
+  final visualEvidenceDir = resolveTestEvidenceDir('phase_3_1_1');
 
   final lautBerceritaPath =
       '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';

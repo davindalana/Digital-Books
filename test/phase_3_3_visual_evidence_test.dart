@@ -17,11 +17,12 @@ import 'package:digital_books/features/reader/presentation/widgets/original_pdf_
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/highlight_interaction_sheet.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/scrolling_reflowable_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final evidenceDir = 'docs/visual_evidence/phase_3_3';
+  final evidenceDir = resolveTestEvidenceDir('phase_3_3');
 
   setUpAll(() {
     Directory(evidenceDir).createSync(recursive: true);

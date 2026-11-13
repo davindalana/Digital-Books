@@ -15,13 +15,14 @@ import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.0.1 — Final Real-World Acceptance & Visual Regression Audit', () {
     const String downloadsDir = '/Users/davindalana/Downloads';
-    const String visualEvidenceDir = 'docs/visual_evidence';
+    final String visualEvidenceDir = resolveTestEvidenceDir();
 
     final lautBerceritaFile = File(
       '$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf',

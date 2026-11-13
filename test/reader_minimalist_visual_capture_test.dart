@@ -18,11 +18,12 @@ import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/domain/models/book_annotation.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final evidenceDir = Directory('docs/visual_evidence/minimalist_ui');
+  final evidenceDir = resolveTestEvidenceDirectory('minimalist_ui');
   const processedDocPath =
       '/Users/davindalana/Documents/DigitalBooks/books/7b3dcbf3-0f23-4c6d-8044-d525257dac00.json';
   const pdfFixturePath = 'test/fixtures/corpus/01_single_column_novel.pdf';

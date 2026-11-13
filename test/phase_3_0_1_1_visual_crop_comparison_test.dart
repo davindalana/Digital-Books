@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +15,7 @@ void main() {
   test(
     'Phase 3.0.1.1: Visual Crop Comparison of Thin Strokes and Punctuation',
     () async {
-      const evidenceDir = 'docs/visual_evidence/enhancement_fix';
+      final evidenceDir = resolveTestEvidenceDir('enhancement_fix');
       Directory(evidenceDir).createSync(recursive: true);
 
       final lautFile = File(

@@ -16,6 +16,7 @@ import 'package:digital_books/features/reader/domain/engines/pagination_engine.d
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +25,7 @@ void main() {
   final jsonFile = File(
     '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json',
   );
-  final evidenceDir = Directory('docs/visual_evidence/book_mode_acceptance');
+  final evidenceDir = resolveTestEvidenceDirectory('book_mode_acceptance');
 
   late ReaderDocument readerDoc;
 

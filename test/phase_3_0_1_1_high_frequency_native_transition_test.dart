@@ -8,13 +8,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.0.1.1 — High-Frequency Native Transition & Compositor Blip Audit', () {
     const String downloadsDir = '/Users/davindalana/Downloads';
-    const String evidenceDir = 'docs/visual_evidence/native_transitions';
+    final String evidenceDir = resolveTestEvidenceDir('native_transitions');
 
     final lautBerceritaFile = File(
       '$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf',

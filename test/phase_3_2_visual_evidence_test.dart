@@ -14,11 +14,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final evidenceDir = 'docs/visual_evidence/phase_3_2';
+  final evidenceDir = resolveTestEvidenceDir('phase_3_2');
 
   setUpAll(() {
     Directory(evidenceDir).createSync(recursive: true);
