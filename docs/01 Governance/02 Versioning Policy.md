@@ -1,9 +1,9 @@
-# Digital Books — Versioning Policy & Governance
+# Versioning Policy
 
 > **Metadata Dokumen**
 > - **Siklus / Inisiatif**: Tata Kelola Rekayasa (Engineering Governance)
 > - **Modul / Kategori**: Semantic Versioning 2.0.0 & Release Gates
-> - **Urutan Dokumen**: Dokumen 02 dari 02 pada Standar Tata Kelola
+> - **Urutan Dokumen**: 02 Versioning Policy
 > - **Tanggal**: November 2026
 > - **Status Verifikasi**: **APPROVED**
 

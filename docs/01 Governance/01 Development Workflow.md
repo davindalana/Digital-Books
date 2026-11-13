@@ -1,9 +1,9 @@
-# Digital Books — Development Workflow & Engineering Governance
+# Development Workflow
 
 > **Metadata Dokumen**
 > - **Siklus / Inisiatif**: Tata Kelola Rekayasa (Engineering Governance)
 > - **Modul / Kategori**: Development Workflow & Git Standards
-> - **Urutan Dokumen**: Dokumen 01 dari 02 pada Standar Tata Kelola
+> - **Urutan Dokumen**: 01 Development Workflow
 > - **Tanggal**: November 2026
 > - **Status Verifikasi**: **APPROVED**
 

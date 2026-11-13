@@ -27,10 +27,10 @@ All notable changes to the **Digital Books** application are documented in this 
   - Integrated one-tap toggle on `ReadingScreen` top navigation bar (`Icons.auto_fix_high`) and fine-grained controls in `AppearanceSheet`.
   - Added `test/phase_3_0_1_image_enhancement_test.dart` (4 passing test scenarios).
 - **Deliverables**:
-  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/04 Phase 3.0.1 Reader Quality.md`
-  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/05 Phase 3.0.1 Semantic Reconstruction.md`
-  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/06 Phase 3.0.1 PDF Transition Validation.md`
-  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/07 Phase 3.0.1 Performance.md`
+  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/04 Phase 3.0.1 Reader Quality and Contrast.md`
+  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/05 Phase 3.0.1 Reflowable Semantic Reconstruction.md`
+  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/06 Phase 3.0.1 PDF Transition and Anti Flash Validation.md`
+  - `docs/03 Reports/01 Historical Engine v1.1/01 Phase 3.0 Core Engine/07 Phase 3.0.1 Comprehensive Regression Benchmark.md`
 
 ### Performance
 - High-resolution 8.1 MB scanned page enhancement executes in 18 ms (well under the 35 ms budget).

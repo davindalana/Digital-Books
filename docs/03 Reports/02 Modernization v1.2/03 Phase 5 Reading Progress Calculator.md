@@ -1,4 +1,4 @@
-# Phase 5 — Unified Reading Progress Calculator & Mode-Aware Formatting
+# Phase 5 Reading Progress Calculator
 
 > **Metadata Dokumen**
 > - **Siklus / Inisiatif**: Siklus II — Modernization & Apple Books Polish (v1.2+)
