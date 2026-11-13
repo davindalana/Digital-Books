@@ -1,6 +1,6 @@
-# Digital Books (macOS) • Version 1.0.0
+# Digital Books for macOS • Version 1.1.0-alpha.8+9
 
-A high-performance, native-fidelity digital reading application crafted for macOS with an Apple Books-inspired user experience. Built with Flutter, Drift (SQLite), and native PDFium.
+A local-first digital library and reading application for macOS, built with Flutter, Drift (SQLite), and PDFium. This repository is currently preparing a macOS beta; Android and iOS are not release targets for this beta.
 
 ---
 
@@ -58,7 +58,7 @@ Digital Books Architecture
                             ▼
 ┌────────────────────────────────────────────────────────┐
 │           Persistence & Durability (Drift/SQLite)      │
-│  Schema v3 · Cascade Delete · Atomic Backup & Restore  │
+│  Schema v6 · Cascade Delete · Atomic Backup & Restore  │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -82,7 +82,7 @@ Measured on macOS (ARM64 / Apple Silicon):
 
 ### Prerequisites
 - macOS 12.0 (Monterey) or higher
-- Flutter SDK 3.24+ (Channel stable)
+- Flutter SDK 3.41.6 / Dart 3.11.4 (the currently verified toolchain)
 - Xcode 15+ & CocoaPods
 
 ### Running the App Locally
@@ -103,12 +103,15 @@ flutter run -d macos
 # Static analysis (0 issues required)
 flutter analyze
 
-# Full unit, widget, and stability test suite (137 tests)
-flutter test
+# Full unit, widget, and stability test suite
+flutter test --reporter expanded
 
-# Native macOS integration test
-flutter test integration_test/macos_native_flow_test.dart -d macos
+# Native macOS integration tests are listed under integration_test/.
+# Run the selected scenario on a macOS desktop target.
+flutter test integration_test/macos_phase_2_8_4_native_visual_acceptance_test.dart -d macos
 ```
+
+The native interaction and visual acceptance checklist still requires a human run on macOS. Passing Flutter tests alone does not complete beta acceptance.
 
 ---
 

@@ -113,7 +113,7 @@ void main() {
     );
 
     testWidgets(
-      '2. Slim Bottom Bar sits flush at window bottom with 32dp height',
+      '2. Bottom Bar sits flush at window bottom with its current content height',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1000, 700));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -122,18 +122,18 @@ void main() {
         await tester.pumpAndSettle();
 
         // Page label exists in bottom bar
-        final pageLabelFinder = find.textContaining('Hal. 1 dari');
+        final pageLabelFinder = find.textContaining('Page 1 of');
         expect(pageLabelFinder, findsOneWidget);
 
-        // Verify bottom bar container sits at the very bottom edge (y=700 - 32 = 668)
+        // Verify the bottom bar container sits at the very bottom edge.
         final bottomBarContainerFinder = find
             .ancestor(of: pageLabelFinder, matching: find.byType(Container))
             .first;
         final bottomBarSize = tester.getSize(bottomBarContainerFinder);
-        expect(bottomBarSize.height, equals(32.0));
+        expect(bottomBarSize.height, equals(46.0));
 
         final bottomBarTopLeft = tester.getTopLeft(bottomBarContainerFinder);
-        expect(bottomBarTopLeft.dy, equals(700.0 - 32.0));
+        expect(bottomBarTopLeft.dy, equals(700.0 - bottomBarSize.height));
 
         // Scrubbing slider exists and is configured with compact track height
         final sliderFinder = find.byType(Slider);

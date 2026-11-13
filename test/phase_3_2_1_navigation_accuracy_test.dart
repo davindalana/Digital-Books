@@ -43,12 +43,12 @@ void main() {
         expect(nextCount, equals(1));
 
         // Tap Previous Match
-        await tester.tap(find.byTooltip('Hasil Sebelumnya (Shift+Enter)'));
+        await tester.tap(find.byTooltip('Previous result (Shift+Enter)'));
         await tester.pump();
         expect(prevCount, equals(1));
 
         // Tap Close
-        await tester.tap(find.byTooltip('Selesai Pencarian (Esc)'));
+        await tester.tap(find.byTooltip('Finish search (Esc)'));
         await tester.pump();
         expect(closed, isTrue);
       },

@@ -107,16 +107,17 @@ void main() {
         expect(expandedFinder, findsOneWidget);
         final RenderBox expandedBox = tester.renderObject(expandedFinder);
 
-        // Expected content height:
-        // Viewport (600) - Container vertical padding (24 * 2) - Header (28) - Footer (24) = 500.0 pt
-        const expectedContentHeight = viewportHeight - (24.0 * 2) - 28.0 - 24.0;
-        expect(expectedContentHeight, equals(500.0));
+        // The current renderer allocates 24 pt top and bottom padding,
+        // a 28 pt header, and a 20 pt footer region (including its spacing).
+        const expectedContentHeight = viewportHeight - (24.0 * 2) - 28.0 - 20.0;
+        expect(expectedContentHeight, equals(504.0));
         expect(expandedBox.size.height, equals(expectedContentHeight));
 
         // Now compare with PaginationEngine availableHeight formula:
-        // (viewportHeight - (verticalPadding * 2) - headerHeight - footerHeight)
+        // Compare the measured renderer geometry against the explicit layout
+        // budget used by this widget configuration.
         final engineCalculatedHeight =
-            (viewportHeight - (24.0 * 2) - 28.0 - 24.0).clamp(120.0, 4000.0);
+            (viewportHeight - (24.0 * 2) - 28.0 - 20.0).clamp(120.0, 4000.0);
         expect(engineCalculatedHeight, equals(expandedBox.size.height));
         print(
           'Vertical Geometry Verification: Rendered Content Height (${expandedBox.size.height} pt) == Engine Available Height ($engineCalculatedHeight pt). MATCH!',

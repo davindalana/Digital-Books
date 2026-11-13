@@ -1,6 +1,12 @@
-# Known Issues & Technical Disclosures • Digital Books v1.0.0
+# Known Issues & Technical Disclosures • Digital Books for macOS
 
-This document outlines known limitations, architectural boundaries, and intended behaviors in Version 1.0.0.
+This document outlines known limitations and architectural boundaries relevant to the macOS beta.
+
+## Beta Scope
+
+- The beta target is macOS. Android and iOS builds are not release targets for this beta and are not covered by its acceptance status.
+- Full release acceptance is pending native manual testing of import, reading, annotations, backup/restore, relaunch persistence, and compact/standard/expansive window sizes.
+- Reflowable reconstruction quality varies by source PDF. Use Original PDF mode for complex tables, formulas, multi-column layouts, and scans until OCR output passes its quality gate.
 
 ---
 
@@ -11,7 +17,7 @@ In macOS App Sandbox (configured in `macos/Runner/Release.entitlements`), direct
 - When a user imports a PDF file from an arbitrary directory (such as `~/Downloads` or external USB drives), macOS generates security-scoped bookmarks or provides temporary access while the app is active.
 - If the application is packaged with strict sandboxing enabled, original PDFs located outside the sandbox directory (`~/Library/Containers/com.davindalana.digitalBooks`) may become inaccessible if user permissions are revoked or file paths change.
 
-### Mitigation in v1.0.0
+### Current behavior
 - Digital Books extracts and caches extracted text structure and high-resolution cover thumbnails directly inside its internal application support directory (`~/Library/Application Support/com.davindalana.digitalBooks/`).
 - Users can use the **Full Library Bundle Export** feature, which bundles all PDF originals alongside the metadata manifest, ensuring 100% portability regardless of sandboxing.
 
@@ -23,7 +29,7 @@ In macOS App Sandbox (configured in `macos/Runner/Release.entitlements`), direct
 - Annotations (Highlights, Bookmarks, Sticky Notes) created in the **Reflowable Reading Engine** utilize semantic fuzzy anchor resolution (`chapterId`, `paragraphIndex`, `exactText`, `prefixContext`, `suffixContext`).
 - In **Native PDF Mode**, text is rendered directly from PDFium raster/vector streams.
 
-### Scope in v1.0.0
+### Current behavior
 - Text highlighting and in-place note attachment are optimized for the **Reflowable Engine**.
 - When viewing a book in Native PDF mode, users can bookmark pages and view reading progress; fine-grained vector text highlights directly baked into PDF binary streams are scheduled for a future release.
 
@@ -35,7 +41,7 @@ In macOS App Sandbox (configured in `macos/Runner/Release.entitlements`), direct
 When importing scanned or image-dense PDF files exceeding 500 pages:
 - High-DPI cover rendering and full-text extraction via PDFium temporarily utilizes system memory during the initial background ingestion worker.
 
-### Mitigation in v1.0.0
+### Current behavior
 - Ingestion occurs asynchronously on an isolated worker thread without blocking the Flutter UI.
 - Once ingestion completes, PDFium page pointers are immediately released, returning system memory back to normal idle baseline levels (< 80 MB RSS).
 

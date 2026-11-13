@@ -461,7 +461,7 @@ void main() {
         await tester.pump();
 
         // Tap Simpan button
-        await tester.tap(find.widgetWithText(FilledButton, 'Simpan'));
+        await tester.tap(find.widgetWithText(FilledButton, 'Save'));
         await tester.pump();
 
         expect(savedColor, isNotEmpty);

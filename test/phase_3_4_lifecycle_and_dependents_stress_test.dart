@@ -277,7 +277,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify sheet is open
-        expect(find.text('Anotasi & Penanda Buku'), findsOneWidget);
+        expect(find.text('Highlights & Bookmarks'), findsOneWidget);
 
         // Press Escape: Should dismiss modal sheet, NOT ReadingScreen!
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -285,7 +285,7 @@ void main() {
 
         // ReadingScreen is STILL mounted!
         expect(find.byType(ReadingScreen), findsOneWidget);
-        expect(find.text('Anotasi & Penanda Buku'), findsNothing);
+        expect(find.text('Highlights & Bookmarks'), findsNothing);
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox());

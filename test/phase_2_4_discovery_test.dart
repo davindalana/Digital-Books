@@ -522,10 +522,10 @@ void main() {
         await tester.tap(find.byTooltip('Hasil Berikutnya (Enter)'));
         expect(nextCount, equals(1));
 
-        await tester.tap(find.byTooltip('Hasil Sebelumnya (Shift+Enter)'));
+        await tester.tap(find.byTooltip('Previous result (Shift+Enter)'));
         expect(prevCount, equals(1));
 
-        await tester.tap(find.byTooltip('Selesai Pencarian (Esc)'));
+        await tester.tap(find.byTooltip('Finish search (Esc)'));
         expect(closed, isTrue);
       },
     );
@@ -552,7 +552,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        expect(find.text('Daftar Isi'), findsOneWidget);
+        expect(find.text('Table of Contents'), findsOneWidget);
         expect(find.text('Bab 1: Kendali Diri'), findsOneWidget);
         expect(find.text('Bab 2: Manajemen Persepsi'), findsOneWidget);
         // Nested heading in auto-expanded current chapter

@@ -29,7 +29,7 @@ MAJOR.MINOR.PATCH-PRERELEASE+BUILD
 | **MINOR** | Penambahan fitur utama baru yang backward-compatible (misal: penambahan OCR engine, sync engine, atau reflowable reader). | `1.1.0`, `1.2.0` |
 | **PATCH** | Perbaikan bug kritis, perbaikan visual kecil, atau penyesuaian dependensi pada versi stabil. | `1.0.1`, `1.1.1` |
 | **PRERELEASE** | Fase pematangan rilis sebelum stabil: `alpha.N`, `beta.N`, `rc.N`. | `alpha.8`, `beta.1`, `rc.1` |
-| **BUILD** | Angka integer mononoton naik yang merepresentasikan sequence build internal untuk distribusi macOS/iOS/Android. | `+9`, `+10` |
+| **BUILD** | Angka integer monoton naik yang merepresentasikan sequence build internal untuk distribusi macOS pada target beta saat ini. | `+9`, `+10` |
 
 ---
 

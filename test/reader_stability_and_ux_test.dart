@@ -31,8 +31,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Ensure error UI renders cleanly without overflow
-        expect(find.text('Berkas PDF Tidak Ditemukan'), findsOneWidget);
-        expect(find.text('Coba Lagi'), findsOneWidget);
+        expect(
+          find.textContaining('Original PDF not found at:'),
+          findsOneWidget,
+        );
+        expect(find.text('Try Again'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -60,7 +63,7 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      expect(find.text('Berkas PDF Tidak Ditemukan'), findsOneWidget);
+      expect(find.textContaining('Original PDF not found at:'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

@@ -864,7 +864,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('hasil pindaian (scan)'), findsOneWidget);
+        expect(
+          find.textContaining(
+            'This scanned document has no complete text layer',
+          ),
+          findsOneWidget,
+        );
         expect(
           find.byKey(const ValueKey('quality_banner_switch_button')),
           findsOneWidget,

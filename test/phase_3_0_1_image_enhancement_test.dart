@@ -402,12 +402,12 @@ void main() {
 
         // Check section header exists
         expect(find.text('PENINGKATAN KUALITAS PINDAIAN'), findsOneWidget);
-        expect(find.text('Tingkatkan Kualitas Pindaian'), findsOneWidget);
+        expect(find.text('Enhance Scanned Pages'), findsOneWidget);
 
         // Tap enhancement switch to enable it
         final switchFinder = find.widgetWithText(
           SwitchListTile,
-          'Tingkatkan Kualitas Pindaian',
+          'Enhance Scanned Pages',
         );
         expect(switchFinder, findsOneWidget);
         await tester.tap(switchFinder);

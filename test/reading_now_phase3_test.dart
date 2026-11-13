@@ -303,7 +303,7 @@ void main() {
 
         // Friendly prompt
         expect(find.text(AppStrings.emptySedangDibacaTitle), findsOneWidget);
-        expect(find.text('Pilih Buku'), findsOneWidget);
+        expect(find.text('Choose a Book'), findsOneWidget);
 
         // Rak "Belum dimulai" is visible right below
         expect(find.text(AppStrings.shelfBelumDimulai), findsOneWidget);

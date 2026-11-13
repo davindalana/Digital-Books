@@ -55,7 +55,7 @@ void main() {
         expect(sheetFinder, findsOneWidget);
         final size = tester.getSize(sheetFinder);
         expect(size.width, lessThanOrEqualTo(420.0));
-        expect(find.text('Pengaturan Tampilan'), findsOneWidget);
+        expect(find.text('Appearance Settings'), findsOneWidget);
       },
     );
 
@@ -88,7 +88,7 @@ void main() {
         expect(find.text('FONT'), findsNothing);
         expect(
           find.text(
-            'Pengaturan ukuran font dan tipografi teks berlaku dalam mode Buku (Reflowable).',
+            'Font size and typography settings apply in Book (Reflowable) mode.',
           ),
           findsOneWidget,
         );
@@ -159,7 +159,7 @@ void main() {
 
         // In continuous mode, the spread toggle button exists but has the explanatory tooltip
         final disabledSpreadFinder = find.byTooltip(
-          'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi)',
+          'Two-page view is available only in paginated mode',
         );
         expect(disabledSpreadFinder, findsOneWidget);
 
@@ -169,7 +169,7 @@ void main() {
         expect(find.byType(SnackBar), findsOneWidget);
         expect(
           find.text(
-            'Tampilan 2 halaman hanya tersedia dalam mode Halaman (Paginasi). Silakan beralih dari Gulir Vertikal.',
+            'Two-page view is available only in paginated mode. Switch from vertical scrolling to continue.',
           ),
           findsOneWidget,
         );

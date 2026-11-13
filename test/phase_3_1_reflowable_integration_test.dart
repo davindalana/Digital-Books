@@ -170,7 +170,7 @@ void main() {
 
         // Verify that "Mulai OCR" button or Top App Bar is rendered
         expect(find.text('Laut Bercerita'), findsOneWidget);
-        expect(find.text('Mulai OCR'), findsOneWidget);
+        expect(find.text('Start OCR'), findsOneWidget);
 
         // Cleanly unmount to cancel periodic auto-save and auto-hide timers
         await tester.pumpWidget(const SizedBox());
