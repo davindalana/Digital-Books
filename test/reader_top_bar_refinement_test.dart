@@ -7,8 +7,12 @@ import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/core/providers/database_providers.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
+import 'package:digital_books/core/typography/typography_settings.dart';
+import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/models/book_annotation.dart';
+import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
+import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_page_renderer.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 
 void main() {
@@ -444,6 +448,82 @@ void main() {
           (groupMidY - nativeTrafficLightCenterY).abs(),
           lessThanOrEqualTo(2.0),
         );
+      },
+    );
+
+    testWidgets(
+      '11. Book mode running header is vertically centered between header and body text',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1200, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        const runningChapterTitle = 'BAB I: PERBEDAAN JUARA 1';
+        final page = PaginatedPage(
+          pageIndexInChapter: 0,
+          pageIndexInBook: 0,
+          chapterIndex: 0,
+          chapterTitle: runningChapterTitle,
+          firstAnchorNodeId: 'n1',
+          lastAnchorNodeId: 'n1',
+          slices: [
+            PaginatedNodeSlice(
+              node: const ContentNode(
+                id: 'n1',
+                type: ContentNodeType.paragraph,
+                text: 'Isi buku pertama',
+              ),
+              textSlice: 'Isi buku pertama',
+              startCharOffset: 0,
+              endCharOffset: 16,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(platform: TargetPlatform.macOS),
+            home: Scaffold(
+              body: ReflowablePageRenderer(
+                page: page,
+                totalPagesInBook: 10,
+                theme: ReadingThemeType.black,
+                typography: const TypographySettings(),
+                contentWidth: 400.0,
+                showHeader: true,
+                showFooter: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final headerTextFinder = find.text(runningChapterTitle.toUpperCase());
+        expect(headerTextFinder, findsOneWidget);
+
+        // Header text is centered within its 28pt box
+        final centerFinder = find.ancestor(
+          of: headerTextFinder,
+          matching: find.byType(Center),
+        );
+        expect(centerFinder, findsWidgets);
+
+        // The 28pt box is padded by 13pt top and 7pt bottom (total 48pt) to compensate
+        // for body text paragraph leading and achieve sub-pixel optical centering.
+        final headerPaddingFinder = find.ancestor(
+          of: headerTextFinder,
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Padding &&
+                w.padding == const EdgeInsets.only(top: 13.0, bottom: 7.0),
+          ),
+        );
+        expect(headerPaddingFinder, findsOneWidget);
+
+        // Verify total header height is 48pt (10 + 28 + 10)
+        final RenderBox headerPaddingBox = tester.renderObject(
+          headerPaddingFinder,
+        );
+        expect(headerPaddingBox.size.height, equals(48.0));
       },
     );
   });

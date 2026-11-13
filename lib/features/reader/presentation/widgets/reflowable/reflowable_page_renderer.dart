@@ -93,25 +93,27 @@ class ReflowablePageRenderer extends StatelessWidget {
         children: [
           // 1. Running Header
           if (effectiveShowHeader)
-            SizedBox(
-              height: 28,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Text(
-                  page.chapterTitle.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w600,
-                    color: theme.secondaryTextColor.withAlpha(160),
+            Padding(
+              padding: const EdgeInsets.only(top: 13.0, bottom: 7.0),
+              child: SizedBox(
+                height: 28,
+                child: Center(
+                  child: Text(
+                    page.chapterTitle.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                      fontWeight: FontWeight.w600,
+                      color: theme.secondaryTextColor.withAlpha(160),
+                    ),
                   ),
                 ),
               ),
             )
           else
-            const SizedBox(height: 28),
+            const SizedBox(height: 48),
 
           // 2. Main Page Content (Slices)
           //

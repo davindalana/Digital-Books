@@ -1373,8 +1373,8 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
                       ? Padding(
                           padding: EdgeInsets.only(
                             top: nativeTitlebarInset > 0
-                                ? nativeTitlebarInset + 20.0
-                                : 100.0,
+                                ? nativeTitlebarInset
+                                : 80.0,
                           ),
                           child: ReflowableReaderContainer(
                             key: _reflowableKey,
