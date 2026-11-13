@@ -350,7 +350,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // macOS App Title bar zone (offset right from traffic lights at X in [20, 78])
             Container(
               height: AppThemeTokens.titlebarHeight,
-              padding: const EdgeInsets.only(left: 88, right: 12, top: 14),
+              padding: const EdgeInsets.only(left: 88, right: 12, top: 20),
               child: Row(
                 children: [
                   Container(
@@ -726,7 +726,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     // the title begins at X = 96pt from the window left edge.
     // Match the 24pt inset used by the section content so the title aligns
     // with the hero card. Compact mode also clears the native traffic lights.
-    final double leftInset = isCompact ? 32.0 : 48.0;
+    final double leftInset = isCompact ? 32.0 : AppThemeTokens.space24;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(leftInset, 14, AppThemeTokens.space24, 10),
