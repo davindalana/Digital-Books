@@ -10,9 +10,25 @@ class MainFlutterWindow: NSWindow {
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
-    let windowFrame = self.frame
     self.contentViewController = flutterViewController
-    self.setFrame(windowFrame, display: true)
+
+    // Set expansive default window size (1280x850, centered on screen) with 700x500 minimum.
+    let defaultWidth: CGFloat = 1280.0
+    let defaultHeight: CGFloat = 850.0
+    let minWidth: CGFloat = 700.0
+    let minHeight: CGFloat = 500.0
+
+    self.minSize = NSSize(width: minWidth, height: minHeight)
+
+    let screen = self.screen ?? NSScreen.main
+    let visibleFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1800, height: 1169)
+    let finalWidth = min(defaultWidth, max(minWidth, visibleFrame.width * 0.92))
+    let finalHeight = min(defaultHeight, max(minHeight, visibleFrame.height * 0.92))
+    let originX = visibleFrame.origin.x + (visibleFrame.width - finalWidth) / 2.0
+    let originY = visibleFrame.origin.y + (visibleFrame.height - finalHeight) / 2.0
+    let targetFrame = NSRect(x: originX, y: originY, width: finalWidth, height: finalHeight)
+
+    self.setFrame(targetFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
 
