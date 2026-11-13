@@ -4,6 +4,7 @@
 *.pyc
 *.swp
 .DS_Store
+**/.DS_Store
 .atom/
 .build/
 .buildlog/
@@ -11,6 +12,22 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+
+# Database files & local SQLite artifacts
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+# User backup bundles & physical data archives
+*.bundle/
+*.backup
+
+# Local native build artifacts
+bin/vision_ocr.dSYM/
 
 # IntelliJ related
 *.iml
