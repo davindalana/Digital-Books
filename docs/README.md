@@ -188,25 +188,26 @@ docs/
 
 ---
 
-## 7. Bukti Visual Pengujian Native macOS (`visual_evidence/`)
+## 7. Bukti Visual Pengujian Native macOS (`docs/visual_evidence/`)
+
+> [!NOTE]
+> Seluruh artefak tangkapan layar beresolusi tinggi (lossless Retina DPR $2.0\times$) disimpan dan diindeks secara komprehensif pada direktori [`docs/visual_evidence/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence). Untuk panduan lengkap, diagram alur pemrosesan, dan inventaris detail 18 subdirektori, buka [Katalog Bukti Visual & Alur Verifikasi Native macOS](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md).
 
 > [!IMPORTANT]
-> **Dilarang memindahkan atau mengubah nama direktori `docs/visual_evidence/`!**
-> Direktori ini diakses secara langsung oleh rangkaian tes otomatis (`test/*_test.dart`) dan alat native Swift (`tools/capture_native_windows.swift`) untuk memverifikasi regresi visual tata letak macOS.
+> **Dilarang memindahkan atau mengubah nama direktori di dalam `docs/visual_evidence/`!**
+> Direktori ini diakses dan ditulis secara langsung oleh rangkaian tes otomatis (`test/*_test.dart`) dan alat native Swift (`tools/capture_native_windows.swift`) untuk memverifikasi regresi visual tata letak macOS.
 
-Sub-direktori bukti visual:
-- `phase_2_shell/` & `phase_2_native/`: Screenshot shell window macOS responsive (compact 700dp, standard 900dp, expansive 1280dp) yang dihasilkan dari inisiatif modernisasi Siklus II.
-- `book_mode_acceptance/`: Tangkapan layar spread bab 1–5 Book Mode.
-- `book_mode_redesign/`: Perbandingan before/after perombakan tampilan Book Mode.
-- `enhancement_fix/`: Visual komparasi preset enhancement (Gentle, Balanced, Strong, Original).
-- `minimalist_ui/`: Bukti visual auto-hide controls, hover strip, tema, dan responsivitas window.
-- `native_transitions/`: Frame demi frame kurva kubik transisi curl native (0 ms hingga 340 ms).
-- `phase_3_1_1/` & `phase_3_1_2/`: Bukti visual perbandingan scan asli vs reflowable layout.
-- `phase_3_2/` & `phase_3_2_1/`: Visual in-book search, highlight traversal, dan cycling match.
-- `phase_3_3/`: Visual text selection toolbar, color picker 6-warna, dan panel anotasi.
-- `phase_3_5/` & `phase_3_6/`: Visual korpus uji buku nyata multi-genre.
-- `scan_enhancement/`: Bukti filter kontras dan penghapusan paper noise.
-- `transitions/`: Sequence transisi spread rendering PDFium.
+| No | Alur Fungsional Bukti Visual | Subdirektori Artefak | Siklus & Fase | Cakupan Verifikasi Utama | Dokumen Panduan |
+| :---: | :--- | :--- | :---: | :--- | :--- |
+| **01** | **Prapemrosesan & Peningkatan Citra** | [`scan_enhancement/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/scan_enhancement)<br/>[`enhancement_fix/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/enhancement_fix) | Siklus I<br/>Phase 3.0.1 / 3.0.1.1 | Peningkatan kontras kertas kuning, penajaman tepi huruf via unsharp mask, dan preservasi tanda baca tipis. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-1-prapemrosesan--peningkatan-citra-pindaian-image-enhancement--tone-mapping) |
+| **02** | **Transisi Halaman & 3D Curl Native** | [`transitions/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/transitions)<br/>[`native_transitions/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/native_transitions) | Siklus I<br/>Phase 3.0.1 / 3.0.1.1 | Eliminasi *white flash* pada spread rendering PDFium dan kurva kubik transisi curl 3D native 340 ms. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-2-transisi-halaman--efek-3d-curl-native-page-transitions--3d-curl) |
+| **03** | **Apple Vision OCR & Tipografi Reflowable** | [`phase_3_1_1/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_1_1)<br/>[`phase_3_1_2/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_1_2)<br/>[`reflowable/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/reflowable) | Siklus I<br/>Phase 3.1 s.d. 3.1.2 | Perbandingan scan asli vs reflowable, teks terjustifikasi, skala font (14–24pt), tema (Terang, Sepia, Gelap), dan mode baca. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-3-apple-vision-ocr--rekonstruksi-tipografi-reflowable-ocr--typography-quality) |
+| **04** | **Pencarian Penuh Dalam Buku (In-Book)** | [`phase_3_2/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_2)<br/>[`phase_3_2_1/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_2_1) | Siklus I<br/>Phase 3.2 / 3.2.1 | Dialog pencarian semantik, precision bounding-box emas, traversal bar, navigasi siklis, dan retensi match saat resize. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-4-pencarian-penuh-dalam-buku-in-book-search--precision-traversal) |
+| **05** | **Anotasi, Sorotan & Catatan Pengguna** | [`phase_3_3/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_3) | Siklus I<br/>Phase 3.3 | Selection toolbar, palet 6 warna, bottom sheet catatan, bookmark toggle, perpustakaan anotasi, dan jump navigation. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-5-anotasi-sorotan-warna--catatan-pengguna-annotations--highlights-subsystem) |
+| **06** | **Validasi Korpus Riil Multi-Genre** | [`phase_3_5/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_5) | Siklus I<br/>Phase 3.5 | Evaluasi performa OCR dan dehyphenation pada 7 korpus buku riil (*Laut Bercerita*, *Bicara Itu Ada Seninya*, dll.). | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-6-validasi-korpus-riil-multi-genre-real-world-multi-corpus-validation) |
+| **07** | **Book Mode & Akseptansi Buku Utuh** | [`book_mode_acceptance/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/book_mode_acceptance)<br/>[`book_mode_redesign/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/book_mode_redesign)<br/>[`phase_3_6/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_3_6)<br/>[`real_book_acceptance/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/real_book_acceptance) | Siklus I<br/>Phase 3.4 / 3.6 | Paginasi horizontal Bab I–V, estetika buku cetak (drop cap, TOC leaders), resolusi black screen bug, dan uji buku riil 255 halaman. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-7-book-mode--akseptansi-buku-utuh-book-mode-pagination--real-book-acceptance) |
+| **08** | **Antarmuka Minimalis Layar Baca** | [`minimalist_ui/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/minimalist_ui) | Siklus I & II<br/>Phase 3.9B / v1.2 | Auto-hide toolbar, hover edge triggers, tema, pemotongan judul panjang, traffic lights band macOS, dan running title centering. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-8-antarmuka-minimalis-layar-baca-minimalist-reader-ui--traffic-lights) |
+| **09** | **Shell Desktop macOS Responsif** | [`phase_2_shell/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_2_shell)<br/>[`phase_2_native/`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/phase_2_native) | Siklus II<br/>Phase 2 | Tata letak responsif 3 breakpoint (Compact 700dp, Standard 900dp, Expansive 1280dp) dan capture native macOS aktual tanpa modal dialog. | [`Buka`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/visual_evidence/README.md#alur-9-shell-desktop-macos-responsif--multi-breakpoint-layout-siklus-ii-modernization) |
 
 ---
 
