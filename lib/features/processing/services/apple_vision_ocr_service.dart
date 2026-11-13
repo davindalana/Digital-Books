@@ -35,11 +35,6 @@ class AppleVisionOcrService {
     if (rootBin.existsSync()) {
       return rootBin.path;
     }
-    const knownProjectBin =
-        '/Users/davindalana/Documents/Project/Digital Books/bin/vision_ocr';
-    if (File(knownProjectBin).existsSync()) {
-      return knownProjectBin;
-    }
     return 'bin/vision_ocr';
   }
 
@@ -51,9 +46,6 @@ class AppleVisionOcrService {
       '${Directory.current.path}/macos/tools/vision_ocr.swift',
     );
     if (rootSrc.existsSync()) return rootSrc.path;
-    const knownSrc =
-        '/Users/davindalana/Documents/Project/Digital Books/macos/tools/vision_ocr.swift';
-    if (File(knownSrc).existsSync()) return knownSrc;
     return '${Directory.current.path}/macos/tools/vision_ocr.swift';
   }
 
