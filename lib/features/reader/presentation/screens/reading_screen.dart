@@ -1343,7 +1343,10 @@ class _ReadingScreenState extends ConsumerState<ReadingScreen>
               children: [
                 // 1. Reading Body Engine
                 Positioned.fill(
-                  top: nativeTitlebarInset,
+                  // The macOS title bar is transparent and the reader chrome
+                  // floats above the page. Let the book extend behind it so
+                  // hiding the chrome never leaves an empty black band.
+                  top: 0,
                   child: _isLoadingDoc
                       ? Center(
                           child: Column(

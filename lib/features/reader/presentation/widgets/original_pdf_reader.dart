@@ -1392,7 +1392,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     }
 
     // Two-Page Open Book Spread
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Container(
         width: geo.bookW,
         height: geo.bookH,
@@ -1668,7 +1669,8 @@ class OriginalPdfReaderState extends State<OriginalPdfReader>
     final isForward = _direction == FlipDirection.forward;
     final geo = _calculateBookGeometry(doc, constraints, true, false);
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: Container(
         width: geo.bookW,
         height: geo.bookH,
