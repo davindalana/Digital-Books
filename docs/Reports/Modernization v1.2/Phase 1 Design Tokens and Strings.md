@@ -34,11 +34,13 @@ Dibuat berkas [`lib/core/theme/app_theme_tokens.dart`](file:///Users/davindalana
   - `sidebarWidth = 220.0`
   - `iconRailWidth = 64.0`
 
-### 2.2 Indonesian UX Strings Dictionary (`AppStrings`)
-Dibuat berkas [`lib/core/constants/app_strings.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/constants/app_strings.dart) yang menstandarisasi seluruh istilah antarmuka ke dalam Bahasa Indonesia baku bernuansa Apple Books:
-- Navigasi: *Semua Buku*, *Sedang Dibaca*, *Koleksi*, *Favorit*, *Selesai*.
-- Filter & Urutan: *Terakhir Dibaca*, *Judul*, *Penulis*, *Format*, *Ukuran File*.
-- Badge & Metadata: *Pindai*, *Hasil Pindai*, *Teks Digital*.
+### 2.2 Centralized UX Strings Dictionary (`AppStrings`)
+Dibuat berkas [`lib/core/constants/app_strings.dart`](file:///Users/davindalana/Documents/Project/Digital%20Books/lib/core/constants/app_strings.dart) yang menstandarisasi seluruh istilah antarmuka bernuansa Apple Books:
+- Navigasi: *Currently Reading*, *All Books*, *Collections*, *Bookmarks*, *Highlights & Notes*, *Settings*.
+- Aksi Utama: *Add Book*, *Continue Reading*, *Start Reading*, *View All*, *Import PDF…*.
+- Badge & Metadata: *Scanned*, *Digital Text*, *Unknown Author*, *Untitled*.
+- Status Progres: *Unread*, *Just Started*, *Finished*.
+- Mode Baca: *Book* (Reflowable), *PDF* (Original Document).
 
 ---
 

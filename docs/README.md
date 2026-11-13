@@ -19,7 +19,7 @@ flowchart TD
 
     subgraph S2["Siklus II: Modernization & Apple Books Polish (v1.2+) — November 2026"]
         direction TB
-        P1_NEW["Phase 1 (Modern)<br/>Design Tokens & Indonesian Strings"] --> P2_NEW["Phase 2 (Modern)<br/>Responsive macOS Shell, Rail & Sidebar"]
+        P1_NEW["Phase 1 (Modern)<br/>Design Tokens & Strings Dictionary"] --> P2_NEW["Phase 2 (Modern)<br/>Responsive macOS Shell, Rail & Sidebar"]
         P2_NEW --> P3_NEW["Phase 3 - 4 (Modern)<br/>Metadata Dialog & Native Window Transitions"]
         P3_NEW --> P5_NEW["Phase 5 (Modern)<br/>Unified Reading Progress Calculator"]
     end
@@ -99,7 +99,7 @@ docs/
 
 | Dokumen | Topik & Cakupan | Tautan |
 | :--- | :--- | :--- |
-| **Phase 1: Design Tokens & Strings** | Sentralisasi skala spasi (`AppThemeTokens`), skala radius, konstanta breakpoint macOS, dan kamus terminologi UX Bahasa Indonesia baku (`AppStrings`). | [`Phase 1 Design Tokens and Strings.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Modernization%20v1.2/Phase%201%20Design%20Tokens%20and%20Strings.md) |
+| **Phase 1: Design Tokens & Strings** | Sentralisasi skala spasi (`AppThemeTokens`), skala radius, konstanta breakpoint macOS, dan kamus terminologi UX terpadu (`AppStrings`). | [`Phase 1 Design Tokens and Strings.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Modernization%20v1.2/Phase%201%20Design%20Tokens%20and%20Strings.md) |
 | **Phase 2: macOS Responsive Shell** | Shell adaptif desktop macOS dengan 3 breakpoint (`compact < 700dp`, `standard 900dp`, `expansive >= 1280dp`), Icon Rail ramping ($64\text{ dp}$), Native Sidebar ($220\text{ dp}$), dan sinkronisasi rak buku aktif. | [`Phase 2 macOS Responsive Shell.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Modernization%20v1.2/Phase%202%20macOS%20Responsive%20Shell.md) |
 | **Phase 5: Reading Progress Calculator** | Kalkulator progres membaca mode-aware (`ReadingProgressCalculator`), pemisahan metrik fisik (PDF) vs semantik (Book Mode), dan estimasi waktu baca per bab. | [`Phase 5 Reading Progress Calculator.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Modernization%20v1.2/Phase%205%20Reading%20Progress%20Calculator.md) |
 

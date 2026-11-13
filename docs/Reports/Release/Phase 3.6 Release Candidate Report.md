@@ -3,7 +3,7 @@
 > **Auditor note (11 November 2026):** This report is preserved as a historical
 > milestone artifact, but several of its quantitative and manual-validation
 > claims were later found to be inaccurate. See
-> [`phase_3_7_independent_audit_report.md`](phase_3_7_independent_audit_report.md)
+> [`Phase 3.7 Independent Audit Report.md`](file:///Users/davindalana/Documents/Project/Digital%20Books/docs/Reports/Release/Phase%203.7%20Independent%20Audit%20Report.md)
 > for the independent verification. In particular, the four-book coverage, the
 > "manual" reader UX steps, the 1,468 pages at 1200×800 pagination figure, the
 > RSS delta, the visual-evidence captions, and the 480/480 test count are

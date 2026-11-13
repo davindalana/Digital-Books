@@ -34,21 +34,21 @@ void main() {
       expect(AppThemeTokens.minInteractiveTarget, equals(28.0));
     });
 
-    test('AppStrings contains consistent Indonesian terminology', () {
-      expect(AppStrings.navSedangDibaca, equals('Sedang Dibaca'));
-      expect(AppStrings.navSemuaBuku, equals('Semua Buku'));
-      expect(AppStrings.navSelesai, equals('Selesai'));
-      expect(AppStrings.navKoleksi, equals('Koleksi'));
-      expect(AppStrings.navPenanda, equals('Penanda'));
-      expect(AppStrings.navSorotanCatatan, equals('Sorotan & Catatan'));
-      expect(AppStrings.navPengaturan, equals('Pengaturan'));
+    test('AppStrings contains consistent UX terminology', () {
+      expect(AppStrings.navSedangDibaca, equals('Currently Reading'));
+      expect(AppStrings.navSemuaBuku, equals('All Books'));
+      expect(AppStrings.navSelesai, equals('Finished'));
+      expect(AppStrings.navKoleksi, equals('Collections'));
+      expect(AppStrings.navPenanda, equals('Bookmarks'));
+      expect(AppStrings.navSorotanCatatan, equals('Highlights & Notes'));
+      expect(AppStrings.navPengaturan, equals('Settings'));
 
-      expect(AppStrings.actionTambahBuku, equals('Tambah Buku'));
-      expect(AppStrings.actionLanjutkan, equals('Lanjutkan'));
-      expect(AppStrings.unknownAuthor, equals('Penulis tidak diketahui'));
-      expect(AppStrings.badgeHasilPindai, equals('Hasil pindai'));
-      expect(AppStrings.readerModeTeks, equals('Teks'));
-      expect(AppStrings.readerModePdfAsli, equals('PDF Asli'));
+      expect(AppStrings.actionTambahBuku, equals('Add Book'));
+      expect(AppStrings.actionLanjutkan, equals('Continue Reading'));
+      expect(AppStrings.unknownAuthor, equals('Unknown Author'));
+      expect(AppStrings.badgeHasilPindai, equals('Scanned'));
+      expect(AppStrings.readerModeTeks, equals('Book'));
+      expect(AppStrings.readerModePdfAsli, equals('PDF'));
     });
   });
 }

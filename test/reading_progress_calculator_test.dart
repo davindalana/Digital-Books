@@ -37,7 +37,7 @@ void main() {
           currentPosition: 1,
           totalPages: 255,
         );
-        expect(label, 'Baru dimulai • Hal. 1 dari 255');
+        expect(label, '${AppStrings.statusBaruDimulai} • Hal. 1 dari 255');
       },
     );
 
