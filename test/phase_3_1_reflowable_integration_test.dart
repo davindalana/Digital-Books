@@ -50,7 +50,6 @@ void main() {
   );
 
   setUp(() async {
-    if (!checkFixtureOrSkip(lautPdf)) return;
     tempAppDir = Directory.systemTemp.createTempSync('digital_books_e_test_');
     PathProviderPlatform.instance = MockPathProviderPlatform(tempAppDir);
 
@@ -77,6 +76,7 @@ void main() {
     test(
       '1. In-Book Search operates seamlessly on OCR-reconstructed text',
       () async {
+        if (!checkFixtureOrSkip(lautPdf)) return;
         // Seed book and perform OCR on pages 14-16
         await dbService.insertBook(
           BooksCompanion(
@@ -138,6 +138,7 @@ void main() {
     testWidgets(
       '2. ReadingScreen mounts and displays OCR progress / controls',
       (tester) async {
+        if (!checkFixtureOrSkip(lautPdf)) return;
         tester.view.physicalSize = const Size(1280, 800);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(() => tester.view.resetPhysicalSize());

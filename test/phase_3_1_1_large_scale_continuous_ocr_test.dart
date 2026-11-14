@@ -360,6 +360,7 @@ void main() {
     test(
       '3. Semantic Pipeline Assembly & Document Serialization from 50 OCR Pages',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaPath)) return;
         // Reconstruct BookDocument from the 50 OCR pages saved in test 2
         final pages = await dbService.getOcrPagesForBook(
           'laut-bercerita-50p-audit',

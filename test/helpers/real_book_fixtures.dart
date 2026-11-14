@@ -118,6 +118,10 @@ abstract final class RealBookFixtures {
   static File resolve(RealBookFixture fixture) {
     final path = _existingPath(fixture.candidates);
     if (path != null) return File(path);
+    final realBooksDir = Platform.environment['REAL_BOOKS_DIR'];
+    if (realBooksDir != null && realBooksDir.isNotEmpty) {
+      return File(p.join(expandHome(realBooksDir), p.basename(fixture.candidates.first)));
+    }
     return File(expandHome(fixture.candidates.first));
   }
 
@@ -182,6 +186,7 @@ String? _existingPath(List<String> candidates) {
       );
       if (File(subPath).existsSync()) return subPath;
     }
+    return null;
   }
 
   for (final candidate in candidates) {
@@ -252,6 +257,15 @@ File? resolveFixtureFile(String path, {String? reason}) {
     if (File(inDir).existsSync()) return File(inDir);
     final subPath = p.join(cleanDir, path.replaceAll(RegExp(r'^~/'), ''));
     if (File(subPath).existsSync()) return File(subPath);
+
+    if (Platform.environment['REQUIRE_REAL_BOOKS'] == '1') {
+      fail('Required fixture file "$path" is missing in REAL_BOOKS_DIR ($cleanDir).');
+    } else {
+      markTestSkipped(
+        'Fixture file "${p.basename(path)}" not available in REAL_BOOKS_DIR; ${reason ?? 'skipped'}.',
+      );
+      return null;
+    }
   }
 
   final resolved = expandHome(path);

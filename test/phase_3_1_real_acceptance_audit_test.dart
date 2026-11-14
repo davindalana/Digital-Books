@@ -88,6 +88,11 @@ void main() {
       });
 
       test('2. Multi-Page OCR & Semantic Benchmark across Corpus', () async {
+        if (!checkFixtureOrSkip(lautFile) ||
+            !checkFixtureOrSkip(bicaraFile) ||
+            !checkFixtureOrSkip(suspectXFile)) {
+          return;
+        }
         final corpus = [
           {
             'id': 'laut_bercerita_audit',

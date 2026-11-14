@@ -147,6 +147,7 @@ void main() {
 
   group('Minimalist UI Visual Evidence Capture Suite', () {
     testWidgets('Capture 1: Book Mode with Controls Visible', (tester) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -171,6 +172,7 @@ void main() {
     });
 
     testWidgets('Capture 2: Book Mode After Auto-Hide', (tester) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -203,6 +205,7 @@ void main() {
     // bar together) on any hover movement, making 03 and 04 byte-identical to 01.
 
     testWidgets('Capture 5: Light Theme (Theme White)', (tester) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -227,6 +230,7 @@ void main() {
     });
 
     testWidgets('Capture 6: Dark Theme (Theme Black)', (tester) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -251,6 +255,7 @@ void main() {
     });
 
     testWidgets('Capture 7: Sepia Theme (Theme Sepia)', (tester) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -302,6 +307,7 @@ void main() {
     testWidgets('Capture 9: Long Title Truncation with Ellipsis', (
       tester,
     ) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(1200, 800));
       tester.view.physicalSize = const Size(2400, 1600);
@@ -392,6 +398,7 @@ void main() {
     testWidgets('Capture 11: Medium Window Responsive Top Bar (800dp)', (
       tester,
     ) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(800, 700));
       tester.view.physicalSize = const Size(1600, 1400);
@@ -420,6 +427,7 @@ void main() {
     testWidgets('Capture 12: Narrow Window Responsive Top Bar (450dp)', (
       tester,
     ) async {
+      if (!checkFixtureOrSkip(processedDocPath)) return;
       final key = GlobalKey();
       await tester.binding.setSurfaceSize(const Size(450, 700));
       tester.view.physicalSize = const Size(900, 1400);
@@ -448,6 +456,7 @@ void main() {
     testWidgets(
       'Capture 13: Traffic Lights and Toolbar in Same Horizontal Band',
       (tester) async {
+        if (!checkFixtureOrSkip(processedDocPath)) return;
         final key = GlobalKey();
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         tester.view.physicalSize = const Size(2400, 1600);
