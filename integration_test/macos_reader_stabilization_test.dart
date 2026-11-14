@@ -130,7 +130,7 @@ void main() {
       expect(state.currentPage, equals(1));
       debugPrint('Step 4B PASSED: previousPage returned to page 1.');
 
-      // Step 5: Switch to Continuous View Mode
+      // Step 5: Switch to Continuous View Mode and scroll
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -151,8 +151,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       expect(readerKey.currentState?.viewMode, equals(PdfViewMode.continuous));
       expect(find.byType(ListView), findsOneWidget);
+      expect(readerKey.currentState?.errorMessage, isNull);
+      expect(find.byType(RawImage), findsAtLeastNWidgets(1));
+
+      // Scroll ListView to assert smooth scrolling and page rendering without error
+      final listView = find.byType(ListView);
+      await tester.drag(listView, const Offset(0, -600));
+      await tester.pump(const Duration(milliseconds: 300));
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(readerKey.currentState?.errorMessage, isNull);
+      expect(find.byType(RawImage), findsAtLeastNWidgets(1));
       debugPrint(
-        'Step 5 PASSED: Continuous scroll view rendered successfully.',
+        'Step 5 PASSED: Continuous scroll view rendered and scrolled successfully without errors.',
       );
 
       // Step 6: Dismount and verify clean disposal
