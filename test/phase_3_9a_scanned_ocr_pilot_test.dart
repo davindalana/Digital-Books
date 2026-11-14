@@ -217,6 +217,10 @@ void main() {
     test(
       '5. Evaluate Quality Gate metrics on the 25-page pilot dataset',
       () async {
+        if (maybeLautBook == null) {
+          markTestSkipped('Laut Bercerita fixture not available');
+          return;
+        }
         final storedPages = await dbService.getOcrPagesForBook(pilotBookId);
         expect(storedPages.length, equals(25));
 
@@ -440,6 +444,10 @@ void main() {
     test(
       '9. Quality gate on full book (394 pages) prevents premature Book Mode presentation',
       () async {
+        if (maybeLautBook == null) {
+          markTestSkipped('Laut Bercerita fixture not available');
+          return;
+        }
         final storedPages = await dbService.getOcrPagesForBook(
           'pilot-laut-25p-audit',
         );
