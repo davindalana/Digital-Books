@@ -9,6 +9,8 @@ import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_page_renderer.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,15 +20,24 @@ void main() {
     late ReaderDocument suspectXDoc;
     late ReaderDocument lautBerceritaDoc;
 
+    final letThemFile = File(
+      p.join(RealBookFixtures.booksDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json'),
+    );
+    final suspectXFile = File(
+      p.join(RealBookFixtures.booksDir, '67141617-5a74-4f9b-a9fa-45b28366e27d.json'),
+    );
+    final lautFile = File(
+      p.join(RealBookFixtures.booksDir, '8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.json'),
+    );
+
     setUpAll(() async {
-      final booksDir = Directory(
-        '/Users/davindalana/Documents/DigitalBooks/books',
-      );
+      if (!checkFixtureOrSkip(letThemFile) ||
+          !checkFixtureOrSkip(suspectXFile) ||
+          !checkFixtureOrSkip(lautFile)) {
+        return;
+      }
 
       // 1. The Let Them Theory (Vector Non-Fiction)
-      final letThemFile = File(
-        '${booksDir.path}/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json',
-      );
       if (letThemFile.existsSync()) {
         final json =
             jsonDecode(await letThemFile.readAsString())
@@ -37,9 +48,6 @@ void main() {
       }
 
       // 2. The Devotion of Suspect X (Novel with Dialogue)
-      final suspectXFile = File(
-        '${booksDir.path}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
-      );
       if (suspectXFile.existsSync()) {
         final json =
             jsonDecode(await suspectXFile.readAsString())
@@ -50,15 +58,20 @@ void main() {
       }
 
       // 3. Laut Bercerita (Scanned Novel)
-      final lautFile = File(
-        '${booksDir.path}/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.json',
-      );
       if (lautFile.existsSync()) {
         final json =
             jsonDecode(await lautFile.readAsString()) as Map<String, dynamic>;
         lautBerceritaDoc = ReaderDocument.fromBookDocument(
           BookDocument.fromJson(json),
         );
+      }
+    });
+
+    setUp(() {
+      if (!checkFixtureOrSkip(letThemFile) ||
+          !checkFixtureOrSkip(suspectXFile) ||
+          !checkFixtureOrSkip(lautFile)) {
+        return;
       }
     });
 

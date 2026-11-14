@@ -20,6 +20,7 @@ import 'package:digital_books/features/reader/domain/engines/pagination_engine.d
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,11 +29,11 @@ void main() {
   late Directory tempDir;
 
   final lautBerceritaPath =
-      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
   final bicaraSeninyaPath =
-      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
   final mrXPath =
-      '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf');
 
   setUpAll(() async {
     tempDir = Directory.systemTemp.createTempSync('db_reading_quality_test_');
@@ -102,6 +103,11 @@ void main() {
     test(
       '1. Multi-Section Representative Quality & Integrity Audit across 3 Books',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaPath) ||
+            !checkFixtureOrSkip(bicaraSeninyaPath) ||
+            !checkFixtureOrSkip(mrXPath)) {
+          return;
+        }
         final testCases = [
           {
             'book': 'Laut Bercerita (Fiction / Photocopy)',

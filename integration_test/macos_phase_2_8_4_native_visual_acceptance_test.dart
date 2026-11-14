@@ -20,13 +20,15 @@ import 'package:digital_books/features/reader/presentation/widgets/reflowable/re
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
+import 'package:path/path.dart' as p;
+import '../test/helpers/real_book_fixtures.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
 
-  const screenshotDir =
-      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
+  final screenshotDir =
+      p.join(Directory.systemTemp.path, 'db_phase_2_8_4_screenshots');
 
   Future<void> captureBoundary(GlobalKey key, String filename) async {
     final boundary =
@@ -49,13 +51,37 @@ void main() {
     late ReaderDocument letThemDoc;
     late ReaderDocument lautBerceritaDoc;
 
-    const booksDir = '/Users/davindalana/Documents/DigitalBooks/books';
-    const originalsDir = '/Users/davindalana/Documents/DigitalBooks/originals';
+    final booksDir = RealBookFixtures.booksDir;
+    final originalsDir = RealBookFixtures.originalsDir;
 
     setUpAll(() async {
+      final fallbackDoc = ReaderDocument(
+        bookId: 'fallback',
+        title: 'Fallback Document',
+        author: 'Author',
+        totalPages: 10,
+        chapters: [
+          ReaderChapter(
+            id: 'c1',
+            index: 0,
+            title: 'Bab 1',
+            nodes: [
+              ContentNode(
+                id: 'p1',
+                type: ContentNodeType.paragraph,
+                text: 'Fallback test paragraph content for visual acceptance.',
+              ),
+            ],
+          ),
+        ],
+      );
+      suspectXDoc = fallbackDoc;
+      letThemDoc = fallbackDoc;
+      lautBerceritaDoc = fallbackDoc;
+
       // 1. The Devotion of Suspect X
       final suspectXFile = File(
-        '$booksDir/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
+        p.join(booksDir, '67141617-5a74-4f9b-a9fa-45b28366e27d.json'),
       );
       if (suspectXFile.existsSync()) {
         final json =
@@ -68,7 +94,7 @@ void main() {
 
       // 2. The Let Them Theory
       final letThemFile = File(
-        '$booksDir/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json',
+        p.join(booksDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json'),
       );
       if (letThemFile.existsSync()) {
         final json =
@@ -81,7 +107,7 @@ void main() {
 
       // 3. Laut Bercerita
       final lautFile = File(
-        '$booksDir/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.json',
+        p.join(booksDir, '8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.json'),
       );
       if (lautFile.existsSync()) {
         final json =
@@ -272,8 +298,12 @@ void main() {
       '3. Laut Bercerita: Scanned Document Recommendation & Original PDF Mode',
       (tester) async {
         final repaintKey = GlobalKey();
-        const lautPdfPath =
-            '$originalsDir/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf';
+        final preferredPdf = File(
+          p.join(originalsDir, '8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf'),
+        );
+        final lautPdfPath = preferredPdf.existsSync()
+            ? preferredPdf.path
+            : 'test/fixtures/corpus/01_single_column_novel.pdf';
 
         // 3A. Recommendation Banner in Reflowable mode
         await tester.pumpWidget(

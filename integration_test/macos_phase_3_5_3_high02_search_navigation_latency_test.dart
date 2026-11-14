@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,16 +21,18 @@ import 'package:digital_books/features/reader/domain/models/reader_content.dart'
 import 'package:digital_books/features/reader/domain/models/search_geometry.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_reader_container.dart';
+import '../test/helpers/real_book_fixtures.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
 
   group('Phase 3.5.3 — HIGH-02: End-to-End Search Navigation Latency Validation', () {
-    const digitalPdfPath =
-        '/Users/davindalana/Downloads/The Let Them Theory (Mel Robbins).pdf';
-    const ocrPdfPath =
-        '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+    final digitalPdfFile = RealBookFixtures.resolve(RealBookFixtures.theLetThemTheory);
+    final ocrPdfFile = RealBookFixtures.resolve(RealBookFixtures.bicaraItuAdaSeninya);
+    final fallbackPdf = File('test/fixtures/corpus/01_single_column_novel.pdf');
+    final digitalPdfPath = (digitalPdfFile.existsSync() ? digitalPdfFile : fallbackPdf).path;
+    final ocrPdfPath = (ocrPdfFile.existsSync() ? ocrPdfFile : fallbackPdf).path;
 
     late AppDatabase db;
     late DatabaseService dbService;
@@ -47,7 +50,7 @@ void main() {
           id: const drift.Value(digitalBookId),
           title: const drift.Value('The Let Them Theory'),
           author: const drift.Value('Mel Robbins'),
-          originalPdfPath: const drift.Value(digitalPdfPath),
+          originalPdfPath: drift.Value(digitalPdfPath),
           fileHash: const drift.Value('digital_hash_bench'),
           totalPages: const drift.Value(20),
           isScanned: const drift.Value(false),
@@ -105,7 +108,7 @@ void main() {
           id: const drift.Value(ocrBookId),
           title: const drift.Value('Bicara Itu Ada Seninya'),
           author: const drift.Value('Oh Su Hyang'),
-          originalPdfPath: const drift.Value(ocrPdfPath),
+          originalPdfPath: drift.Value(ocrPdfPath),
           fileHash: const drift.Value('ocr_hash_bench'),
           totalPages: const drift.Value(50),
           isScanned: const drift.Value(true),

@@ -8,18 +8,19 @@ import 'package:digital_books/features/processing/services/ocr_semantic_pipeline
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 const _bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
-const _jsonPath =
-    '/Users/davindalana/Documents/DigitalBooks/books/$_bookId.json';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('Audit corpus ground truth: OCR, TOC, and paragraph continuations', () async {
-    final dbFile = File('/Users/davindalana/Documents/digital_books_db.sqlite');
+    final jsonPath = p.join(RealBookFixtures.booksDir, '$_bookId.json');
+    final dbFile = File(p.join(RealBookFixtures.documentsDir, 'digital_books_db.sqlite'));
     final pdfFile = File(
-      '/Users/davindalana/Documents/DigitalBooks/originals/$_bookId.pdf',
+      p.join(RealBookFixtures.originalsDir, '$_bookId.pdf'),
     );
 
     BookDocument? bookDoc;
@@ -38,11 +39,8 @@ void main() {
     }
 
     if (bookDoc == null) {
-      final file = File(_jsonPath);
-      if (!file.existsSync()) {
-        markTestSkipped('Real book JSON corpus not found at ${file.path}');
-        return;
-      }
+      final file = File(jsonPath);
+      if (!checkFixtureOrSkip(file)) return;
       bookDoc = BookDocument.fromJsonString(await file.readAsString());
       print('Audited document loaded from pre-existing JSON.');
     }

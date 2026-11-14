@@ -14,6 +14,7 @@ import 'package:digital_books/core/database/app_database.dart';
 import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -35,11 +36,11 @@ void main() {
   late DatabaseService dbService;
 
   final lautBerceritaPath =
-      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
   final bicaraSeninyaPath =
-      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
   final mrXPath =
-      '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf');
 
   setUpAll(() async {
     tempDir = Directory.systemTemp.createTempSync('db_large_scale_ocr_test_');
@@ -72,6 +73,11 @@ void main() {
     test(
       '1. Systematic 30-Page Sampling Across Beginning, Middle, and End of 3 Books',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaPath) ||
+            !checkFixtureOrSkip(bicaraSeninyaPath) ||
+            !checkFixtureOrSkip(mrXPath)) {
+          return;
+        }
         final samplePlans = [
           {
             'book': 'Laut Bercerita',
@@ -212,6 +218,7 @@ void main() {
     test(
       '2. Continuous 50-Page Uninterrupted Batch Test & Memory/Performance Telemetry',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaPath)) return;
         final pdfDoc = await PdfDocument.openFile(lautBerceritaPath);
         final startPage = 14;
         final pageCount = 50; // Pages 14 to 63

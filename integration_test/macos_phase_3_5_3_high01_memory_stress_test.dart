@@ -9,29 +9,26 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
+import '../test/helpers/real_book_fixtures.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
 
   group('Phase 3.5.3 — HIGH-01: Native macOS Memory Profiling (50 Cycles)', () {
-    const largePdfPath =
-        '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
-    final targetPdfFile = File(largePdfPath);
+    final targetPdfFile = RealBookFixtures.resolve(RealBookFixtures.bicaraItuAdaSeninya);
 
     testWidgets('50 Consecutive Open/Navigate/Scroll/Close Cycles on 64MB Real PDF', (
       tester,
     ) async {
-      expect(
-        targetPdfFile.existsSync(),
-        isTrue,
-        reason: 'Test requires real large PDF file (>50MB) to exist on disk',
-      );
+      if (!checkFixtureOrSkip(targetPdfFile, 'Large PDF for memory profiling')) {
+        return;
+      }
 
       final fileSizeMb = targetPdfFile.lengthSync() / (1024 * 1024);
       print('===============================================================');
       print('HIGH-01 MEMORY PROFILING PROTOCOL START');
-      print('Target PDF: $largePdfPath');
+      print('Target PDF: ${targetPdfFile.path}');
       print('File Size: ${fileSizeMb.toStringAsFixed(2)} MB');
       print('Target Process PID: $pid');
       print('Host Platform: macOS Darwin ARM64');

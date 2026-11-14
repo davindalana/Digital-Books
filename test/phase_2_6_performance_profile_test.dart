@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path/path.dart' as p;
 import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/engines/in_book_search_engine.dart';
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
@@ -145,7 +146,7 @@ void main() {
     print('===============================================================\n');
 
     final resultsFile = File(
-      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48/scratch/phase_2_6_performance_profile.json',
+      p.join(Directory.systemTemp.path, 'phase_2_6_performance_profile.json'),
     );
     await resultsFile.parent.create(recursive: true);
     await resultsFile.writeAsString(

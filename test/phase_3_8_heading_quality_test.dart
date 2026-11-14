@@ -45,15 +45,17 @@ void main() {
   }
 
   group('real saved artifact: Laut Bercerita (pre-3.8 pipeline)', () {
+    ResolvedRealBook? resolved;
     late BookDocument original;
     late List<BookChapter> normalized;
 
     setUpAll(() {
-      final resolved = requireRealBook(RealBookFixtures.lautSavedArtifact);
+      resolved = requireRealBook(RealBookFixtures.lautSavedArtifact);
+      if (resolved == null) return;
       final json =
-          jsonDecode(resolved.file.readAsStringSync()) as Map<String, dynamic>;
+          jsonDecode(resolved!.file.readAsStringSync()) as Map<String, dynamic>;
       original = BookDocument.fromJson(json);
-      resolved.report(
+      resolved!.report(
         'loaded saved artifact',
         details: {
           'chapters': original.chapters.length,
@@ -64,6 +66,12 @@ void main() {
         },
       );
       normalized = ChapterQualityNormalizer.normalize(original.chapters);
+    });
+
+    setUp(() {
+      if (resolved == null) {
+        markTestSkipped('Laut Bercerita saved artifact not available');
+      }
     });
 
     test('duplicate chapter titles are merged', () {
@@ -147,13 +155,15 @@ void main() {
   });
 
   group('real PDF: The Let Them Theory (native text layer)', () {
+    ResolvedRealBook? resolved;
     late BookDocument doc;
     late int extractionChars;
 
     setUpAll(() async {
-      final resolved = requireRealBook(RealBookFixtures.letThemTheory);
+      resolved = requireRealBook(RealBookFixtures.letThemTheory);
+      if (resolved == null) return;
       final extraction = await GeometryAwarePdfExtractor.extractDocument(
-        pdfFile: resolved.file,
+        pdfFile: resolved!.file,
         bookId: 'phase38-letthem',
         extractImagesToDisk: false,
       );
@@ -163,11 +173,11 @@ void main() {
       );
       final reconstructed = await SemanticDocumentReconstructor.reconstruct(
         extraction: extraction,
-        title: resolved.fixture.title,
+        title: resolved!.fixture.title,
         author: 'Mel Robbins',
       );
       doc = reconstructed.toBookDocument();
-      resolved.report(
+      resolved!.report(
         'reconstructed',
         details: {
           'pages': extraction.totalPages,
@@ -180,6 +190,12 @@ void main() {
           'quality': reconstructed.quality.status.name,
         },
       );
+    });
+
+    setUp(() {
+      if (resolved == null) {
+        markTestSkipped('The Let Them Theory PDF not available');
+      }
     });
 
     test('table-of-contents entries are not promoted to chapters', () {

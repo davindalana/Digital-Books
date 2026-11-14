@@ -20,6 +20,8 @@ import 'package:digital_books/features/reader/domain/engines/reflowable_engine.d
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -44,10 +46,11 @@ void main() {
   late BackgroundOcrQueue queue;
 
   final lautPdf = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf'),
   );
 
   setUp(() async {
+    if (!checkFixtureOrSkip(lautPdf)) return;
     tempAppDir = Directory.systemTemp.createTempSync('digital_books_e_test_');
     PathProviderPlatform.instance = MockPathProviderPlatform(tempAppDir);
 

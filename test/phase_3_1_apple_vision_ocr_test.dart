@@ -6,24 +6,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.1 — Checkpoint A: Apple Vision OCR Engine Verification', () {
-    const String downloadsDir = '/Users/davindalana/Downloads';
+    final String downloadsDir = RealBookFixtures.downloadsDir;
     final lautBerceritaFile = File(
       '$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf',
-    );
-    final bicaraFile = File(
-      '$downloadsDir/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
     );
 
     const ocrService = AppleVisionOcrService();
 
     setUpAll(() {
-      expect(lautBerceritaFile.existsSync(), isTrue);
-      expect(bicaraFile.existsSync(), isTrue);
       expect(
         ocrService.isAvailable,
         isTrue,
@@ -192,6 +188,7 @@ void main() {
     test(
       '6. Direct PDF Page Processing: Renders and extracts a page directly from PdfDocument',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         final doc = await PdfDocument.openFile(lautBerceritaFile.path);
         final page = doc.pages[14]; // Page 15
 

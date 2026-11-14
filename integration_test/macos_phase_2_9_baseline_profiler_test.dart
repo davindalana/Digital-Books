@@ -10,16 +10,20 @@ import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/appearance_sheet.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'package:path/path.dart' as p;
+import '../test/helpers/real_book_fixtures.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   pdfrxFlutterInitialize();
 
   group('Phase 2.9 — Native Baseline Profiling (6 Scenarios)', () {
-    const originalsDir = '/Users/davindalana/Documents/DigitalBooks/originals';
-    final testPdf = File(
-      '$originalsDir/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
-    ); // The Let Them Theory
+    final originalsDir = RealBookFixtures.originalsDir;
+    final preferredPdf = File(
+      p.join(originalsDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf'),
+    );
+    final fallbackPdf = File('test/fixtures/corpus/01_single_column_novel.pdf');
+    final testPdf = preferredPdf.existsSync() ? preferredPdf : fallbackPdf;
 
     testWidgets('Scenario 1: Idle in Library (60s baseline simulation)', (
       tester,

@@ -12,6 +12,7 @@ import 'package:digital_books/features/reader/domain/models/reader_content.dart'
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,13 +21,15 @@ void main() {
     late ReaderDocument suspectXDoc;
     late ReaderDocument letThemDoc;
 
+    final suspectXFile = File(
+      '${RealBookFixtures.booksDir}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
+    );
+    final letThemFile = File(
+      '${RealBookFixtures.booksDir}/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json',
+    );
+
     setUpAll(() async {
-      final booksDir = Directory(
-        '/Users/davindalana/Documents/DigitalBooks/books',
-      );
-      final suspectXFile = File(
-        '${booksDir.path}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
-      );
+      if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
       if (suspectXFile.existsSync()) {
         final json =
             jsonDecode(await suspectXFile.readAsString())
@@ -36,9 +39,6 @@ void main() {
         suspectXDoc = ReflowableEngine.normalizeDocument(normDoc);
       }
 
-      final letThemFile = File(
-        '${booksDir.path}/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.json',
-      );
       if (letThemFile.existsSync()) {
         final json =
             jsonDecode(await letThemFile.readAsString())
@@ -47,6 +47,10 @@ void main() {
         final normDoc = BookTextNormalizer.normalizeDocument(rawDoc);
         letThemDoc = ReflowableEngine.normalizeDocument(normDoc);
       }
+    });
+
+    setUp(() {
+      if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
     });
 
     test(

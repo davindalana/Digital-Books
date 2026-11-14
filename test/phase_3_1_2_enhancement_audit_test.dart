@@ -11,6 +11,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/models/ocr_page_result.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
+import 'helpers/real_book_fixtures.dart';
 
 int levenshteinDistance<T>(List<T> a, List<T> b) {
   if (a.isEmpty) return b.length;
@@ -88,11 +89,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final lautPath =
-      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
   final bicaraPath =
-      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
   final mrXPath =
-      '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf');
 
   const ocrService = AppleVisionOcrService();
   late Directory tempDir;
@@ -162,6 +163,7 @@ Tak terlalu lama, perahu motor terasa melambat. Mungkin
 kami sudah tiba di tempat tujuan, entah pulau apa, aku tak tahu.
 Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
 
+      if (!checkFixtureOrSkip(lautPath)) return;
       final doc = await PdfDocument.openFile(lautPath);
       final page = doc.pages[14]; // P.15
       final rawRender = await page.render(
@@ -366,6 +368,7 @@ jadi penyanyi pop opera yang mendunia. Setiap orang yang
 mendengar nama Paul Robert Potts pasti akan langsung teringat
 kisahnya dan hanyut dalam keharuan.''';
 
+        if (!checkFixtureOrSkip(bicaraPath)) return;
         final doc = await PdfDocument.openFile(bicaraPath);
         final page = doc.pages[32]; // P.33
         final rawRender = await page.render(
@@ -521,6 +524,7 @@ kisahnya dan hanyut dalam keharuan.''';
     test(
       '3. 4-Way Evaluation on Narrative Novel: The Devotion of Suspect X P.11',
       () async {
+        if (!checkFixtureOrSkip(mrXPath)) return;
         final doc = await PdfDocument.openFile(mrXPath);
         final page = doc.pages[10]; // P.11
         final rawRender = await page.render(

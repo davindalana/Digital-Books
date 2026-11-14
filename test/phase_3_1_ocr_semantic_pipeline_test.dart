@@ -16,6 +16,7 @@ import 'package:digital_books/features/processing/services/ocr_semantic_pipeline
 import 'package:digital_books/features/processing/services/paragraph_reconstructor.dart';
 import 'package:digital_books/features/processing/models/extracted_page_geometry.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -40,7 +41,7 @@ void main() {
   late BackgroundOcrQueue queue;
 
   final lautPdf = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+    '${RealBookFixtures.downloadsDir}/Laut Bercerita (Leila S. Chudori).pdf',
   );
 
   setUp(() async {
@@ -86,7 +87,7 @@ void main() {
       test(
         'Processes pages 14-16, synthesizes BookDocument, and updates DB & disk',
         () async {
-          expect(lautPdf.existsSync(), isTrue);
+          if (!checkFixtureOrSkip(lautPdf)) return;
 
           // 1. Run queue on pages 14, 15, 16 with autoReconstruct = true
           await queue.start(

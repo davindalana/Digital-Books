@@ -10,6 +10,7 @@ import 'package:digital_books/features/processing/services/paragraph_reconstruct
 import 'package:digital_books/features/processing/services/semantic_classifier.dart';
 import 'package:digital_books/features/processing/models/semantic_reconstruction_models.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -357,8 +358,9 @@ void main() {
       'F. Real-World Document Stress on The Devotion of Suspect X & 48 Laws of Power',
       () {
         final suspectX = File(
-          '/Users/davindalana/Documents/DigitalBooks/books/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
+          '${RealBookFixtures.booksDir}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
         );
+        if (!checkFixtureOrSkip(suspectX)) return;
         if (suspectX.existsSync()) {
           final doc = BookDocument.fromJsonString(suspectX.readAsStringSync());
           final readerDoc = ReaderDocument(

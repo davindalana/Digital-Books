@@ -9,6 +9,8 @@ import 'package:digital_books/features/processing/services/paragraph_reconstruct
 import 'package:digital_books/features/processing/services/semantic_classifier.dart';
 import 'package:digital_books/features/processing/services/image_placement_resolver.dart';
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   const corpusDir = 'test/fixtures/corpus';
@@ -422,13 +424,16 @@ void main() {
     test('protects real scanned book from corrupted reflowable conversion', () async {
       final candidates = [
         File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf',
+          p.join(RealBookFixtures.originalsDir, '8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf'),
         ),
         File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/{SB} Laut Bercerita.pdf',
+          p.join(RealBookFixtures.originalsDir, '{SB} Laut Bercerita.pdf'),
         ),
         File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/Laut Bercerita.pdf',
+          p.join(RealBookFixtures.originalsDir, 'Laut Bercerita.pdf'),
+        ),
+        File(
+          p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf'),
         ),
       ];
 
@@ -441,10 +446,12 @@ void main() {
       }
 
       if (realBookFile == null) {
-        print(
-          'Skipping real book test: {SB} Laut Bercerita.pdf not found in local user directories.',
-        );
-        return;
+        if (Platform.environment['REQUIRE_REAL_BOOKS'] == '1') {
+          fail('Required fixture Laut Bercerita PDF is missing.');
+        } else {
+          markTestSkipped('Laut Bercerita PDF not found in local user directories.');
+          return;
+        }
       }
 
       final extraction = await GeometryAwarePdfExtractor.extractDocument(

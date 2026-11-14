@@ -6,12 +6,13 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.0.1.1 — Enhancement Defect Correction & Adaptive Gutter Audit', () {
-    const String downloadsDir = '/Users/davindalana/Downloads';
+    final String downloadsDir = RealBookFixtures.downloadsDir;
     final lautBerceritaFile = File(
       '$downloadsDir/Laut Bercerita (Leila S. Chudori).pdf',
     );
@@ -19,25 +20,13 @@ void main() {
       '$downloadsDir/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
     );
 
-    setUpAll(() {
-      expect(
-        lautBerceritaFile.existsSync(),
-        isTrue,
-        reason: 'Laut Bercerita PDF must exist',
-      );
-      expect(
-        bicaraFile.existsSync(),
-        isTrue,
-        reason: 'Bicara Itu Ada Seninya PDF must exist',
-      );
-    });
-
     // =========================================================================
     // PRIORITY 1: STRONG ENHANCEMENT AUDIT & THIN CHARACTER PRESERVATION
     // =========================================================================
     test(
       '1. Strong Enhancement: Preserves character edge anti-aliasing while deepening ink',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         final doc = await PdfDocument.openFile(lautBerceritaFile.path);
         final page = doc.pages[14]; // Page 15
         final img = await page.render(
@@ -173,6 +162,7 @@ void main() {
     test(
       '2. Adaptive Gutter: Accurately differentiates flat pages from real binding shadows',
       () async {
+        if (!checkFixtureOrSkip(lautBerceritaFile) || !checkFixtureOrSkip(bicaraFile)) return;
         // 1. Laut Bercerita P.15: Flat novel scan with clean white inner margin
         final lautDoc = await PdfDocument.openFile(lautBerceritaFile.path);
         final lautP15 = lautDoc.pages[14];

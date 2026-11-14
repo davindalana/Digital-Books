@@ -21,6 +21,8 @@ import 'package:digital_books/features/reader/presentation/screens/reading_scree
 import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -289,13 +291,10 @@ void main() {
       'Real-world book benchmarks verify reading order and chapter integrity',
       () {
         final jsonFile = File(
-          '/Users/davindalana/Documents/DigitalBooks/books/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
+          p.join(RealBookFixtures.booksDir, '67141617-5a74-4f9b-a9fa-45b28366e27d.json'),
         );
 
-        if (!jsonFile.existsSync()) {
-          markTestSkipped('Processed book JSON is missing at ${jsonFile.path}');
-          return;
-        }
+        if (!checkFixtureOrSkip(jsonFile)) return;
 
         final doc = BookDocument.fromJsonString(jsonFile.readAsStringSync());
 

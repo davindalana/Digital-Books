@@ -64,13 +64,13 @@ double _computeWer(String ref, String hyp) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late ResolvedRealBook lautBook;
+  ResolvedRealBook? maybeLautBook;
   late AppDatabase db;
   late DatabaseService dbService;
   final ocrService = const AppleVisionOcrService();
 
   setUpAll(() async {
-    lautBook = requireRealBook(RealBookFixtures.lautBercerita);
+    maybeLautBook = requireRealBook(RealBookFixtures.lautBercerita);
     db = AppDatabase(NativeDatabase.memory());
     dbService = DatabaseService(db);
     await ocrService.ensureBinaryAvailable();
@@ -140,6 +140,11 @@ void main() {
     test(
       '4. Process 25 representative pages (0..24) and persist in SQLite',
       () async {
+        if (maybeLautBook == null) {
+          markTestSkipped('Laut Bercerita fixture not available');
+          return;
+        }
+        final lautBook = maybeLautBook!;
         await dbService.insertBook(
           BooksCompanion.insert(
             id: pilotBookId,
@@ -350,6 +355,11 @@ void main() {
     test(
       '8. Reconstruct BookDocument via OcrSemanticPipeline and inspect blocks',
       () async {
+        if (maybeLautBook == null) {
+          markTestSkipped('Laut Bercerita fixture not available');
+          return;
+        }
+        final lautBook = maybeLautBook!;
         final pipeline = OcrSemanticPipeline(dbService);
         final bookDoc = await pipeline.reconstructDocument(
           bookId: 'pilot-laut-25p-audit',
@@ -459,6 +469,11 @@ void main() {
     );
 
     test('10. Original PDF is immutable and byte-preserved', () async {
+      if (maybeLautBook == null) {
+        markTestSkipped('Laut Bercerita fixture not available');
+        return;
+      }
+      final lautBook = maybeLautBook!;
       final currentSize = await lautBook.file.length();
       final currentHash = await FileStorageService.computeFileSha256(
         lautBook.file,

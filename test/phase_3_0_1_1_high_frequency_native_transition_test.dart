@@ -9,13 +9,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.0.1.1 — High-Frequency Native Transition & Compositor Blip Audit', () {
-    const String downloadsDir = '/Users/davindalana/Downloads';
+    final String downloadsDir = RealBookFixtures.downloadsDir;
     final String evidenceDir = resolveTestEvidenceDir('native_transitions');
 
     final lautBerceritaFile = File(
@@ -27,8 +28,6 @@ void main() {
 
     setUpAll(() {
       Directory(evidenceDir).createSync(recursive: true);
-      expect(lautBerceritaFile.existsSync(), isTrue);
-      expect(bicaraFile.existsSync(), isTrue);
     });
 
     Future<Uint8List?> captureBoundaryBytes(GlobalKey key) async {
@@ -68,6 +67,7 @@ void main() {
     testWidgets(
       '1. High-Frequency Sampling: Single Forward & Backward (35+ frames @ 10ms)',
       (tester) async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         final readerKey = GlobalKey();
         int currentPage = 1;
@@ -196,6 +196,7 @@ void main() {
     testWidgets(
       '2. Immediate Reverse: Mid-flight direction change without flash or lockup',
       (tester) async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         final readerKey = GlobalKey();
 
@@ -264,6 +265,7 @@ void main() {
     testWidgets(
       '3. Rapid Navigation: 8 rapid flips without race condition or blank canvas',
       (tester) async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         final readerKey = GlobalKey();
 
@@ -333,6 +335,7 @@ void main() {
     testWidgets(
       '4. Large 64MB PDF: Transition stability with cold & warm cache',
       (tester) async {
+        if (!checkFixtureOrSkip(bicaraFile)) return;
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         final readerKey = GlobalKey();
 

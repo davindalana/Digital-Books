@@ -16,13 +16,14 @@ import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 3.0.1 — Final Real-World Acceptance & Visual Regression Audit', () {
-    const String downloadsDir = '/Users/davindalana/Downloads';
+    final String downloadsDir = RealBookFixtures.downloadsDir;
     final String visualEvidenceDir = resolveTestEvidenceDir();
 
     final lautBerceritaFile = File(
@@ -49,16 +50,7 @@ void main() {
     test(
       'A. Real Scanned PDF Image Enhancement: Original vs Gentle vs Balanced vs Strong',
       () async {
-        expect(
-          lautBerceritaFile.existsSync(),
-          isTrue,
-          reason: 'Laut Bercerita PDF must exist in Downloads',
-        );
-        expect(
-          bicaraFile.existsSync(),
-          isTrue,
-          reason: 'Bicara Itu Ada Seninya PDF must exist in Downloads',
-        );
+        if (!checkFixtureOrSkip(lautBerceritaFile) || !checkFixtureOrSkip(bicaraFile)) return;
 
         final lautDoc = await PdfDocument.openFile(lautBerceritaFile.path);
         // Page 15: Chapter text with dialogue and margin noise
@@ -466,17 +458,19 @@ void main() {
       print('===============================================================');
 
       // 1. The Devotion of Suspect X (Novel with Dialogue & Chapters)
-      expect(suspectXFile.existsSync(), isTrue);
+      if (!checkFixtureOrSkip(suspectXFile) ||
+          !checkFixtureOrSkip(lautBerceritaFile) ||
+          !checkFixtureOrSkip(bicaraFile)) {
+        return;
+      }
       final suspectXDoc = await PdfDocument.openFile(suspectXFile.path);
       expect(suspectXDoc.pages.length, equals(324));
 
       // 2. Laut Bercerita (Scanned Novel)
-      expect(lautBerceritaFile.existsSync(), isTrue);
       final lautDoc = await PdfDocument.openFile(lautBerceritaFile.path);
       expect(lautDoc.pages.length, equals(394));
 
       // 3. Bicara Itu Ada Seninya (64 MB Scanned Book)
-      expect(bicaraFile.existsSync(), isTrue);
       final bicaraDoc = await PdfDocument.openFile(bicaraFile.path);
       expect(bicaraDoc.pages.length, equals(255));
 
@@ -711,6 +705,7 @@ void main() {
     testWidgets(
       'C. PDF Page Transition Frame-by-Frame Audit in OriginalPdfReader',
       (tester) async {
+        if (!checkFixtureOrSkip(lautBerceritaFile)) return;
         await tester.binding.setSurfaceSize(const Size(1200, 800));
         int currentPage = 1;
         final transitionKey = GlobalKey();
@@ -831,6 +826,7 @@ void main() {
     // PART D: PERFORMANCE & RAM AUDIT (64MB Scanned PDF)
     // =========================================================================
     test('D. Performance & Memory Audit: 64MB Scanned PDF Stress Load', () async {
+      if (!checkFixtureOrSkip(bicaraFile)) return;
       final initialRss = ProcessInfo.currentRss;
       final stopwatch = Stopwatch()..start();
 

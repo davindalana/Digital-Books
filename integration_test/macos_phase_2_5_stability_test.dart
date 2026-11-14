@@ -18,12 +18,13 @@ import 'package:digital_books/features/library/presentation/widgets/backup_resto
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_reader_container.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  const screenshotDir =
-      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
+  final screenshotDir =
+      p.join(Directory.systemTemp.path, 'db_phase_2_5_screenshots');
 
   Future<void> captureBoundary(GlobalKey key, String filename) async {
     final boundary =

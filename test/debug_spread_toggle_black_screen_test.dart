@@ -15,28 +15,32 @@ import 'package:digital_books/features/reader/presentation/widgets/reflowable/re
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_reader_container.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
-  final jsonPath =
-      '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json';
-  final pdfPath =
-      '/Users/davindalana/Documents/DigitalBooks/originals/$bookId.pdf';
+  final jsonPath = p.join(RealBookFixtures.booksDir, '$bookId.json');
+  final pdfPath = p.join(RealBookFixtures.originalsDir, '$bookId.pdf');
 
   setUpAll(() async {
+    if (!checkFixtureOrSkip(jsonPath) || !checkFixtureOrSkip(pdfPath)) return;
     GoogleFonts.config.allowRuntimeFetching = false;
-    for (final family in ['Palatino', 'Inter', 'Georgia']) {
-      final fontPath =
-          File('/System/Library/Fonts/Supplemental/Georgia.ttf').existsSync()
-          ? '/System/Library/Fonts/Supplemental/Georgia.ttf'
-          : '/System/Library/Fonts/Supplemental/Arial.ttf';
-      final bytes = File(fontPath).readAsBytesSync();
-      final loader = FontLoader(family)
-        ..addFont(Future.value(ByteData.view(bytes.buffer)));
-      await loader.load();
+    final interFont = File('assets/fonts/Inter-Regular.ttf');
+    if (interFont.existsSync()) {
+      for (final family in ['Palatino', 'Inter', 'Georgia']) {
+        final bytes = interFont.readAsBytesSync();
+        final loader = FontLoader(family)
+          ..addFont(Future.value(ByteData.view(bytes.buffer)));
+        await loader.load();
+      }
     }
+  });
+
+  setUp(() {
+    if (!checkFixtureOrSkip(jsonPath) || !checkFixtureOrSkip(pdfPath)) return;
   });
 
   late AppDatabase db;

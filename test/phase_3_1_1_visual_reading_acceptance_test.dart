@@ -14,6 +14,7 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable_book_reader.dart';
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
@@ -24,11 +25,11 @@ void main() {
   final visualEvidenceDir = resolveTestEvidenceDir('phase_3_1_1');
 
   final lautBerceritaPath =
-      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
   final bicaraSeninyaPath =
-      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf');
   final mrXPath =
-      '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf');
 
   setUpAll(() async {
     tempDir = Directory.systemTemp.createTempSync('db_visual_acceptance_test_');
@@ -113,6 +114,7 @@ void main() {
   testWidgets(
     '1. Capture Visual Comparison: Laut Bercerita Page 15 (Scan vs Reflowable)',
     (tester) async {
+      if (!checkFixtureOrSkip(lautBerceritaPath)) return;
       tester.view.physicalSize = const Size(1000, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -195,6 +197,7 @@ void main() {
   testWidgets(
     '2. Capture Visual Comparison: Bicara Itu Ada Seninya Page 33 (Scan vs Reflowable)',
     (tester) async {
+      if (!checkFixtureOrSkip(bicaraSeninyaPath)) return;
       tester.view.physicalSize = const Size(1000, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -277,6 +280,7 @@ void main() {
   testWidgets(
     '3. Capture Visual: The Devotion of Suspect X Page 11 Narrative Reflowable',
     (tester) async {
+      if (!checkFixtureOrSkip(mrXPath)) return;
       tester.view.physicalSize = const Size(1000, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());

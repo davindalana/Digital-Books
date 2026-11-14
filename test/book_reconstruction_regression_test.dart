@@ -9,21 +9,18 @@ import 'package:digital_books/features/processing/services/paragraph_reconstruct
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/semantic_classifier.dart';
 import 'package:digital_books/features/processing/services/semantic_document_reconstructor.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   test(
     'End-to-End Book Reconstruction Regression Test on Bicara Itu Ada Seninya',
     () async {
       const bookId = '447899e1-0e78-4658-ad3d-e5efaa92c46e';
-      const imagesDirPath =
-          '/Users/davindalana/Documents/DigitalBooks/images/$bookId';
+      final imagesDirPath =
+          p.join(RealBookFixtures.digitalBooksDir, 'images', bookId);
       final imagesDir = Directory(imagesDirPath);
-      if (!imagesDir.existsSync()) {
-        markTestSkipped(
-          'Local OCR test images are missing at ${imagesDir.path}',
-        );
-        return;
-      }
+      if (!checkFixtureOrSkip(imagesDir, 'Bicara OCR images directory')) return;
 
       final ocrService = const AppleVisionOcrService();
       final pagesToTest = [

@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
@@ -20,14 +21,13 @@ void main() {
       Directory(evidenceDir).createSync(recursive: true);
 
       final lautFile = File(
-        '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+        '${RealBookFixtures.downloadsDir}/Laut Bercerita (Leila S. Chudori).pdf',
       );
       final bicaraFile = File(
-        '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
+        '${RealBookFixtures.downloadsDir}/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
       );
 
-      expect(lautFile.existsSync(), isTrue);
-      expect(bicaraFile.existsSync(), isTrue);
+      if (!checkFixtureOrSkip(lautFile) || !checkFixtureOrSkip(bicaraFile)) return;
 
       final lautDoc = await PdfDocument.openFile(lautFile.path);
       final bicaraDoc = await PdfDocument.openFile(bicaraFile.path);

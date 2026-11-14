@@ -12,6 +12,8 @@ import 'package:digital_books/core/services/file_storage_service.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -34,9 +36,10 @@ void main() {
   late BackgroundOcrQueue queue;
 
   final lautBerceritaPath =
-      '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf';
+      p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
 
   setUp(() async {
+    if (!checkFixtureOrSkip(lautBerceritaPath)) return;
     tempDir = Directory.systemTemp.createTempSync('db_integrity_test_');
     PathProviderPlatform.instance = MockPathProviderPlatform(tempDir);
     db = AppDatabase(NativeDatabase.memory());

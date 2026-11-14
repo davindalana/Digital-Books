@@ -8,20 +8,19 @@ import 'package:digital_books/features/reader/domain/engines/reflowable_engine.d
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/services/book_text_normalizer.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 2.8.4 — Position & Annotation Regression Suite', () {
     late ReaderDocument suspectXDoc;
+    final suspectXFile = File(
+      '${RealBookFixtures.booksDir}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
+    );
 
     setUpAll(() async {
-      final booksDir = Directory(
-        '/Users/davindalana/Documents/DigitalBooks/books',
-      );
-      final suspectXFile = File(
-        '${booksDir.path}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
-      );
+      if (!checkFixtureOrSkip(suspectXFile)) return;
       if (suspectXFile.existsSync()) {
         final json =
             jsonDecode(await suspectXFile.readAsString())
@@ -30,6 +29,10 @@ void main() {
         final normDoc = BookTextNormalizer.normalizeDocument(rawDoc);
         suspectXDoc = ReflowableEngine.normalizeDocument(normDoc);
       }
+    });
+
+    setUp(() {
+      if (!checkFixtureOrSkip(suspectXFile)) return;
     });
 
     test(

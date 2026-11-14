@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -12,10 +13,8 @@ void main() {
   test(
     'Phase 3.0.1.1: Comprehensive Performance, Latency & Memory Regression',
     () async {
-      final bicaraFile = File(
-        '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
-      );
-      expect(bicaraFile.existsSync(), isTrue);
+      final bicaraFile = RealBookFixtures.resolve(RealBookFixtures.bicaraItuAdaSeninya);
+      if (!checkFixtureOrSkip(bicaraFile, 'Bicara Itu Ada Seninya')) return;
 
       final initialRss = ProcessInfo.currentRss;
 

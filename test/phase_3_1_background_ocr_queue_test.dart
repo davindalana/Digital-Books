@@ -8,6 +8,7 @@ import 'package:digital_books/core/database/database_service.dart';
 import 'package:digital_books/features/processing/models/ocr_queue_state.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,10 +19,11 @@ void main() {
   late BackgroundOcrQueue queue;
 
   final testPdf = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+    '${RealBookFixtures.downloadsDir}/Laut Bercerita (Leila S. Chudori).pdf',
   );
 
   setUp(() async {
+    if (!checkFixtureOrSkip(testPdf)) return;
     db = AppDatabase(NativeDatabase.memory());
     dbService = DatabaseService(db);
     ocrService = const AppleVisionOcrService();

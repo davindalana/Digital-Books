@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:path/path.dart' as p;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,8 +97,8 @@ void main() {
     ],
   );
 
-  const screenshotDir =
-      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
+  final screenshotDir =
+      p.join(Directory.systemTemp.path, 'db_phase_2_4_screenshots');
 
   Future<void> captureBoundary(GlobalKey key, String filename) async {
     final boundary =

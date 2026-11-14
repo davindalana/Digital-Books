@@ -8,6 +8,8 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/apple_vision_ocr_service.dart';
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/geometry_aware_pdf_extractor.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 int levenshteinDistance<T>(List<T> a, List<T> b) {
@@ -59,36 +61,29 @@ void main() {
   final visualDir = resolveTestEvidenceDir('phase_3_5');
 
   final lautFile = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf'),
   );
   final bicaraFile = File(
-    '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf'),
   );
   final filosofiFile = File(
-    '/Users/davindalana/Downloads/filosofi-teraspdf.pdf',
+    p.join(RealBookFixtures.downloadsDir, 'filosofi-teraspdf.pdf'),
   );
   final powerFile = File(
-    '/Users/davindalana/Downloads/The 48 Laws Of Power (Robert Greene).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'The 48 Laws Of Power (Robert Greene).pdf'),
   );
   final suspectXFile = File(
-    '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf'),
   );
   final jurnalFile = File(
-    '/Users/davindalana/Downloads/1259-Article Text-5284-1-10-20231024.pdf',
+    p.join(RealBookFixtures.downloadsDir, '1259-Article Text-5284-1-10-20231024.pdf'),
   );
   final letThemFile = File(
-    '/Users/davindalana/Downloads/The Let Them Theory (Mel Robbins).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'The Let Them Theory (Mel Robbins).pdf'),
   );
 
   setUpAll(() async {
     Directory(visualDir).createSync(recursive: true);
-    expect(lautFile.existsSync(), isTrue);
-    expect(bicaraFile.existsSync(), isTrue);
-    expect(filosofiFile.existsSync(), isTrue);
-    expect(powerFile.existsSync(), isTrue);
-    expect(suspectXFile.existsSync(), isTrue);
-    expect(jurnalFile.existsSync(), isTrue);
-    expect(letThemFile.existsSync(), isTrue);
     expect(ocrService.isAvailable, isTrue);
   });
 
@@ -116,6 +111,7 @@ void main() {
     // Category A: Indonesian Fiction Prose (Laut Bercerita P.15)
     // -------------------------------------------------------------------------
     test('Category A: Indonesian Fiction Prose (Laut Bercerita P.15)', () async {
+      if (!checkFixtureOrSkip(lautFile)) return;
       await renderPageToDisk(
         lautFile,
         14,
@@ -194,6 +190,7 @@ Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
     test(
       'Category B: Indonesian Non-Fiction (Bicara Itu Ada Seninya P.33)',
       () async {
+        if (!checkFixtureOrSkip(bicaraFile)) return;
         await renderPageToDisk(
           bicaraFile,
           32,
@@ -271,6 +268,7 @@ kisahnya dan hanyut dalam keharuan.''';
     // Category C: Indonesian Philosophy / Self-Help (Filosofi Teras P.21)
     // -------------------------------------------------------------------------
     test('Category C: Indonesian Philosophy (Filosofi Teras P.21)', () async {
+      if (!checkFixtureOrSkip(filosofiFile)) return;
       await renderPageToDisk(
         filosofiFile,
         20,
@@ -361,6 +359,7 @@ HENRY MANAMPIRING''';
     test(
       'Category D: Multi-Style & Heading Structure (The 48 Laws Of Power P.13)',
       () async {
+        if (!checkFixtureOrSkip(powerFile)) return;
         await renderPageToDisk(
           powerFile,
           12,
@@ -456,6 +455,7 @@ mereka.''';
     test(
       'Category E: Translated Dialogue & Transliteration (Suspect X P.11)',
       () async {
+        if (!checkFixtureOrSkip(suspectXFile)) return;
         await renderPageToDisk(
           suspectXFile,
           10,
@@ -537,6 +537,7 @@ Bentō: makanan bekal yang dikemas praktis agar bisa dibawa ke mana-mana.''';
     // Category F: Two-Column Academic Paper Structure (Jurnal P.2)
     // -------------------------------------------------------------------------
     test('Category F: Two-Column Academic Paper Structure (Jurnal P.2)', () async {
+      if (!checkFixtureOrSkip(jurnalFile)) return;
       await renderPageToDisk(
         jurnalFile,
         1,
@@ -635,6 +636,7 @@ Page 1022''';
     test(
       'Category G: Native Selectable Digital PDF (The Let Them Theory P.12)',
       () async {
+        if (!checkFixtureOrSkip(letThemFile)) return;
         await renderPageToDisk(
           letThemFile,
           11,

@@ -13,6 +13,8 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/processing/services/background_ocr_queue.dart';
 import 'package:digital_books/features/processing/services/ocr_semantic_pipeline.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 class MockPathProviderPlatform extends PathProviderPlatform
     with MockPlatformInterfaceMixin {
@@ -37,13 +39,13 @@ void main() {
   late BackgroundOcrQueue queue;
 
   final lautFile = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf'),
   );
   final bicaraFile = File(
-    '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf'),
   );
   final suspectXFile = File(
-    '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf',
+    p.join(RealBookFixtures.downloadsDir, 'Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf'),
   );
 
   setUp(() async {
@@ -73,21 +75,11 @@ void main() {
     'Phase 3.1 Checkpoint F: Native macOS OCR Acceptance & Performance Validation',
     () {
       test('1. Corpus Verification: All three test books exist on disk', () {
-        expect(
-          lautFile.existsSync(),
-          isTrue,
-          reason: 'Laut Bercerita must exist',
-        );
-        expect(
-          bicaraFile.existsSync(),
-          isTrue,
-          reason: 'Bicara Itu Ada Seninya must exist',
-        );
-        expect(
-          suspectXFile.existsSync(),
-          isTrue,
-          reason: 'Suspect X must exist',
-        );
+        if (!checkFixtureOrSkip(lautFile) ||
+            !checkFixtureOrSkip(bicaraFile) ||
+            !checkFixtureOrSkip(suspectXFile)) {
+          return;
+        }
         expect(
           ocrService.isAvailable,
           isTrue,
@@ -251,6 +243,7 @@ void main() {
       test(
         '3. Recovery After Sudden Interruption & Skip Completed Pages',
         () async {
+          if (!checkFixtureOrSkip(lautFile)) return;
           const bookId = 'recovery_test_book';
           final file = lautFile;
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:path/path.dart' as p;
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
@@ -90,8 +91,8 @@ void main() {
     ],
   );
 
-  const screenshotDir =
-      '/Users/davindalana/.gemini/antigravity/brain/d28b8768-0772-4001-8dca-34c07962ba48';
+  final screenshotDir =
+      p.join(Directory.systemTemp.path, 'db_phase_2_2_screenshots');
 
   Future<void> captureBoundary(GlobalKey key, String filename) async {
     final boundary =

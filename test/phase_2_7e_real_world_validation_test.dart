@@ -23,6 +23,8 @@ import 'package:digital_books/features/reader/presentation/screens/reading_scree
 import 'package:digital_books/core/theme/typography_settings.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_page_renderer.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
 
@@ -95,15 +97,10 @@ void main() {
       'reconstructs real 265-page book (The Let Them Theory) with high fidelity',
       () async {
         final realBookFile = File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
+          p.join(RealBookFixtures.originalsDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf'),
         );
 
-        if (!realBookFile.existsSync()) {
-          markTestSkipped(
-            'Real 265-page book PDF is missing at ${realBookFile.path}',
-          );
-          return;
-        }
+        if (!checkFixtureOrSkip(realBookFile, 'The Let Them Theory PDF')) return;
 
         final sw = Stopwatch()..start();
         final extraction = await GeometryAwarePdfExtractor.extractDocument(

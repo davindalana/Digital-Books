@@ -11,6 +11,8 @@ import 'package:digital_books/features/reader/domain/engines/reflowable_engine.d
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/reflowable_page_renderer.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +20,7 @@ void main() {
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
   final jsonFile = File(
-    '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json',
+    p.join(RealBookFixtures.booksDir, '$bookId.json'),
   );
 
   group('Front Matter Centering and Pagination Quality', () {
@@ -185,10 +187,7 @@ void main() {
     );
 
     test('Real book Chapter 0 paginates cleanly without fragmentation', () {
-      if (!jsonFile.existsSync()) {
-        markTestSkipped('Processed book JSON is missing at ${jsonFile.path}');
-        return;
-      }
+      if (!checkFixtureOrSkip(jsonFile, 'Processed book JSON')) return;
 
       final bookDoc = BookDocument.fromJson(
         jsonDecode(jsonFile.readAsStringSync()) as Map<String, dynamic>,

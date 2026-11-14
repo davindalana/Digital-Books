@@ -24,6 +24,8 @@ import 'package:digital_books/features/reader/domain/models/reader_content.dart'
 import 'package:digital_books/features/reader/domain/engines/pagination_engine.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 int _levenshtein(String s, String t) {
@@ -71,12 +73,12 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
-  final dbFile = File('/Users/davindalana/Documents/digital_books_db.sqlite');
+  final dbFile = File(p.join(RealBookFixtures.documentsDir, 'digital_books_db.sqlite'));
   final pdfFile = File(
-    '/Users/davindalana/Documents/DigitalBooks/originals/$bookId.pdf',
+    p.join(RealBookFixtures.originalsDir, '$bookId.pdf'),
   );
   final processedJsonFile = File(
-    '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json',
+    p.join(RealBookFixtures.booksDir, '$bookId.json'),
   );
 
   late AppDatabase db;
@@ -86,19 +88,18 @@ void main() {
   late BackgroundOcrQueue queue;
 
   setUpAll(() async {
+    if (!checkFixtureOrSkip(dbFile) || !checkFixtureOrSkip(pdfFile)) return;
     GoogleFonts.config.allowRuntimeFetching = false;
-    // Load real glyphs for visual evidence. Flutter tests default to the Ahem
-    // test font, which renders every character as a solid block.
-    for (final family in ['Palatino', 'Inter']) {
-      final bytes = File(
-        '/System/Library/Fonts/Supplemental/Arial.ttf',
-      ).readAsBytesSync();
-      final loader = FontLoader(family)
-        ..addFont(Future.value(ByteData.view(bytes.buffer)));
-      await loader.load();
+    // Load real glyphs for visual evidence.
+    final interFont = File('assets/fonts/Inter-Regular.ttf');
+    if (interFont.existsSync()) {
+      for (final family in ['Palatino', 'Inter']) {
+        final bytes = interFont.readAsBytesSync();
+        final loader = FontLoader(family)
+          ..addFont(Future.value(ByteData.view(bytes.buffer)));
+        await loader.load();
+      }
     }
-    expect(dbFile.existsSync(), isTrue, reason: 'Database file must exist');
-    expect(pdfFile.existsSync(), isTrue, reason: 'Original PDF must exist');
 
     db = AppDatabase(NativeDatabase(dbFile));
     dbService = DatabaseService(db);
@@ -109,6 +110,10 @@ void main() {
       ocrService: ocrService,
       semanticPipeline: semanticPipeline,
     );
+  });
+
+  setUp(() {
+    if (!checkFixtureOrSkip(dbFile) || !checkFixtureOrSkip(pdfFile)) return;
   });
 
   tearDownAll(() async {

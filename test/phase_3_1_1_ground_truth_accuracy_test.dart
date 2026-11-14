@@ -9,6 +9,7 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/processing/services/paragraph_reconstructor.dart';
 import 'package:digital_books/features/processing/services/reading_order_resolver.dart';
 import 'package:digital_books/features/processing/services/geometry_aware_pdf_extractor.dart';
+import 'helpers/real_book_fixtures.dart';
 
 /// Calculates Levenshtein edit distance between two strings or token sequences.
 int levenshteinDistance<T>(List<T> a, List<T> b) {
@@ -61,22 +62,9 @@ void main() {
 
   const ocrService = AppleVisionOcrService();
 
-  final lautFile = File(
-    '/Users/davindalana/Downloads/Laut Bercerita (Leila S. Chudori).pdf',
-  );
-  final bicaraFile = File(
-    '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf',
-  );
-  final suspectXFile = File(
-    '/Users/davindalana/Downloads/Kesetiaan Mr X The Devotion Of Suspect X (Keigo Higashino).pdf',
-  );
-
-  setUpAll(() {
-    expect(lautFile.existsSync(), isTrue);
-    expect(bicaraFile.existsSync(), isTrue);
-    expect(suspectXFile.existsSync(), isTrue);
-    expect(ocrService.isAvailable, isTrue);
-  });
+  final lautFile = RealBookFixtures.resolve(RealBookFixtures.lautBercerita);
+  final bicaraFile = RealBookFixtures.resolve(RealBookFixtures.bicaraItuAdaSeninya);
+  final suspectXFile = RealBookFixtures.resolve(RealBookFixtures.kesetiaanMrX);
 
   group('Phase 3.1.1 — OCR Ground Truth Accuracy & Error Rate Audit', () {
     // -------------------------------------------------------------------------
@@ -115,6 +103,12 @@ suara permukaan laut yang dibelah perahu motor itu.
 Tak terlalu lama, perahu motor terasa melambat. Mungkin
 kami sudah tiba di tempat tujuan, entah pulau apa, aku tak tahu.
 Aku dipaksa turun. Agak sulit berjalan di tepi tebing dengan''';
+
+        if (!checkFixtureOrSkip(lautFile, 'Laut Bercerita')) return;
+        if (!ocrService.isAvailable) {
+          markTestSkipped('AppleVisionOcrService is not available');
+          return;
+        }
 
         final doc = await PdfDocument.openFile(lautFile.path);
         final page = doc.pages[14]; // Page 15 (0-indexed 14)
@@ -203,6 +197,12 @@ jadi penyanyi pop opera yang mendunia. Setiap orang yang
 mendengar nama Paul Robert Potts pasti akan langsung teringat
 kisahnya dan hanyut dalam keharuan.''';
 
+        if (!checkFixtureOrSkip(bicaraFile, 'Bicara Itu Ada Seninya')) return;
+        if (!ocrService.isAvailable) {
+          markTestSkipped('AppleVisionOcrService is not available');
+          return;
+        }
+
         final doc = await PdfDocument.openFile(bicaraFile.path);
         final page = doc.pages[32]; // Page 33 (0-indexed 32)
         final ocrResult = await ocrService.processPdfPage(
@@ -267,6 +267,12 @@ kisahnya dan hanyut dalam keharuan.''';
     test(
       '3. Ground Truth Audit: The Devotion of Suspect X Page 11 (Narrative Prose)',
       () async {
+        if (!checkFixtureOrSkip(suspectXFile, 'The Devotion of Suspect X')) return;
+        if (!ocrService.isAvailable) {
+          markTestSkipped('AppleVisionOcrService is not available');
+          return;
+        }
+
         final doc = await PdfDocument.openFile(suspectXFile.path);
         final page = doc.pages[10]; // Page 11 (0-indexed 10)
         final ocrResult = await ocrService.processPdfPage(
@@ -303,6 +309,12 @@ kisahnya dan hanyut dalam keharuan.''';
     test(
       '4. Sentence Completeness & Paragraph Boundary Accuracy on Laut Bercerita P.15',
       () async {
+        if (!checkFixtureOrSkip(lautFile, 'Laut Bercerita')) return;
+        if (!ocrService.isAvailable) {
+          markTestSkipped('AppleVisionOcrService is not available');
+          return;
+        }
+
         final doc = await PdfDocument.openFile(lautFile.path);
         final page = doc.pages[14]; // Page 15
         final ocrResult = await ocrService.processPdfPage(

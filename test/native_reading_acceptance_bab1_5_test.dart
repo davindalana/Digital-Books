@@ -16,6 +16,8 @@ import 'package:digital_books/features/reader/domain/engines/pagination_engine.d
 import 'package:digital_books/features/reader/domain/engines/reflowable_engine.dart';
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
@@ -23,35 +25,38 @@ void main() {
 
   const bookId = '7b3dcbf3-0f23-4c6d-8044-d525257dac00';
   final jsonFile = File(
-    '/Users/davindalana/Documents/DigitalBooks/books/$bookId.json',
+    p.join(RealBookFixtures.booksDir, '$bookId.json'),
   );
   final evidenceDir = resolveTestEvidenceDirectory('book_mode_acceptance');
 
   late ReaderDocument readerDoc;
 
   setUpAll(() async {
+    if (!checkFixtureOrSkip(jsonFile)) return;
     GoogleFonts.config.allowRuntimeFetching = false;
-    for (final family in ['Palatino', 'Inter', 'Georgia']) {
-      final fontPath =
-          File('/System/Library/Fonts/Supplemental/Georgia.ttf').existsSync()
-          ? '/System/Library/Fonts/Supplemental/Georgia.ttf'
-          : '/System/Library/Fonts/Supplemental/Arial.ttf';
-      final bytes = File(fontPath).readAsBytesSync();
-      final loader = FontLoader(family)
-        ..addFont(Future.value(ByteData.view(bytes.buffer)));
-      await loader.load();
+    final interFont = File('assets/fonts/Inter-Regular.ttf');
+    if (interFont.existsSync()) {
+      for (final family in ['Palatino', 'Inter', 'Georgia']) {
+        final bytes = interFont.readAsBytesSync();
+        final loader = FontLoader(family)
+          ..addFont(Future.value(ByteData.view(bytes.buffer)));
+        await loader.load();
+      }
     }
 
     if (!evidenceDir.existsSync()) {
       evidenceDir.createSync(recursive: true);
     }
 
-    expect(jsonFile.existsSync(), isTrue, reason: 'Real book JSON must exist');
     final jsonStr = jsonFile.readAsStringSync();
     final bookDoc = BookDocument.fromJson(
       jsonDecode(jsonStr) as Map<String, dynamic>,
     );
     readerDoc = ReflowableEngine.normalizeDocument(bookDoc);
+  });
+
+  setUp(() {
+    if (!checkFixtureOrSkip(jsonFile)) return;
   });
 
   group('Native Reading Acceptance BAB I-V & Visual Evidence Capture', () {

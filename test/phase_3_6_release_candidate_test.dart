@@ -23,6 +23,8 @@ import 'package:digital_books/features/reader/domain/engines/pagination_engine.d
 import 'package:digital_books/features/reader/domain/models/book_document.dart';
 import 'package:digital_books/features/reader/presentation/screens/reading_screen.dart';
 import 'package:digital_books/core/theme/typography_settings.dart';
+import 'package:path/path.dart' as p;
+import 'helpers/real_book_fixtures.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
 import 'package:digital_books/features/reader/presentation/widgets/original_pdf_reader.dart';
 import 'package:digital_books/features/reader/providers/reader_settings_provider.dart';
@@ -415,14 +417,9 @@ void main() {
       '8. Real-World Digital Book: The Let Them Theory (265 Pages) E2E',
       () async {
         final realBook = File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
+          p.join(RealBookFixtures.originalsDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf'),
         );
-        if (!realBook.existsSync()) {
-          markTestSkipped(
-            'The Let Them Theory PDF is missing at ${realBook.path}',
-          );
-          return;
-        }
+        if (!checkFixtureOrSkip(realBook, 'The Let Them Theory PDF')) return;
 
         final sw = Stopwatch()..start();
         final extraction = await GeometryAwarePdfExtractor.extractDocument(
@@ -455,14 +452,9 @@ void main() {
       '9. Real-World Scanned Fiction: The Devotion of Suspect X (324 Pages)',
       () async {
         final realBook = File(
-          '/Users/davindalana/Documents/DigitalBooks/originals/67141617-5a74-4f9b-a9fa-45b28366e27d.pdf',
+          p.join(RealBookFixtures.originalsDir, '67141617-5a74-4f9b-a9fa-45b28366e27d.pdf'),
         );
-        if (!realBook.existsSync()) {
-          markTestSkipped(
-            'The Devotion of Suspect X PDF is missing at ${realBook.path}',
-          );
-          return;
-        }
+        if (!checkFixtureOrSkip(realBook, 'The Devotion of Suspect X PDF')) return;
 
         final extraction = await GeometryAwarePdfExtractor.extractDocument(
           pdfFile: realBook,
@@ -478,12 +470,9 @@ void main() {
 
     test('10. Real-World Scanned Literary: Laut Bercerita (394 Pages)', () async {
       final realBook = File(
-        '/Users/davindalana/Documents/DigitalBooks/originals/8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf',
+        p.join(RealBookFixtures.originalsDir, '8565c1aa-0bb7-4876-8fd6-38ce318d3ed4.pdf'),
       );
-      if (!realBook.existsSync()) {
-        markTestSkipped('Laut Bercerita PDF is missing at ${realBook.path}');
-        return;
-      }
+      if (!checkFixtureOrSkip(realBook, 'Laut Bercerita PDF')) return;
 
       final extraction = await GeometryAwarePdfExtractor.extractDocument(
         pdfFile: realBook,
@@ -939,7 +928,7 @@ void main() {
 
       // 3. 265 Pages (The Let Them Theory)
       final letThem = File(
-        '/Users/davindalana/Documents/DigitalBooks/originals/8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf',
+        p.join(RealBookFixtures.originalsDir, '8cda23f0-bf42-4a4d-a1fd-30d2943835c9.pdf'),
       );
       if (letThem.existsSync()) {
         final sw265 = Stopwatch()..start();

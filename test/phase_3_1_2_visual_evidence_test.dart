@@ -14,6 +14,7 @@ import 'package:digital_books/features/processing/services/apple_vision_ocr_serv
 import 'package:digital_books/features/reader/domain/models/reader_content.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/paginated_reflowable_reader.dart';
 import 'package:digital_books/features/reader/presentation/widgets/reflowable/scrolling_reflowable_reader.dart';
+import 'helpers/real_book_fixtures.dart';
 import 'helpers/test_evidence_dir.dart';
 
 void main() {
@@ -22,9 +23,6 @@ void main() {
   final ocrService = AppleVisionOcrService();
   late Directory tempDir;
   final evidenceDir = resolveTestEvidenceDir('phase_3_1_2');
-
-  final bicaraSeninyaPath =
-      '/Users/davindalana/Downloads/Bicara Itu Ada Seninya (Oh Su Hyang).pdf';
 
   setUpAll(() async {
     tempDir = Directory.systemTemp.createTempSync('db_vis_312_');
@@ -177,10 +175,12 @@ void main() {
 
   group('Phase 3.1.2 — Native Visual Evidence Capture Suite', () {
     testWidgets('1. Capture Original Scanned PDF Page', (tester) async {
+      final file = File(p.join(RealBookFixtures.downloadsDir, 'Bicara Itu Ada Seninya (Oh Su Hyang).pdf'));
+      if (!checkFixtureOrSkip(file, 'Bicara Itu Ada Seninya PDF')) return;
       final outPath = p.join(evidenceDir, 'mode_original_pdf.png');
 
       await tester.runAsync(() async {
-        final pdfDoc = await PdfDocument.openFile(bicaraSeninyaPath);
+        final pdfDoc = await PdfDocument.openFile(file.path);
         final page = pdfDoc.pages[3]; // P.4 (Copyright & Lists page)
         final img = await page.render(
           width: (page.width * 1.5).round(),
