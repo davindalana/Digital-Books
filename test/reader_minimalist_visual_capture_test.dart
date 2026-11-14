@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_print
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 
 import 'package:digital_books/core/database/app_database.dart';
@@ -152,7 +154,7 @@ void main() {
         buildTestApp(
           key: key,
           mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.black,
+          theme: ReadingThemeType.white,
         ),
       );
       await tester.pumpAndSettle();
@@ -176,7 +178,7 @@ void main() {
         buildTestApp(
           key: key,
           mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.black,
+          theme: ReadingThemeType.white,
         ),
       );
       await tester.pumpAndSettle();
@@ -206,7 +208,7 @@ void main() {
         buildTestApp(
           key: key,
           mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.black,
+          theme: ReadingThemeType.white,
         ),
       );
       await tester.pumpAndSettle();
@@ -243,7 +245,7 @@ void main() {
         buildTestApp(
           key: key,
           mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.black,
+          theme: ReadingThemeType.white,
         ),
       );
       await tester.pumpAndSettle();
@@ -407,10 +409,24 @@ void main() {
       tester.view.devicePixelRatio = 2.0;
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
+      // Create a copy of the processed doc with an empty chapter title,
+      // so ReadingScreen falls back to displaying widget.book.author in the top bar.
+      final tempDocFile = File(
+        '${Directory.systemTemp.path}/test_empty_ch_title.json',
+      );
+      final rawJson = File(processedDocPath).readAsStringSync();
+      final decoded = jsonDecode(rawJson) as Map<String, dynamic>;
+      final chapters = decoded['chapters'] as List<dynamic>;
+      if (chapters.isNotEmpty) {
+        (chapters[0] as Map<String, dynamic>)['title'] = '';
+      }
+      tempDocFile.writeAsStringSync(jsonEncode(decoded));
+
       final longSubtitleBook = testBook.copyWith(
         id: 'test-long-subtitle-book',
         author:
             'Professor Bartholomew Alexander Montgomery III, Distinguished Chair of Comparative Typography and Cognitive Ergonomics',
+        processedBookPath: Value(tempDocFile.path),
       );
       await db.into(db.books).insert(longSubtitleBook);
 
@@ -587,5 +603,41 @@ void main() {
         await teardownWidget(tester);
       },
     );
+
+    test('Verify minimalist UI captures have distinct hashes', () {
+      final f01 = File('${evidenceDir.path}/01_book_mode_controls_visible.png');
+      final f02 = File('${evidenceDir.path}/02_book_mode_auto_hidden.png');
+      final f05 = File('${evidenceDir.path}/05_book_mode_light_theme.png');
+      final f06 = File('${evidenceDir.path}/06_book_mode_dark_theme.png');
+      final f10 = File('${evidenceDir.path}/10_long_subtitle_truncation.png');
+
+      if (f01.existsSync() && f06.existsSync()) {
+        final h01 = f01.readAsBytesSync();
+        final h06 = f06.readAsBytesSync();
+        expect(
+          h01,
+          isNot(equals(h06)),
+          reason: '01 (white) and 06 (black) must have distinct hashes',
+        );
+      }
+      if (f01.existsSync() && f02.existsSync()) {
+        final h01 = f01.readAsBytesSync();
+        final h02 = f02.readAsBytesSync();
+        expect(
+          h01,
+          isNot(equals(h02)),
+          reason: '01 and 02 must have distinct hashes',
+        );
+      }
+      if (f06.existsSync() && f10.existsSync()) {
+        final h06 = f06.readAsBytesSync();
+        final h10 = f10.readAsBytesSync();
+        expect(
+          h06,
+          isNot(equals(h10)),
+          reason: '06 and 10 must have distinct hashes',
+        );
+      }
+    });
   });
 }
