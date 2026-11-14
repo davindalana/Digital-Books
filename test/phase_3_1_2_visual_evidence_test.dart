@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/core/theme/reading_theme.dart';
@@ -245,6 +246,13 @@ void main() {
         File(p.join(evidenceDir, 'mode_reflowable_scrolling.png')).existsSync(),
         isTrue,
       );
+      final paginatedBytes = File(p.join(evidenceDir, 'mode_reflowable_paginated.png')).readAsBytesSync();
+      final scrollingBytes = File(p.join(evidenceDir, 'mode_reflowable_scrolling.png')).readAsBytesSync();
+      expect(
+        sha256.convert(paginatedBytes).toString(),
+        isNot(equals(sha256.convert(scrollingBytes).toString())),
+        reason: 'Paginated and scrolling captures must have distinct hashes',
+      );
     });
 
     testWidgets('3. Capture Typography Scaling: 14pt, 18pt, 24pt', (
@@ -314,6 +322,16 @@ void main() {
         File(p.join(evidenceDir, 'typography_large_24pt.png')).existsSync(),
         isTrue,
       );
+
+      final t14Bytes = File(p.join(evidenceDir, 'typography_small_14pt.png')).readAsBytesSync();
+      final t18Bytes = File(p.join(evidenceDir, 'typography_normal_18pt.png')).readAsBytesSync();
+      final t24Bytes = File(p.join(evidenceDir, 'typography_large_24pt.png')).readAsBytesSync();
+      final typoHashes = {
+        sha256.convert(t14Bytes).toString(),
+        sha256.convert(t18Bytes).toString(),
+        sha256.convert(t24Bytes).toString(),
+      };
+      expect(typoHashes.length, equals(3), reason: 'All 3 typography scales must have distinct hashes');
     });
 
     testWidgets('4. Capture Reading Themes: White, Sepia, Dark', (
@@ -374,6 +392,16 @@ void main() {
         filename: 'theme_dark.png',
       );
       expect(File(p.join(evidenceDir, 'theme_dark.png')).existsSync(), isTrue);
+
+      final whiteBytes = File(p.join(evidenceDir, 'theme_white.png')).readAsBytesSync();
+      final sepiaBytes = File(p.join(evidenceDir, 'theme_sepia.png')).readAsBytesSync();
+      final darkBytes = File(p.join(evidenceDir, 'theme_dark.png')).readAsBytesSync();
+      final themeHashes = {
+        sha256.convert(whiteBytes).toString(),
+        sha256.convert(sepiaBytes).toString(),
+        sha256.convert(darkBytes).toString(),
+      };
+      expect(themeHashes.length, equals(3), reason: 'All 3 reading themes must have distinct hashes');
     });
 
     testWidgets('5. Capture Layouts: Single Page vs Two-Page Spread', (
@@ -423,6 +451,14 @@ void main() {
       expect(
         File(p.join(evidenceDir, 'layout_two_page_spread.png')).existsSync(),
         isTrue,
+      );
+
+      final singleBytes = File(p.join(evidenceDir, 'layout_single_page.png')).readAsBytesSync();
+      final twoPageBytes = File(p.join(evidenceDir, 'layout_two_page_spread.png')).readAsBytesSync();
+      expect(
+        sha256.convert(singleBytes).toString(),
+        isNot(equals(sha256.convert(twoPageBytes).toString())),
+        reason: 'Single page and two-page spread captures must have distinct hashes',
       );
     });
   });

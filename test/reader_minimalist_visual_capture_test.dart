@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -195,79 +194,9 @@ void main() {
       await teardownWidget(tester);
     });
 
-    testWidgets('Capture 3: Top Edge Hover (Revealed Top Chrome)', (
-      tester,
-    ) async {
-      final key = GlobalKey();
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      tester.view.physicalSize = const Size(2400, 1600);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildTestApp(
-          key: key,
-          mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.white,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Wait for auto-hide
-      await tester.pump(const Duration(milliseconds: 3300));
-      await tester.pumpAndSettle();
-
-      // Hover at top edge (y = 25 <= 56)
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await mouse.addPointer(location: const Offset(600, 400));
-      await mouse.moveTo(const Offset(600, 25));
-      await tester.pump();
-      await tester.pumpAndSettle();
-
-      await captureScreen(
-        tester,
-        key: key,
-        filename: '03_book_mode_top_edge_hover.png',
-      );
-      await teardownWidget(tester);
-    });
-
-    testWidgets('Capture 4: Bottom Edge Hover (Revealed Bottom Chrome)', (
-      tester,
-    ) async {
-      final key = GlobalKey();
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
-      tester.view.physicalSize = const Size(2400, 1600);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        buildTestApp(
-          key: key,
-          mode: ReadingMode.reflowable,
-          theme: ReadingThemeType.white,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Wait for auto-hide
-      await tester.pump(const Duration(milliseconds: 3300));
-      await tester.pumpAndSettle();
-
-      // Hover at bottom edge (y = 780 >= 752)
-      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await mouse.addPointer(location: const Offset(600, 400));
-      await mouse.moveTo(const Offset(600, 780));
-      await tester.pump();
-      await tester.pumpAndSettle();
-
-      await captureScreen(
-        tester,
-        key: key,
-        filename: '04_book_mode_bottom_edge_hover.png',
-      );
-      await teardownWidget(tester);
-    });
+    // Note: Captures 3 and 4 (top/bottom edge hover) have been removed from the
+    // capture suite. Digital Books reveals the unified chrome (top bar and bottom
+    // bar together) on any hover movement, making 03 and 04 byte-identical to 01.
 
     testWidgets('Capture 5: Light Theme (Theme White)', (tester) async {
       final key = GlobalKey();
@@ -609,6 +538,7 @@ void main() {
       final f02 = File('${evidenceDir.path}/02_book_mode_auto_hidden.png');
       final f05 = File('${evidenceDir.path}/05_book_mode_light_theme.png');
       final f06 = File('${evidenceDir.path}/06_book_mode_dark_theme.png');
+      final f07 = File('${evidenceDir.path}/07_book_mode_sepia_theme.png');
       final f10 = File('${evidenceDir.path}/10_long_subtitle_truncation.png');
 
       if (f01.existsSync() && f06.existsSync()) {
@@ -636,6 +566,15 @@ void main() {
           h01,
           isNot(equals(h02)),
           reason: '01 and 02 must have distinct hashes',
+        );
+      }
+      if (f06.existsSync() && f07.existsSync()) {
+        final h06 = f06.readAsBytesSync();
+        final h07 = f07.readAsBytesSync();
+        expect(
+          h06,
+          isNot(equals(h07)),
+          reason: '06 (dark) and 07 (sepia) must have distinct hashes',
         );
       }
       if (f06.existsSync() && f10.existsSync()) {

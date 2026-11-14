@@ -202,6 +202,19 @@ void main() {
         ).writeAsBytes(strongPng);
         final strongStats = computeLuminanceStats(strongPixels, w, h);
 
+        // Verify all 4 enhancement tiers on Laut Bercerita P.15 produce distinct hashes
+        final p15TierHashes = {
+          sha256.convert(rawPng).toString(),
+          sha256.convert(gentlePng).toString(),
+          sha256.convert(balancedPng).toString(),
+          sha256.convert(strongPng).toString(),
+        };
+        expect(
+          p15TierHashes.length,
+          equals(4),
+          reason: 'All 4 enhancement tiers on Laut Bercerita P.15 must be distinct',
+        );
+
         // 5. Gutter Compensation
         // 5A. Verification on Real Document: Laut Bercerita P.15 has clean margins and no spine shadow (shadowDelta < 12).
         // ScannedImageEnhancer correctly bypasses gutter shadow compensation, preserving identical output.
@@ -227,82 +240,6 @@ void main() {
           equals(balancedPixels),
           reason:
               'Enhancer must safely bypass gutter compensation on real pages lacking spine shadow',
-        );
-
-        // 5B. Verification with Synthetic Spine Shadow: Prove gutter shadow removal activates
-        // and alters pixel data when an actual spine shadow gradient is present.
-        final gutterTestPixels = Uint8List.fromList(rawPixels);
-        final gutterZoneWidth = (w * 0.15).round();
-        for (int y = 0; y < h; y++) {
-          final rowOffset = y * w * 4;
-          for (int x = w - gutterZoneWidth; x < w; x++) {
-            final idx = rowOffset + (x * 4);
-            final distFromEdge = w - 1 - x;
-            final shadowFactor =
-                1.0 -
-                ((gutterZoneWidth - distFromEdge) / gutterZoneWidth) * 0.25;
-            gutterTestPixels[idx] = (gutterTestPixels[idx] * shadowFactor)
-                .round()
-                .clamp(0, 255);
-            gutterTestPixels[idx + 1] =
-                (gutterTestPixels[idx + 1] * shadowFactor).round().clamp(
-                  0,
-                  255,
-                );
-            gutterTestPixels[idx + 2] =
-                (gutterTestPixels[idx + 2] * shadowFactor).round().clamp(
-                  0,
-                  255,
-                );
-          }
-        }
-
-        final syntheticGutterOnPixels = ScannedImageEnhancer.enhanceBgra(
-          srcPixels: gutterTestPixels,
-          width: w,
-          height: h,
-          config: gutterOnConfig,
-        );
-        final syntheticGutterOnPng = await bgraToPng(
-          syntheticGutterOnPixels,
-          w,
-          h,
-        );
-        await File(
-          '$visualEvidenceDir/scan_enhancement/gutter_shadow_synthetic_on.png',
-        ).writeAsBytes(syntheticGutterOnPng);
-
-        const gutterOffConfig = ScanEnhancementConfig(
-          isEnabled: true,
-          intensity: ScanEnhancementIntensity.balanced,
-          toGrayscale: true,
-          removeGutterShadow: false,
-          isLeftPage: true,
-        );
-        final syntheticGutterOffPixels = ScannedImageEnhancer.enhanceBgra(
-          srcPixels: gutterTestPixels,
-          width: w,
-          height: h,
-          config: gutterOffConfig,
-        );
-        final syntheticGutterOffPng = await bgraToPng(
-          syntheticGutterOffPixels,
-          w,
-          h,
-        );
-        await File(
-          '$visualEvidenceDir/scan_enhancement/gutter_shadow_synthetic_off.png',
-        ).writeAsBytes(syntheticGutterOffPng);
-
-        expect(
-          syntheticGutterOnPixels,
-          isNot(equals(syntheticGutterOffPixels)),
-          reason:
-              'Gutter shadow removal must alter pixel data when shadow gradient is detected',
-        );
-        expect(
-          sha256.convert(syntheticGutterOnPng).toString(),
-          isNot(equals(sha256.convert(syntheticGutterOffPng).toString())),
         );
 
         pdfImage.dispose();
@@ -361,6 +298,108 @@ void main() {
           await File(
             '$visualEvidenceDir/scan_enhancement/bicara_p33_strong.png',
           ).writeAsBytes(bStrongPng);
+
+          // Verify all 4 enhancement tiers on Bicara P.33 produce distinct hashes
+          final bicaraTierHashes = {
+            sha256.convert(bRawPng).toString(),
+            sha256.convert(bGentlePng).toString(),
+            sha256.convert(bBalancedPng).toString(),
+            sha256.convert(bStrongPng).toString(),
+          };
+          expect(
+            bicaraTierHashes.length,
+            equals(4),
+            reason: 'All 4 enhancement tiers on Bicara P.33 must be distinct',
+          );
+
+          // 5B. Verification with Synthetic Spine Shadow: Prove gutter shadow removal activates
+          // and alters pixel data when an actual spine shadow gradient is present across text & margin.
+          final gutterTestPixels = Uint8List.fromList(bRawPixels);
+          final gutterZoneWidth = (bW * 0.16).round();
+          for (int y = 0; y < bH; y++) {
+            final rowOffset = y * bW * 4;
+            for (int x = 0; x < gutterZoneWidth; x++) {
+              final idx = rowOffset + (x * 4);
+              final shadowFactor =
+                  1.0 -
+                  ((gutterZoneWidth - x) / gutterZoneWidth) * 0.30;
+              gutterTestPixels[idx] = (gutterTestPixels[idx] * shadowFactor)
+                  .round()
+                  .clamp(0, 255);
+              gutterTestPixels[idx + 1] =
+                  (gutterTestPixels[idx + 1] * shadowFactor).round().clamp(
+                    0,
+                    255,
+                  );
+              gutterTestPixels[idx + 2] =
+                  (gutterTestPixels[idx + 2] * shadowFactor).round().clamp(
+                    0,
+                    255,
+                  );
+            }
+          }
+
+          const bGutterOnConfig = ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.balanced,
+            toGrayscale: true,
+            removeGutterShadow: true,
+            isLeftPage: false,
+          );
+          final syntheticGutterOnPixels = ScannedImageEnhancer.enhanceBgra(
+            srcPixels: gutterTestPixels,
+            width: bW,
+            height: bH,
+            config: bGutterOnConfig,
+          );
+          final syntheticGutterOnPng = await bgraToPng(
+            syntheticGutterOnPixels,
+            bW,
+            bH,
+          );
+          await File(
+            '$visualEvidenceDir/scan_enhancement/gutter_shadow_synthetic_on.png',
+          ).writeAsBytes(syntheticGutterOnPng);
+
+          const bGutterOffConfig = ScanEnhancementConfig(
+            isEnabled: true,
+            intensity: ScanEnhancementIntensity.balanced,
+            toGrayscale: true,
+            removeGutterShadow: false,
+            isLeftPage: false,
+          );
+          final syntheticGutterOffPixels = ScannedImageEnhancer.enhanceBgra(
+            srcPixels: gutterTestPixels,
+            width: bW,
+            height: bH,
+            config: bGutterOffConfig,
+          );
+          final syntheticGutterOffPng = await bgraToPng(
+            syntheticGutterOffPixels,
+            bW,
+            bH,
+          );
+          await File(
+            '$visualEvidenceDir/scan_enhancement/gutter_shadow_synthetic_off.png',
+          ).writeAsBytes(syntheticGutterOffPng);
+
+          expect(
+            syntheticGutterOnPixels,
+            isNot(equals(syntheticGutterOffPixels)),
+            reason:
+                'Gutter shadow removal must alter pixel data when shadow gradient is detected',
+          );
+          expect(
+            sha256.convert(syntheticGutterOnPng).toString(),
+            isNot(equals(sha256.convert(syntheticGutterOffPng).toString())),
+            reason: 'Synthetic ON and OFF must have distinct hashes',
+          );
+          expect(
+            sha256.convert(syntheticGutterOnPng).toString(),
+            isNot(equals(sha256.convert(bBalancedPng).toString())),
+            reason:
+                'Synthetic ON must be distinct from standard unshadowed balanced scan',
+          );
 
           bPdfImage.dispose();
         }
