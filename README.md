@@ -88,30 +88,53 @@ Digital Books Architecture
 ### Running the App Locally
 ```bash
 # Clone the repository
-git clone https://github.com/davindalana/digital-books.git
-cd "Digital Books"
+git clone https://github.com/davindalana/Digital-Books.git
+cd Digital-Books
 
 # Fetch dependencies
 flutter pub get
 
+# Initialize Native Assets
+./tool/setup_native_assets.sh
+# (PDFium native asset perlu disiapkan sebelum flutter test/run)
+
 # Run on macOS
 flutter run -d macos
 ```
+
+### Bundled Offline Typography
+Aplikasi membundel font tipografi lokal berlisensi SIL Open Font License 1.1 (Inter, Literata, Merriweather, Noto Serif) di folder `assets/fonts/` beserta seluruh berkas lisensinya (`OFL-Inter.txt`, `OFL-Literata.txt`, `OFL-Merriweather.txt`, `OFL-NotoSerif.txt`). Hal ini menjamin 100% tipografi offline tanpa unduhan runtime dari internet (`GoogleFonts.config.allowRuntimeFetching = false`).
 
 ### Running the Verification Suites
 ```bash
 # Static analysis (0 issues required)
 flutter analyze
 
-# Full unit, widget, and stability test suite (647 PASSED, 2 SKIPPED — terverifikasi 2026-11-13)
-flutter test --reporter expanded
+# Full unit, widget, and stability test suite:
+# 1. Tanpa korpus PDF pribadi (CI / fresh clone):
+REAL_BOOKS_DIR=/tmp/kosong flutter test
+#    Hasil: 517 PASS, 150 SKIP, 0 FAIL
+
+# 2. Dengan korpus lengkap:
+REAL_BOOKS_DIR=<folder PDF> REQUIRE_REAL_BOOKS=1 flutter test
+#    Hasil: 651 PASS, 1 SKIP, 0 FAIL
 
 # Native macOS integration tests are listed under integration_test/.
 # Run the selected scenario on a macOS desktop target.
 flutter test integration_test/macos_phase_2_8_4_native_visual_acceptance_test.dart -d macos
 ```
 
+*Catatan status pengujian:*
+- Status **SKIP** berarti tes butuh buku berhak cipta yang tidak ada di repo.
+- Mengatur variabel lingkungan `REQUIRE_REAL_BOOKS=1` membuat tes gagal (bukan skip) bila fixture hilang.
+
 The native interaction and visual acceptance checklist still requires a human run on macOS. Passing Flutter tests alone does not complete beta acceptance.
+
+---
+
+## Known Issues
+
+- `integration_test/macos_phase_2_2_reader_ui_test.dart` pernah timeout pada satu rangkaian run (penyebab belum terkonfirmasi); lulus 3/3 pada run ulang di HEAD dan baseline 9e4c8fd; kemungkinan flaky saat mesin sibuk.
 
 ---
 
