@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:digital_books/features/processing/services/scanned_image_enhancer.dart';
@@ -140,11 +141,33 @@ void main() {
         '$evidenceDir/laut_p15_full_strong.png',
       ).writeAsBytes(strongPng);
 
-      // Zoom crop on dialogue with quotation marks and commas (around middle of page)
-      final cropX = (w * 0.18).round();
-      final cropY = (h * 0.38).round();
-      final cropW = (w * 0.65).round();
-      final cropH = (h * 0.20).round();
+      // Dynamically locate actual non-white text bounding box on the page
+      int minX = w, maxX = 0, minY = h, maxY = 0;
+      for (int y = 0; y < h; y += 4) {
+        final rowOffset = y * w * 4;
+        for (int x = 0; x < w; x += 4) {
+          final idx = rowOffset + (x * 4);
+          final b = rawPixels[idx];
+          final g = rawPixels[idx + 1];
+          final r = rawPixels[idx + 2];
+          final lum = (r * 77 + g * 150 + b * 29) >> 8;
+          if (lum < 220) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      expect(minX < maxX && minY < maxY, isTrue, reason: 'Page must have detected text');
+
+      // Crop a centered region inside the actual text bounding box containing dialogue and punctuation
+      final textW = maxX - minX;
+      final textH = maxY - minY;
+      final cropX = minX + (textW * 0.1).round();
+      final cropY = minY + (textH * 0.2).round();
+      final cropW = (textW * 0.8).round();
+      final cropH = (textH * 0.4).round();
 
       final cropOriginal = await cropBgraToPng(
         rawPixels,
@@ -197,6 +220,25 @@ void main() {
       await File(
         '$evidenceDir/crop_punctuation_strong.png',
       ).writeAsBytes(cropStrong);
+
+      // Guard: Crops must not be solid single color
+      expect(cropOriginal.toSet().length, greaterThan(1));
+      expect(cropGentle.toSet().length, greaterThan(1));
+      expect(cropBalanced.toSet().length, greaterThan(1));
+      expect(cropStrong.toSet().length, greaterThan(1));
+
+      // Guard: Each tier must produce distinct PNG bytes
+      final cropHashes = {
+        sha256.convert(cropOriginal).toString(),
+        sha256.convert(cropGentle).toString(),
+        sha256.convert(cropBalanced).toString(),
+        sha256.convert(cropStrong).toString(),
+      };
+      expect(
+        cropHashes.length,
+        equals(4),
+        reason: 'Each enhancement tier must produce distinct punctuation crop pixels',
+      );
 
       print('Visual crops generated in $evidenceDir');
       lautImage.dispose();
