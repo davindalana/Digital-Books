@@ -41,7 +41,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(fontFamily: 'SF Pro Display'),
+        theme: ThemeData(fontFamily: 'Inter'),
         home: Scaffold(
           backgroundColor: const Color(0xFF1C1C1E),
           body: Center(
@@ -583,12 +583,19 @@ void main() {
           widget: widget,
         );
 
-        expect(
-          File(
-            p.join(evidenceDir, '08_search_traversal_cyclic_wrap.png'),
-          ).existsSync(),
-          isTrue,
+        final file07 = File(
+          p.join(evidenceDir, '07_search_traversal_bar_active.png'),
         );
+        final file08 = File(
+          p.join(evidenceDir, '08_search_traversal_cyclic_wrap.png'),
+        );
+        expect(file07.existsSync(), isTrue);
+        expect(file08.existsSync(), isTrue);
+
+        // Permanent distinctness guard: index 0 ("1 dari 3") and index 2 ("3 dari 3") must render distinct bytes
+        final bytes07 = file07.readAsBytesSync();
+        final bytes08 = file08.readAsBytesSync();
+        expect(bytes07, isNot(equals(bytes08)));
       },
     );
 

@@ -40,7 +40,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(fontFamily: 'SF Pro Display'),
+        theme: ThemeData(fontFamily: 'Inter'),
         home: Scaffold(
           backgroundColor: const Color(0xFF1C1C1E),
           body: Center(
