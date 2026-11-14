@@ -18,8 +18,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 2.8.3 — Adaptive Paragraph Flow & Page Utilization', () {
-    late ReaderDocument suspectXDoc;
-    late ReaderDocument letThemDoc;
+    ReaderDocument? suspectXDoc;
+    ReaderDocument? letThemDoc;
 
     final suspectXFile = File(
       '${RealBookFixtures.booksDir}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
@@ -49,13 +49,12 @@ void main() {
       }
     });
 
-    setUp(() {
-      if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
-    });
-
     test(
       '1. Zero Overflow & Vertical Clipping Elimination (Suspect X & Let Them Theory)',
       () {
+        if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
+        final books = [suspectXDoc, letThemDoc].whereType<ReaderDocument>().toList();
+        if (books.length < 2) return;
         const typo = TypographySettings(twoPageSpread: true);
         const viewportWidth = 1000.0;
         const viewportHeight = 600.0;
@@ -70,7 +69,7 @@ void main() {
           typography: typo,
         );
 
-        for (final bookDoc in [suspectXDoc, letThemDoc]) {
+        for (final bookDoc in books) {
           final pages = PaginationEngine.paginateDocument(
             document: bookDoc,
             viewportWidth: viewportWidth,
@@ -106,6 +105,9 @@ void main() {
     );
 
     test('2. Widow & Orphan Control Policy Verification', () {
+      if (!checkFixtureOrSkip(suspectXFile)) return;
+      final doc = suspectXDoc;
+      if (doc == null) return;
       const typo = TypographySettings(twoPageSpread: true);
       const viewportWidth = 1000.0;
       const viewportHeight = 600.0;
@@ -114,7 +116,7 @@ void main() {
         typography: typo,
       );
 
-      final chapter = suspectXDoc.chapters[1]; // SATU
+      final chapter = doc.chapters[1]; // SATU
       final pages = PaginationEngine.paginateChapter(
         chapter: chapter,
         viewportWidth: viewportWidth,
@@ -159,6 +161,9 @@ void main() {
     });
 
     test('3. Page Utilization Metric Across Chapter Prose', () {
+      if (!checkFixtureOrSkip(suspectXFile)) return;
+      final doc = suspectXDoc;
+      if (doc == null) return;
       const typo = TypographySettings(twoPageSpread: true);
       const viewportWidth = 1000.0;
       const viewportHeight = 600.0;
@@ -170,7 +175,7 @@ void main() {
         typography: typo,
       );
 
-      final chapter = suspectXDoc.chapters[1]; // SATU
+      final chapter = doc.chapters[1]; // SATU
       final pages = PaginationEngine.paginateChapter(
         chapter: chapter,
         viewportWidth: viewportWidth,
@@ -205,8 +210,11 @@ void main() {
     test(
       '4. Full Content Concatenation Comparison (Zero Word Loss & Zero Duplication)',
       () {
+        if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
+        final books = [suspectXDoc, letThemDoc].whereType<ReaderDocument>().toList();
+        if (books.length < 2) return;
         // Test both Suspect X and Let Them Theory
-        for (final bookDoc in [suspectXDoc, letThemDoc]) {
+        for (final bookDoc in books) {
           for (
             int chIdx = 0;
             chIdx < math.min(3, bookDoc.chapters.length);

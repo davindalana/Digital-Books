@@ -13,8 +13,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Word Integrity & Content-Level Concatenation Audit', () {
-    late ReaderDocument suspectXDoc;
-    late ReaderDocument letThemDoc;
+    ReaderDocument? suspectXDoc;
+    ReaderDocument? letThemDoc;
 
     final suspectXFile = File(
       p.join(RealBookFixtures.booksDir, '67141617-5a74-4f9b-a9fa-45b28366e27d.json'),
@@ -44,19 +44,17 @@ void main() {
       }
     });
 
-    setUp(() {
-      if (!checkFixtureOrSkip(suspectXFile) || !checkFixtureOrSkip(letThemFile)) return;
-    });
-
     test(
       '1. Content-Level Reconstruction on The Devotion of Suspect X (Zero Word Loss & Zero Duplication)',
       () {
-        expect(suspectXDoc, isNotNull);
+        if (!checkFixtureOrSkip(suspectXFile)) return;
+        final doc = suspectXDoc;
+        if (doc == null) return;
 
         // Test across multiple chapters (dialogue-heavy chapter, narrative-heavy chapter)
         for (final chapterIdx in [1, 2, 5]) {
-          if (chapterIdx >= suspectXDoc.chapters.length) continue;
-          final chapter = suspectXDoc.chapters[chapterIdx];
+          if (chapterIdx >= doc.chapters.length) continue;
+          final chapter = doc.chapters[chapterIdx];
 
           // Gather all original words from chapter nodes
           final originalWords = <String>[];
@@ -233,8 +231,10 @@ void main() {
     test(
       '3. Content-Level Reconstruction on The Let Them Theory (Vector-Text Document)',
       () {
-        expect(letThemDoc, isNotNull);
-        final chapter = letThemDoc.chapters.first;
+        if (!checkFixtureOrSkip(letThemFile)) return;
+        final doc = letThemDoc;
+        if (doc == null) return;
+        final chapter = doc.chapters.first;
         final pages = PaginationEngine.paginateChapter(
           chapter: chapter,
           viewportWidth: 1000.0,

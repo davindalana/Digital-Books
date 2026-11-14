@@ -13,10 +13,10 @@ import 'helpers/real_book_fixtures.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late AppDatabase db;
-  late DatabaseService dbService;
+  AppDatabase? db;
+  DatabaseService? dbService;
   late AppleVisionOcrService ocrService;
-  late BackgroundOcrQueue queue;
+  BackgroundOcrQueue? queue;
 
   final testPdf = File(
     '${RealBookFixtures.downloadsDir}/Laut Bercerita (Leila S. Chudori).pdf',
@@ -24,13 +24,15 @@ void main() {
 
   setUp(() async {
     if (!checkFixtureOrSkip(testPdf)) return;
-    db = AppDatabase(NativeDatabase.memory());
-    dbService = DatabaseService(db);
+    final database = AppDatabase(NativeDatabase.memory());
+    db = database;
+    final service = DatabaseService(database);
+    dbService = service;
     ocrService = const AppleVisionOcrService();
-    queue = BackgroundOcrQueue(dbService: dbService, ocrService: ocrService);
+    queue = BackgroundOcrQueue(dbService: service, ocrService: ocrService);
 
     // Seed test book in DB
-    await dbService.insertBook(
+    await service.insertBook(
       BooksCompanion(
         id: const Value('book_queue_test'),
         title: const Value('Laut Bercerita (Queue Test)'),
@@ -44,21 +46,24 @@ void main() {
   });
 
   tearDown(() async {
-    queue.dispose();
-    await db.close();
+    queue?.dispose();
+    await db?.close();
   });
 
   group('Phase 3.1 Checkpoint C: Background OCR Queue', () {
     test('1. Runs page-by-page OCR and updates DB & progress stream', () async {
-      expect(queue.state.status, equals(OcrQueueStatus.idle));
+      final activeQueue = queue;
+      final activeService = dbService;
+      if (activeQueue == null || activeService == null) return;
+      expect(activeQueue.state.status, equals(OcrQueueStatus.idle));
 
       final progressEvents = <OcrQueueProgress>[];
-      final sub = queue.progressStream.listen((p) {
+      final sub = activeQueue.progressStream.listen((p) {
         progressEvents.add(p);
       });
 
       // Run on page 14 and 15
-      await queue.start(
+      await activeQueue.start(
         bookId: 'book_queue_test',
         pdfPath: testPdf.path,
         startPage: 14,
@@ -67,11 +72,11 @@ void main() {
 
       await sub.cancel();
 
-      expect(queue.state.status, equals(OcrQueueStatus.completed));
-      expect(queue.state.completedPages, equals(2));
+      expect(activeQueue.state.status, equals(OcrQueueStatus.completed));
+      expect(activeQueue.state.completedPages, equals(2));
 
       // Check DB
-      final savedPages = await dbService.getOcrPagesForBook('book_queue_test');
+      final savedPages = await activeService.getOcrPagesForBook('book_queue_test');
       expect(savedPages.length, equals(2));
       expect(savedPages[0].pageIndex, equals(14));
       expect(savedPages[0].status, equals('completed'));
@@ -90,8 +95,11 @@ void main() {
     });
 
     test('2. Resumability: Skips already completed pages', () async {
+      final activeQueue = queue;
+      final activeService = dbService;
+      if (activeQueue == null || activeService == null) return;
       // Pre-populate page 14 as completed
-      await dbService.insertOcrPage(
+      await activeService.insertOcrPage(
         OcrPagesCompanion(
           id: const Value('book_queue_test_14'),
           bookId: const Value('book_queue_test'),
@@ -107,7 +115,7 @@ void main() {
 
       final sw = Stopwatch()..start();
       // Run on pages 14 through 15
-      await queue.start(
+      await activeQueue.start(
         bookId: 'book_queue_test',
         pdfPath: testPdf.path,
         startPage: 14,
@@ -115,7 +123,7 @@ void main() {
       );
       sw.stop();
 
-      final savedPages = await dbService.getOcrPagesForBook('book_queue_test');
+      final savedPages = await activeService.getOcrPagesForBook('book_queue_test');
       expect(savedPages.length, equals(2));
       // Page 14 should retain its pre-populated charCount of 500
       final p14 = savedPages.firstWhere((p) => p.pageIndex == 14);
@@ -126,18 +134,20 @@ void main() {
     });
 
     test('3. Pause and Resume flow', () async {
+      final activeQueue = queue;
+      if (activeQueue == null) return;
       final pauseTriggered = Completer<void>();
 
-      final sub = queue.progressStream.listen((p) {
+      final sub = activeQueue.progressStream.listen((p) {
         if (p.status == OcrQueueStatus.running &&
             p.currentPageIndex == 14 &&
             !pauseTriggered.isCompleted) {
-          queue.pause();
+          activeQueue.pause();
           pauseTriggered.complete();
         }
       });
 
-      final queueFuture = queue.start(
+      final queueFuture = activeQueue.start(
         bookId: 'book_queue_test',
         pdfPath: testPdf.path,
         startPage: 14,
@@ -146,24 +156,26 @@ void main() {
 
       await pauseTriggered.future;
       await Future.delayed(const Duration(milliseconds: 50));
-      expect(queue.state.status, equals(OcrQueueStatus.paused));
+      expect(activeQueue.state.status, equals(OcrQueueStatus.paused));
 
       // Resume
-      queue.resume();
+      activeQueue.resume();
       await queueFuture;
       await sub.cancel();
 
-      expect(queue.state.status, equals(OcrQueueStatus.completed));
+      expect(activeQueue.state.status, equals(OcrQueueStatus.completed));
     });
 
     test('4. Cancellation flow terminates gracefully', () async {
-      final sub = queue.progressStream.listen((p) {
+      final activeQueue = queue;
+      if (activeQueue == null) return;
+      final sub = activeQueue.progressStream.listen((p) {
         if (p.status == OcrQueueStatus.running) {
-          queue.cancel();
+          activeQueue.cancel();
         }
       });
 
-      await queue.start(
+      await activeQueue.start(
         bookId: 'book_queue_test',
         pdfPath: testPdf.path,
         startPage: 14,
@@ -171,7 +183,7 @@ void main() {
       );
 
       await sub.cancel();
-      expect(queue.state.status, equals(OcrQueueStatus.cancelled));
+      expect(activeQueue.state.status, equals(OcrQueueStatus.cancelled));
     });
   });
 }

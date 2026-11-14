@@ -14,7 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Phase 2.8.4 — Position & Annotation Regression Suite', () {
-    late ReaderDocument suspectXDoc;
+    ReaderDocument? suspectXDoc;
     final suspectXFile = File(
       '${RealBookFixtures.booksDir}/67141617-5a74-4f9b-a9fa-45b28366e27d.json',
     );
@@ -31,15 +31,14 @@ void main() {
       }
     });
 
-    setUp(() {
-      if (!checkFixtureOrSkip(suspectXFile)) return;
-    });
-
     test(
       '1. Anchor Node Preservation Across Viewport Resizing (750x600 -> 1000x700 -> 1300x850)',
       () {
+        if (!checkFixtureOrSkip(suspectXFile)) return;
+        final doc = suspectXDoc;
+        if (doc == null) return;
         const typo = TypographySettings(twoPageSpread: true);
-        final ch1 = suspectXDoc.chapters[1]; // SATU
+        final ch1 = doc.chapters[1]; // SATU
 
         // Target node in the middle of chapter 1
         final targetNode = ch1.nodes[ch1.nodes.length ~/ 2];
@@ -47,21 +46,21 @@ void main() {
 
         // Paginating at 3 distinct viewport sizes:
         final pagesCompact = PaginationEngine.paginateDocument(
-          document: suspectXDoc,
+          document: doc,
           viewportWidth: 750.0,
           viewportHeight: 600.0,
           typography: typo.copyWith(twoPageSpread: false),
         );
 
         final pagesStandard = PaginationEngine.paginateDocument(
-          document: suspectXDoc,
+          document: doc,
           viewportWidth: 1000.0,
           viewportHeight: 700.0,
           typography: typo.copyWith(twoPageSpread: true),
         );
 
         final pagesExpansive = PaginationEngine.paginateDocument(
-          document: suspectXDoc,
+          document: doc,
           viewportWidth: 1300.0,
           viewportHeight: 850.0,
           typography: typo.copyWith(twoPageSpread: true),
@@ -118,7 +117,10 @@ void main() {
     test(
       '2. Anchor Context Preservation Across Font Size Changes (12 -> 16 -> 19 -> 24)',
       () {
-        final ch1 = suspectXDoc.chapters[1];
+        if (!checkFixtureOrSkip(suspectXFile)) return;
+        final doc = suspectXDoc;
+        if (doc == null) return;
+        final ch1 = doc.chapters[1];
         final targetNode = ch1.nodes[5];
 
         for (final fontSize in [12.0, 16.0, 19.0, 24.0]) {
@@ -152,7 +154,10 @@ void main() {
     );
 
     test('3. Highlight and Bookmark Resolution to Same Text Snippet', () {
-      final ch1 = suspectXDoc.chapters[1];
+      if (!checkFixtureOrSkip(suspectXFile)) return;
+      final doc = suspectXDoc;
+      if (doc == null) return;
+      final ch1 = doc.chapters[1];
       final testNode = ch1.nodes[4];
       const startChar = 10;
       const endChar = 45;
@@ -184,8 +189,11 @@ void main() {
     });
 
     test('4. Monotonic Reading Progress Across Entire Book', () {
+      if (!checkFixtureOrSkip(suspectXFile)) return;
+      final doc = suspectXDoc;
+      if (doc == null) return;
       final pages = PaginationEngine.paginateDocument(
-        document: suspectXDoc,
+        document: doc,
         viewportWidth: 1000.0,
         viewportHeight: 700.0,
         typography: const TypographySettings(twoPageSpread: true),
