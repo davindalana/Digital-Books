@@ -620,6 +620,15 @@ void main() {
           reason: '01 (white) and 06 (black) must have distinct hashes',
         );
       }
+      if (f05.existsSync() && f06.existsSync()) {
+        final h05 = f05.readAsBytesSync();
+        final h06 = f06.readAsBytesSync();
+        expect(
+          h05,
+          isNot(equals(h06)),
+          reason: '05 (light) and 06 (black) must have distinct hashes',
+        );
+      }
       if (f01.existsSync() && f02.existsSync()) {
         final h01 = f01.readAsBytesSync();
         final h02 = f02.readAsBytesSync();
