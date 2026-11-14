@@ -16,9 +16,15 @@ void main() {
   test(
     'End-to-End Book Reconstruction Regression Test on Bicara Itu Ada Seninya',
     () async {
-      const bookId = '447899e1-0e78-4658-ad3d-e5efaa92c46e';
-      final imagesDirPath =
-          p.join(RealBookFixtures.digitalBooksDir, 'images', bookId);
+      final imagesDirCandidates = [
+        p.join(RealBookFixtures.digitalBooksDir, 'images', '7b3dcbf3-0f23-4c6d-8044-d525257dac00'),
+        p.join(RealBookFixtures.digitalBooksDir, 'images', '447899e1-0e78-4658-ad3d-e5efaa92c46e'),
+      ];
+      final imagesDirPath = imagesDirCandidates.firstWhere(
+        (path) => Directory(path).existsSync(),
+        orElse: () => imagesDirCandidates.first,
+      );
+      final bookId = p.basename(imagesDirPath);
       final imagesDir = Directory(imagesDirPath);
       if (!checkFixtureOrSkip(imagesDir, 'Bicara OCR images directory')) return;
 

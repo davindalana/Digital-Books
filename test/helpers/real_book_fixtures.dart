@@ -150,19 +150,51 @@ abstract final class RealBookFixtures {
     ],
   );
 
-  static String get downloadsDir =>
-      Platform.environment['REAL_BOOKS_DIR'] ?? expandHome('~/Downloads');
+  static String get downloadsDir {
+    final realBooksDir = Platform.environment['REAL_BOOKS_DIR'];
+    if (realBooksDir != null && realBooksDir.isNotEmpty) {
+      final clean = expandHome(realBooksDir);
+      final dir = Directory(clean);
+      if (dir.existsSync()) {
+        return clean;
+      }
+    }
+    return expandHome('~/Downloads');
+  }
 
-  static String get digitalBooksDir =>
-      Platform.environment['REAL_BOOKS_DIR'] ??
-      expandHome('~/Documents/DigitalBooks');
+  static String get digitalBooksDir {
+    final realBooksDir = Platform.environment['REAL_BOOKS_DIR'];
+    if (realBooksDir != null && realBooksDir.isNotEmpty) {
+      final clean = expandHome(realBooksDir);
+      final dir = Directory(clean);
+      if (dir.existsSync() && dir.listSync().isEmpty) {
+        return clean;
+      }
+      if (Directory(p.join(clean, 'books')).existsSync()) {
+        return clean;
+      }
+    }
+    return expandHome('~/Documents/DigitalBooks');
+  }
 
   static String get originalsDir => p.join(digitalBooksDir, 'originals');
 
   static String get booksDir => p.join(digitalBooksDir, 'books');
 
-  static String get documentsDir =>
-      Platform.environment['REAL_BOOKS_DIR'] ?? expandHome('~/Documents');
+  static String get documentsDir {
+    final realBooksDir = Platform.environment['REAL_BOOKS_DIR'];
+    if (realBooksDir != null && realBooksDir.isNotEmpty) {
+      final clean = expandHome(realBooksDir);
+      final dir = Directory(clean);
+      if (dir.existsSync() && dir.listSync().isEmpty) {
+        return clean;
+      }
+      if (File(p.join(clean, 'digital_books_db.sqlite')).existsSync()) {
+        return clean;
+      }
+    }
+    return expandHome('~/Documents');
+  }
 }
 
 String expandHome(String path) {
@@ -176,6 +208,10 @@ String? _existingPath(List<String> candidates) {
   final realBooksDir = Platform.environment['REAL_BOOKS_DIR'];
   if (realBooksDir != null && realBooksDir.isNotEmpty) {
     final cleanDir = expandHome(realBooksDir);
+    final dir = Directory(cleanDir);
+    if (dir.existsSync() && dir.listSync().isEmpty) {
+      return null;
+    }
     for (final candidate in candidates) {
       final name = p.basename(candidate);
       final inDir = p.join(cleanDir, name);
@@ -186,7 +222,6 @@ String? _existingPath(List<String> candidates) {
       );
       if (File(subPath).existsSync()) return subPath;
     }
-    return null;
   }
 
   for (final candidate in candidates) {
@@ -285,12 +320,20 @@ File? resolveFixtureFile(String path, {String? reason}) {
 /// Checks if a file or path exists, skipping the test if missing (or failing if REQUIRE_REAL_BOOKS=1).
 /// Returns true if the file exists and test should proceed; returns false if skipped.
 bool checkFixtureOrSkip(Object fileOrPath, [String? description]) {
-  final file = fileOrPath is File ? fileOrPath : File(fileOrPath.toString());
-  if (file.existsSync()) return true;
-  if (Platform.environment['REQUIRE_REAL_BOOKS'] == '1') {
-    fail('Required fixture "${description ?? file.path}" is missing.');
+  bool exists = false;
+  String path = '';
+  if (fileOrPath is FileSystemEntity) {
+    exists = fileOrPath.existsSync();
+    path = fileOrPath.path;
   } else {
-    markTestSkipped('Fixture "${description ?? p.basename(file.path)}" not found in this environment.');
+    path = fileOrPath.toString();
+    exists = FileSystemEntity.typeSync(path) != FileSystemEntityType.notFound;
+  }
+  if (exists) return true;
+  if (Platform.environment['REQUIRE_REAL_BOOKS'] == '1') {
+    fail('Required fixture "${description ?? path}" is missing.');
+  } else {
+    markTestSkipped('Fixture "${description ?? p.basename(path)}" not found in this environment.');
     return false;
   }
 }

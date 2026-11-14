@@ -732,7 +732,11 @@ void main() {
             find.byType(OriginalPdfReader),
           );
           for (var i = 0; i < 40; i++) {
-            if (!state.isLoading && state.document != null) break;
+            if (!state.isLoading &&
+                state.document != null &&
+                find.byType(RawImage).evaluate().isNotEmpty) {
+              break;
+            }
             await Future.delayed(const Duration(milliseconds: 50));
             await tester.pump();
           }
