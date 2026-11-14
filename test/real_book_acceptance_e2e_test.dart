@@ -81,11 +81,10 @@ void main() {
     p.join(RealBookFixtures.booksDir, '$bookId.json'),
   );
 
-  late AppDatabase db;
-  late DatabaseService dbService;
-  late AppleVisionOcrService ocrService;
-  late OcrSemanticPipeline semanticPipeline;
-  late BackgroundOcrQueue queue;
+  AppDatabase? db;
+  DatabaseService? dbService;
+  OcrSemanticPipeline? semanticPipeline;
+  BackgroundOcrQueue? queue;
 
   setUpAll(() async {
     if (!checkFixtureOrSkip(dbFile) || !checkFixtureOrSkip(pdfFile)) return;
@@ -101,15 +100,19 @@ void main() {
       }
     }
 
-    db = AppDatabase(NativeDatabase(dbFile));
-    dbService = DatabaseService(db);
-    ocrService = const AppleVisionOcrService();
-    semanticPipeline = OcrSemanticPipeline(dbService);
-    queue = BackgroundOcrQueue(
-      dbService: dbService,
-      ocrService: ocrService,
-      semanticPipeline: semanticPipeline,
+    final database = AppDatabase(NativeDatabase(dbFile));
+    final service = DatabaseService(database);
+    final pipeline = OcrSemanticPipeline(service);
+    final ocrQueue = BackgroundOcrQueue(
+      dbService: service,
+      ocrService: const AppleVisionOcrService(),
+      semanticPipeline: pipeline,
     );
+
+    db = database;
+    dbService = service;
+    semanticPipeline = pipeline;
+    queue = ocrQueue;
   });
 
   setUp(() {
@@ -117,14 +120,19 @@ void main() {
   });
 
   tearDownAll(() async {
-    queue.dispose();
-    await db.close();
+    queue?.dispose();
+    await db?.close();
   });
 
   group('Real Book Acceptance: OCR to Horizontal Paginated Reading', () {
     test(
       '1. Offline OCR Queue: Process and Persist All 255 Pages',
       () async {
+        final s = dbService;
+        final q = queue;
+        final sp = semanticPipeline;
+        if (s == null || q == null || sp == null) return;
+
         print(
           '\n===============================================================',
         );
@@ -134,7 +142,7 @@ void main() {
         );
 
         // Check current state in DB
-        final initialPages = await dbService.getOcrPagesForBook(bookId);
+        final initialPages = await s.getOcrPagesForBook(bookId);
         final completedBefore = initialPages
             .where((p) => p.status == 'completed')
             .length;
@@ -148,7 +156,7 @@ void main() {
         final sw = Stopwatch()..start();
         int lastReportedPage = 0;
 
-        final sub = queue.progressStream.listen((progress) {
+        final sub = q.progressStream.listen((progress) {
           if (progress.currentPageIndex > 0 &&
               progress.currentPageIndex % 25 == 0 &&
               progress.currentPageIndex != lastReportedPage) {
@@ -162,7 +170,7 @@ void main() {
         });
 
         // Start queue with auto-reconstruct
-        await queue.start(
+        await q.start(
           bookId: bookId,
           pdfPath: pdfFile.path,
           autoReconstruct: true,
@@ -172,7 +180,7 @@ void main() {
         sw.stop();
 
         try {
-          final doc = await semanticPipeline.reconstructBook(
+          final doc = await sp.reconstructBook(
             bookId: bookId,
             pdfPath: pdfFile.path,
           );
@@ -186,23 +194,26 @@ void main() {
         print(
           'OCR Queue Finished in ${(sw.elapsedMilliseconds / 1000).toStringAsFixed(1)}s',
         );
-        if (queue.state.status == OcrQueueStatus.error) {
-          print('Queue error message: ${queue.state.errorMessage}');
+        if (q.state.status == OcrQueueStatus.error) {
+          print('Queue error message: ${q.state.errorMessage}');
         }
-        expect(queue.state.status, equals(OcrQueueStatus.completed));
-        expect(queue.state.completedPages, equals(255));
+        expect(q.state.status, equals(OcrQueueStatus.completed));
+        expect(q.state.completedPages, equals(255));
       },
       timeout: const Timeout(Duration(minutes: 10)),
     );
 
     test('2. Page-Level SQLite Persistence Verification', () async {
+      final s = dbService;
+      if (s == null) return;
+
       print(
         '\n===============================================================',
       );
       print('STEP 2: DATABASE PERSISTENCE AUDIT');
       print('===============================================================');
 
-      final pages = await dbService.getOcrPagesForBook(bookId);
+      final pages = await s.getOcrPagesForBook(bookId);
       expect(pages.length, equals(255));
 
       final completedPages = pages
@@ -279,6 +290,7 @@ void main() {
     });
 
     test('3. Semantic Reconstruction Structure & Chapter Partitioning', () async {
+      if (!checkFixtureOrSkip(processedJsonFile)) return;
       print(
         '\n===============================================================',
       );
@@ -422,6 +434,9 @@ void main() {
     });
 
     test('4. Ground-Truth Transcription Validation (CER & WER)', () async {
+      final s = dbService;
+      if (s == null) return;
+
       print(
         '\n===============================================================',
       );
@@ -465,7 +480,7 @@ void main() {
             .replaceAll(RegExp(r'\s+'), ' ')
             .trim();
 
-        final ocrPage = await dbService.getOcrPage(bookId, pageIdx);
+        final ocrPage = await s.getOcrPage(bookId, pageIdx);
         expect(ocrPage, isNotNull);
 
         final rawLines = (jsonDecode(ocrPage!.linesJson) as List)
@@ -594,6 +609,8 @@ void main() {
     });
 
     test('5. Horizontal Paginated Reflowable Reader Integration', () async {
+      if (!checkFixtureOrSkip(processedJsonFile)) return;
+
       print(
         '\n===============================================================',
       );
@@ -666,6 +683,9 @@ void main() {
     testWidgets('6. Real Book Native Visual Rendering & Evidence Capture', (
       tester,
     ) async {
+      final s = dbService;
+      if (s == null || !checkFixtureOrSkip(processedJsonFile)) return;
+
       print(
         '\n===============================================================',
       );
@@ -694,7 +714,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [databaseServiceProvider.overrideWithValue(dbService)],
+            overrides: [databaseServiceProvider.overrideWithValue(s)],
             child: MaterialApp(
               debugShowCheckedModeBanner: false,
               theme: ThemeData(

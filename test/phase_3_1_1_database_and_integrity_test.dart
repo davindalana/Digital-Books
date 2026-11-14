@@ -39,7 +39,6 @@ void main() {
       p.join(RealBookFixtures.downloadsDir, 'Laut Bercerita (Leila S. Chudori).pdf');
 
   setUp(() async {
-    if (!checkFixtureOrSkip(lautBerceritaPath)) return;
     tempDir = Directory.systemTemp.createTempSync('db_integrity_test_');
     PathProviderPlatform.instance = MockPathProviderPlatform(tempDir);
     db = AppDatabase(NativeDatabase.memory());

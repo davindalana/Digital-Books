@@ -29,7 +29,7 @@ void main() {
   );
   final evidenceDir = resolveTestEvidenceDirectory('book_mode_acceptance');
 
-  late ReaderDocument readerDoc;
+  ReaderDocument? readerDoc;
 
   setUpAll(() async {
     if (!checkFixtureOrSkip(jsonFile)) return;
@@ -110,19 +110,21 @@ void main() {
     }
 
     test('0. Print Chapter Page Boundaries for Manual Verification', () {
+      final doc = readerDoc;
+      if (doc == null) return;
       for (final (label, w, h, spread) in [
         ('Desktop Spread (1102x951)', 1102.0, 951.0, true),
         ('Compact Single (600x800)', 600.0, 800.0, false),
       ]) {
         PaginationEngine.clearCache();
         final pages = PaginationEngine.paginateDocument(
-          document: readerDoc,
+          document: doc,
           viewportWidth: w,
           viewportHeight: h,
           typography: TypographySettings(twoPageSpread: spread),
         );
         print('\n=== $label Total Pages: ${pages.length} ===');
-        for (final ch in readerDoc.chapters) {
+        for (final ch in doc.chapters) {
           final chPages = pages
               .where((p) => p.chapterIndex == ch.index)
               .toList();
@@ -139,8 +141,10 @@ void main() {
     testWidgets(
       '0b. Render Chapter 0: Front Matter Spread (Cover & Copyright)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Chapter 0: Front Matter Spread ---');
-        final ch0 = readerDoc.chapters.firstWhere(
+        final ch0 = doc.chapters.firstWhere(
           (c) => c.title.contains('Bagian Awal'),
         );
         expect(ch0.nodes, isNotEmpty);
@@ -148,7 +152,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: ch0.nodes.first.id,
             theme: ReadingThemeType.dark,
             typography: const TypographySettings(twoPageSpread: true),
@@ -162,8 +166,10 @@ void main() {
     );
 
     testWidgets('1. Render Chapter 3: Table of Contents (TOC)', (tester) async {
+      final doc = readerDoc;
+      if (doc == null) return;
       print('\n--- Evaluating Chapter 3: Table of Contents ---');
-      final tocChapter = readerDoc.chapters.firstWhere(
+      final tocChapter = doc.chapters.firstWhere(
         (c) => c.title.contains('Daftar Isi'),
       );
       expect(tocChapter.nodes, isNotEmpty);
@@ -174,7 +180,7 @@ void main() {
       await renderAndCapture(
         tester,
         widget: PaginatedReflowableReader(
-          document: readerDoc,
+          document: doc,
           initialAnchorNodeId: tocChapter.nodes.first.id,
           theme: ReadingThemeType.white,
           typography: const TypographySettings(twoPageSpread: true),
@@ -189,8 +195,10 @@ void main() {
     testWidgets('2. Render Chapter 4: BAB I Opener & Spread Flow', (
       tester,
     ) async {
+      final doc = readerDoc;
+      if (doc == null) return;
       print('\n--- Evaluating Chapter 4: BAB I ---');
-      final bab1 = readerDoc.chapters.firstWhere(
+      final bab1 = doc.chapters.firstWhere(
         (c) => c.title.contains('BAB I'),
       );
       expect(bab1.nodes, isNotEmpty);
@@ -199,7 +207,7 @@ void main() {
       await renderAndCapture(
         tester,
         widget: PaginatedReflowableReader(
-          document: readerDoc,
+          document: doc,
           initialAnchorNodeId: bab1.nodes.first.id,
           theme: ReadingThemeType.white,
           typography: const TypographySettings(twoPageSpread: true),
@@ -214,8 +222,10 @@ void main() {
     testWidgets(
       '3. Render BAB I Section: Lists & Dialogues (Tema, Konflik, Simpati, Solusi)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating BAB I Lists & Dialogues ---');
-        final bab1 = readerDoc.chapters.firstWhere(
+        final bab1 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB I'),
         );
         final targetNode = bab1.nodes.firstWhere(
@@ -225,7 +235,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: targetNode.id,
             theme: ReadingThemeType.sepia,
             typography: const TypographySettings(twoPageSpread: true),
@@ -241,8 +251,10 @@ void main() {
     testWidgets(
       '4. Render Chapter 5: BAB II (Pintar Mendengar, Pandai Berbicara)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Chapter 5: BAB II ---');
-        final bab2 = readerDoc.chapters.firstWhere(
+        final bab2 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB II'),
         );
         expect(bab2.nodes, isNotEmpty);
@@ -253,7 +265,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: bab2.nodes.first.id,
             theme: ReadingThemeType.white,
             typography: const TypographySettings(twoPageSpread: true),
@@ -269,8 +281,10 @@ void main() {
     testWidgets(
       '5. Render Chapter 6: BAB III (Ucapan yang Membuat Lawan Bicara Memihak Kita)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Chapter 6: BAB III (MEMIHAK) ---');
-        final bab3 = readerDoc.chapters.firstWhere(
+        final bab3 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB III'),
         );
         expect(bab3.nodes, isNotEmpty);
@@ -282,7 +296,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: bab3.nodes.first.id,
             theme: ReadingThemeType.white,
             typography: const TypographySettings(twoPageSpread: true),
@@ -298,8 +312,10 @@ void main() {
     testWidgets(
       '6. Render Chapter 7: BAB IV (Beratnya Ucapan Ditentukan Oleh Dalamnya Isi & KISS)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Chapter 7: BAB IV ---');
-        final bab4 = readerDoc.chapters.firstWhere(
+        final bab4 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB IV'),
         );
         expect(bab4.nodes, isNotEmpty);
@@ -312,7 +328,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: kissNode.id,
             theme: ReadingThemeType.sepia,
             typography: const TypographySettings(twoPageSpread: true),
@@ -328,8 +344,10 @@ void main() {
     testWidgets(
       '7. Render Chapter 8: BAB V (Suara Bagus Bukan Bawaan Dari Lahir & Vocal Exercises)',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Chapter 8: BAB V ---');
-        final bab5 = readerDoc.chapters.firstWhere(
+        final bab5 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB V'),
         );
         expect(bab5.nodes, isNotEmpty);
@@ -342,7 +360,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: vocalNode.id,
             theme: ReadingThemeType.white,
             typography: const TypographySettings(twoPageSpread: true),
@@ -358,8 +376,10 @@ void main() {
     testWidgets(
       '8. Compact Single-Page Layout (600x800) & Window Resize Anchor Preservation',
       (tester) async {
+        final doc = readerDoc;
+        if (doc == null) return;
         print('\n--- Evaluating Compact Single-Page & Resize ---');
-        final bab1 = readerDoc.chapters.firstWhere(
+        final bab1 = doc.chapters.firstWhere(
           (c) => c.title.contains('BAB I'),
         );
         final anchorNode = bab1.nodes[5];
@@ -367,7 +387,7 @@ void main() {
         await renderAndCapture(
           tester,
           widget: PaginatedReflowableReader(
-            document: readerDoc,
+            document: doc,
             initialAnchorNodeId: anchorNode.id,
             theme: ReadingThemeType.dark,
             typography: const TypographySettings(twoPageSpread: false),
@@ -381,7 +401,7 @@ void main() {
         // Verify that after resize from compact (600) to wide spread (1102), anchor is preserved
         PaginationEngine.clearCache();
         final compactPages = PaginationEngine.paginateDocument(
-          document: readerDoc,
+          document: doc,
           viewportWidth: 600,
           viewportHeight: 800,
           typography: const TypographySettings(twoPageSpread: false),
@@ -392,7 +412,7 @@ void main() {
         );
 
         final spreadPages = PaginationEngine.paginateDocument(
-          document: readerDoc,
+          document: doc,
           viewportWidth: 1102,
           viewportHeight: 951,
           typography: const TypographySettings(twoPageSpread: true),

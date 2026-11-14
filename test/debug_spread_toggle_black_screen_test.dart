@@ -71,6 +71,7 @@ void main() {
   testWidgets('ReadingScreen: toggle spread button on and off in Reflowable mode', (
     tester,
   ) async {
+    if (!checkFixtureOrSkip(jsonPath) || !checkFixtureOrSkip(pdfPath)) return;
     tester.view.physicalSize = const Size(934 * 2.0, 934 * 2.0);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(() {
