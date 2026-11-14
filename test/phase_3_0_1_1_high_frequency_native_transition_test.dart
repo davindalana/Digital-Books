@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -117,8 +118,7 @@ void main() {
 
           // Sample at 10ms intervals (100 Hz sampling rate across 350ms window = 35 frames)
           for (int i = 0; i < 35; i++) {
-            await Future.delayed(const Duration(milliseconds: 10));
-            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 10));
             sampledFrames++;
 
             final bytes = await captureBoundaryBytes(readerKey);
@@ -154,9 +154,25 @@ void main() {
 
           // Wait to settle
           for (int s = 0; s < 10; s++) {
-            await Future.delayed(const Duration(milliseconds: 50));
-            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 50));
           }
+
+          final turnFiles = [0, 8, 17, 26, 34]
+              .map(
+                (idx) => File(
+                  '$evidenceDir/turn_frame_${idx.toString().padLeft(2, '0')}.png',
+                ),
+              )
+              .toList();
+          final hashes = turnFiles
+              .where((f) => f.existsSync())
+              .map((f) => sha256.convert(f.readAsBytesSync()).toString())
+              .toSet();
+          expect(
+            hashes.length,
+            greaterThan(1),
+            reason: 'Turn frames must capture animation progression across time',
+          );
 
           print(
             'Sampled $sampledFrames frames @ 10ms. Blank Frames Detected: $blankFramesDetected',

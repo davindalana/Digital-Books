@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -641,8 +642,7 @@ void main() {
 
           // Sample 12 consecutive frames across the transition (every ~30ms)
           for (int i = 0; i < 12; i++) {
-            await Future.delayed(const Duration(milliseconds: 30));
-            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 30));
             framesSampled++;
 
             final rawImages = find.byType(RawImage);
@@ -672,8 +672,24 @@ void main() {
           }
 
           // Complete transition
-          await Future.delayed(const Duration(milliseconds: 200));
-          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 200));
+
+          final transitionFiles = [0, 3, 6, 9]
+              .map(
+                (idx) => File(
+                  '$visualEvidenceDir/transitions/transition_frame_0$idx.png',
+                ),
+              )
+              .toList();
+          final transHashes = transitionFiles
+              .where((f) => f.existsSync())
+              .map((f) => sha256.convert(f.readAsBytesSync()).toString())
+              .toSet();
+          expect(
+            transHashes.length,
+            greaterThan(1),
+            reason: 'Transition frames must show visual progression',
+          );
         });
 
         print(
