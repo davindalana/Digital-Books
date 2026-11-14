@@ -5,17 +5,26 @@ import 'package:digital_books/features/reader/providers/reader_settings_provider
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:path/path.dart' as p;
+import '../test/helpers/real_book_fixtures.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  const pdfPath =
-      '/Users/davindalana/Documents/DigitalBooks/originals/0ee84822-2c1c-4309-9b9b-88938524b3ae.pdf';
-
   testWidgets(
     'macOS PDF Reader: Real Native PDFium Rendering, Zoom & View Mode Validation',
     (tester) async {
-      final file = File(pdfPath);
+      final preferredPdf = File(
+        p.join(
+          RealBookFixtures.originalsDir,
+          '0ee84822-2c1c-4309-9b9b-88938524b3ae.pdf',
+        ),
+      );
+      final fallbackPdf = File('test/fixtures/corpus/05_headers_footers.pdf');
+      final file = preferredPdf.existsSync() ? preferredPdf : fallbackPdf;
+      final pdfPath = file.path;
+      final expectedPages = file == preferredPdf ? 13 : 3;
+
       expect(
         file.existsSync(),
         isTrue,
@@ -72,16 +81,21 @@ void main() {
       expect(state.isLoading, isFalse);
       expect(state.errorMessage, isNull);
       expect(state.document, isNotNull);
-      expect(state.totalPages, equals(13));
-      expect(totalPages, equals(13));
+      expect(state.totalPages, equals(expectedPages));
+      expect(totalPages, equals(expectedPages));
       expect(currentPage, equals(1));
       debugPrint(
-        'Step 1 PASSED: PDFium opened document with 13 pages successfully.',
+        'Step 1 PASSED: PDFium opened document with $expectedPages pages successfully.',
       );
 
-      // Pump frames to ensure Page 1 rasterizes
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(find.byKey(const ValueKey('pdf_pv_1')), findsOneWidget);
+      // Pump frames to ensure Page 1 rasterizes into bitmap cache
+      int rasterAttempts = 0;
+      while (!state.isPageCached(1) && rasterAttempts < 30) {
+        await tester.pump(const Duration(milliseconds: 100));
+        rasterAttempts++;
+      }
+      expect(state.isPageCached(1), isTrue);
+      expect(find.byType(RawImage), findsAtLeastNWidgets(1));
       debugPrint(
         'Step 2 PASSED: Page 1 rendered without error or black screen.',
       );
@@ -136,7 +150,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 600));
       expect(readerKey.currentState?.viewMode, equals(PdfViewMode.continuous));
-      expect(find.byKey(const ValueKey('pdf_pv_1')), findsOneWidget);
+      expect(find.byType(ListView), findsOneWidget);
       debugPrint(
         'Step 5 PASSED: Continuous scroll view rendered successfully.',
       );
