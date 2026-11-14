@@ -37,6 +37,7 @@ void main() {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     if (byteData != null) {
       final file = File('$screenshotDir/$filename');
+      file.parent.createSync(recursive: true);
       file.writeAsBytesSync(byteData.buffer.asUint8List());
       debugPrint(
         'CAPTURED SCREENSHOT: ${file.path} (${file.lengthSync()} bytes)',
